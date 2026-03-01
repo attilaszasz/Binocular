@@ -295,3 +295,35 @@ Even on private networks, basic security hygiene is required.
 [ ] Contributing Guide: Is there a CONTRIBUTING.md explaining how to write a new Extension Module?
 
 [ ] Screenshots: Does the repo include high-quality screenshots/GIFs of the UI?
+
+## Project Context Baseline Updates
+
+*Managed section — rewritten by SDD planning agents. Do not edit manually.*
+
+### Database Configuration Baseline
+
+- **Engine**: SQLite (single file: `/app/data/binocular.db`)
+- **Journal Mode**: WAL (Write-Ahead Logging) — enabled per-connection via `PRAGMA journal_mode = WAL`
+- **Contention Handling**: `PRAGMA busy_timeout = 5000` (5-second wait on lock)
+- **Foreign Keys**: `PRAGMA foreign_keys = ON` — must be set per-connection (SQLite default is OFF)
+- **Concurrency Model**: Single-user, single-instance; WAL allows concurrent reads during scheduler writes
+- **Migration Strategy**: Custom lightweight runner with numbered SQL files (`001_initial.sql`, `002_*.sql`, …) and a `schema_version` tracking table; auto-applied on startup
+
+### Data Access Pattern
+
+- **No ORM**: Raw SQL via `aiosqlite` with Pydantic models for serialization/deserialization
+- **Repository Pattern**: One repository class per entity providing typed async CRUD methods
+- **Pydantic Models**: One model file per entity in `backend/src/models/`; AppConfig uses `BaseSettings` pattern with typed defaults
+- **Version Comparison**: Semver parsing (`packaging.version.Version`) with string inequality fallback — pure function, not DB-level
+
+### Repository Layout
+
+- **Structure**: Web application layout — `backend/` (Python/FastAPI) + `frontend/` (React/Vite/Tailwind)
+- **Backend paths**: `backend/src/db/` (connection, migrations), `backend/src/models/`, `backend/src/repositories/`, `backend/src/utils/`
+- **Test paths**: `backend/tests/` with temp-file SQLite fixtures per test
+
+### Cross-Cutting Standards
+
+- **Structured Logging**: `structlog` for all backend components (migration runner, connection lifecycle, repository errors)
+- **Dependency Pinning**: Exact versions in lock file (`poetry.lock` or `requirements.txt` with hashes) — required by project instructions
+- **Type Safety**: All Python code must pass `mypy --strict`; all API payloads validated through Pydantic models
