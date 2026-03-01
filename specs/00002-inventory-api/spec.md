@@ -122,6 +122,7 @@ A user has just finished a firmware update session — they physically updated 5
 - What happens when a user tries to retrieve, update, or delete a device or device type that does not exist? The system returns a clear "not found" error rather than an internal server error.
 - What happens when the database already has a device type in place and the user's update tries to change its name to one that already exists? The system detects the uniqueness conflict and rejects the update with a meaningful error referencing the duplicate name.
 - What happens when a user confirms an update on a device that was deleted between the time the page loaded and the time the button was clicked? The system returns a "not found" error for the deleted device.
+- What happens when one device fails during a bulk confirm operation? The system continues confirming remaining devices (best-effort). Successfully confirmed devices stay confirmed. The response summary includes per-device error details so the user can identify and address the failure.
 
 ## Requirements
 
@@ -136,13 +137,22 @@ A user has just finished a firmware update session — they physically updated 5
 - **FR-007**: All resource representations MUST include the resource identifier and timestamps (created, last modified) in a consistent format.
 - **FR-008**: The system MUST validate all input at the API boundary: names must be non-empty and no longer than 200 characters after trimming whitespace; URLs must be syntactically valid; numeric frequency values must be positive.
 - **FR-009**: When a create or update operation violates a uniqueness constraint (duplicate device type name, or duplicate device name within a device type), the system MUST return an error with a human-readable message identifying the conflicting field and value.
-- **FR-010**: When deleting a device type that has child devices, the system MUST reject the request unless the caller explicitly confirms the cascading deletion. If the device type has no child devices, deletion MUST succeed without requiring confirmation.
+- **FR-010**: When deleting a device type that has child devices, the system MUST reject the request unless the caller provides a `confirm_cascade` flag set to true. If the flag is absent or false and child devices exist, the system MUST return an error including the child device count. If the device type has no child devices, deletion MUST succeed without requiring the flag.
 - **FR-011**: Device type responses MUST include a count of child devices so the UI can display cascade deletion warnings and summary information.
 - **FR-012**: The system MUST support filtering the device list by device type and by update status (update available, up to date, never checked).
-- **FR-013**: The system MUST support sorting the device list by name and by last-checked date, with a sensible default order.
-- **FR-014**: The system MUST provide a bulk "confirm all" action that confirms every device with a pending update and returns a summary of how many devices were confirmed, skipped, and errored.
+- **FR-013**: The system MUST support sorting the device list by name and by last-checked date. The default sort order, when not specified by the caller, MUST be name ascending (alphabetical).
+- **FR-013a**: List endpoints MUST return all matching results without pagination in V1. The expected inventory size (5–50 devices, under a few hundred at scale) does not warrant pagination overhead. Pagination may be introduced in a future version if performance degrades.
+- **FR-014**: The system MUST provide a bulk "confirm all" action that confirms every device with a pending update and returns a summary of how many devices were confirmed, skipped, and errored. The action MUST accept an optional device type filter; when provided, only devices under that type are confirmed; when omitted, all eligible devices across all types are confirmed.
+- **FR-014a**: The bulk confirm action MUST use best-effort semantics: each device is confirmed independently, and a failure on one device MUST NOT roll back confirmations already applied to other devices. The summary MUST report per-device errors so the caller can identify and retry specific failures.
 - **FR-015**: The bulk confirm action MUST be idempotent — running it when no devices have pending updates MUST return a summary with zero confirmations and no errors.
-- **FR-016**: All error responses MUST use a consistent structure containing a human-readable message and a machine-readable error code, so the frontend can present meaningful feedback and handle specific errors programmatically.
+- **FR-016**: All error responses MUST use a consistent structure containing a human-readable message and a machine-readable error code, so the frontend can present meaningful feedback and handle specific errors programmatically. The following error codes MUST be used:
+  - `DUPLICATE_NAME` — uniqueness constraint violated (duplicate device type name or duplicate device name within a type)
+  - `NOT_FOUND` — referenced resource does not exist
+  - `VALIDATION_ERROR` — input fails boundary validation (empty name, invalid URL, negative frequency, etc.)
+  - `CASCADE_BLOCKED` — device type deletion rejected because child devices exist and cascade was not confirmed
+  - `NO_LATEST_VERSION` — confirm update rejected because the device has never been checked
+  - `INTERNAL_ERROR` — unexpected system failure
+  Additional codes MAY be introduced by future features.
 - **FR-017**: The API MUST expose interactive, auto-generated documentation grouped by resource type (device types, devices, actions) so users can discover and test endpoints directly from the browser.
 - **FR-018**: A partial update with no changed fields (empty update body) MUST succeed as a no-op, returning the unchanged resource rather than producing an error.
 - **FR-019**: Requests referencing a non-existent resource (by identifier) MUST return a clear "not found" error, never an internal server error.
@@ -171,6 +181,17 @@ A user has just finished a firmware update session — they physically updated 5
 - Assumes single-user, single-instance deployment — no concurrent multi-user write conflicts to manage.
 - Assumes the application operates without user authentication (trusted, private network as stated in the product brief). Access control is out of scope.
 - Assumes firmware version strings are opaque text — the API accepts and returns them as-is without imposing format constraints. Version comparison logic (for update status derivation) is inherited from the existing data layer.
+
+## Clarifications
+
+### Session 2026-03-01
+
+- Q: Should list endpoints support pagination? → A: No pagination for V1 — return all results. Expected inventory sizes (5–50 devices, under a few hundred at scale) don't warrant pagination overhead. Revisit if performance degrades.
+- Q: How should the caller signal intent to cascade-delete a device type with children? → A: Query parameter `?confirm_cascade=true` on the DELETE request. Absent or false triggers rejection with device count warning.
+- Q: What is the default sort order when the caller doesn't specify? → A: Name ascending (alphabetical).
+- Q: Can bulk confirm be scoped to a single device type? → A: Yes — optional device_type filter parameter. If provided, only devices under that type are confirmed; if omitted, all eligible devices confirmed.
+- Q: Is bulk confirm atomic or best-effort? → A: Best-effort with per-device error reporting. Each device confirmed independently; failures don't roll back others.
+- Q: Should the spec enumerate machine-readable error codes? → A: Yes — fixed vocabulary: DUPLICATE_NAME, NOT_FOUND, VALIDATION_ERROR, CASCADE_BLOCKED, NO_LATEST_VERSION, INTERNAL_ERROR. New codes may be added by future features.
 
 ## Compliance Check
 
