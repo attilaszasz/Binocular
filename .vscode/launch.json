@@ -19,6 +19,32 @@
         "BINOCULAR_DB_PATH": "${workspaceFolder}/data/binocular.db"
       },
       "console": "integratedTerminal"
+    },
+    {
+      "name": "Binocular: Debug Frontend",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "pattern": "Local:.+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Binocular: Full Stack",
+      "configurations": [
+        "Binocular: Debug API",
+        "Binocular: Debug Frontend"
+      ]
     }
   ]
 }
