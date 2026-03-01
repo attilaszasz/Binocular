@@ -5,7 +5,7 @@
 
 ## Product Document
 
-**Path**: 
+**Path**: docs/binocular-product-brief.md
 
 ## Technical Context Document
 
