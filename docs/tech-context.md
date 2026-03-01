@@ -354,3 +354,19 @@ Even on private networks, basic security hygiene is required.
 - **Dependency Pinning**: Exact versions in lock file (`poetry.lock` or `requirements.txt` with hashes) — required by project instructions
 - **Type Safety**: All Python code must pass `mypy --strict`; all API payloads validated through Pydantic models
 - **Testing**: `pytest` + `pytest-asyncio` for async tests; `httpx.AsyncClient` for API integration tests; isolated temp-file SQLite per test
+
+### Frontend Architecture
+
+- **Stack**: React + Tailwind CSS, built with Vite; served as static files through the FastAPI backend (single-port)
+- **Application Shell**: Fixed sidebar navigation on desktop (≥ 768px), off-canvas hamburger menu on mobile (< 768px); sticky top header with page title and theme toggle
+- **Navigation**: Client-side routing (SPA) — four tabs: Inventory, Activity Logs, Modules, Settings
+- **Dark Mode**: System preference detection (`prefers-color-scheme`) with manual toggle; choice persisted in `localStorage`; applied before first paint to prevent theme flash
+- **Placeholder Pattern**: Non-implemented tabs render styled placeholder views describing upcoming functionality — prevents dead-end navigation while features are delivered incrementally
+
+### Frontend-Backend Integration
+
+- **Data Flow**: Frontend is a thin API consumer; backend API is the single source of truth for all data (no local DB, no offline cache in V1)
+- **Error Handling**: Backend error conditions (duplicate name, not found, validation failure, cascade conflict, missing version data) are mapped to user-friendly inline messages at the UI layer
+- **Validation**: Client-side validation mirrors backend rules (non-empty trimmed names ≤ 200 chars, valid URLs ≤ 2048 chars, notes ≤ 2000 chars) for immediate feedback; backend remains authoritative
+- **Mutation Pattern**: All create/update/confirm actions use backend responses to update UI state in place (no follow-up GET needed)
+- **Tri-State Status**: Device update status (update available / up to date / never checked) is derived from backend data, displayed with distinct visual treatments (color + icon + text label)
