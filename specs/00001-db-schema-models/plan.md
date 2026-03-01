@@ -20,6 +20,9 @@ Establish Binocular's foundational data layer: a SQLite database configured with
 **Performance Goals**: Sub-50ms for single-entity CRUD; sub-200ms for full inventory retrieval (<1K rows expected)
 **Constraints**: Single-user, single-instance access; 2 MB max item size (SQLite page limit is not a concern at this scale); database file on a persistent Docker volume (`/app/data/binocular.db`)
 **Scale/Scope**: <100 device types, <1K devices, single concurrent user (homelab)
+**Logging**: Structured logging via `structlog` for all backend components — migration events, connection lifecycle, repository errors (Principle IV)
+**Type Checking**: All code must pass `mypy --strict` with zero errors (Principle IV)
+**Dependency Pinning**: Exact versions in lock file (`poetry.lock` or `requirements.txt` with hashes) per project instructions
 
 ## Instructions Check
 
@@ -27,8 +30,8 @@ Establish Binocular's foundational data layer: a SQLite database configured with
 
 | Principle | Status | Notes |
 |---|---|---|
-| I. Self-Contained Deployment | PASS | SQLite single-file DB in `/app/data`. Zero external database dependencies. Sensible defaults for all AppConfig settings. |
-| II. Extension-First Architecture | PASS | ExtensionModule registry table captures contract validation results, activation status, file hash, and error state. Module metadata is separate from core entity data. DeviceType references module via nullable FK. |
+| I. Self-Contained Deployment | PASS | SQLite single-file DB in `/app/data`. Zero external database dependencies. Sensible defaults for all AppConfig settings. Container-level rules (non-root user, HEALTHCHECK, single-port, docker-compose.yml) are out of scope for this data-layer feature — verified in Feature 6.1 (Deployment & Security). |
+| II. Extension-First Architecture | PASS | ExtensionModule registry table captures contract validation results, activation status, file hash, and error state. Module metadata is separate from core entity data. DeviceType references module via nullable FK. Runtime contract enforcement (Protocol/ABC, importlib loading, error boundaries, Pydantic return validation) is scoped to Feature 2.1 (Module Interface Contract). |
 | III. Responsible Scraping | N/A | Data persistence layer only — no web requests in this feature. Scraping behavior is scoped to the Extension Engine feature. |
 | IV. Type Safety & Validation | PASS | All entities backed by Pydantic models with strict type annotations. AppConfig uses Pydantic `BaseSettings` pattern with typed columns. Version strings stored as `TEXT` — comparison logic uses semver parsing with string fallback. All DB access functions return typed Pydantic model instances. |
 | V. Test-First Development | PASS | Spec provides Given/When/Then acceptance scenarios for all user stories. Plan calls for isolated temp-file SQLite fixtures for each test. Migration runner, CRUD operations, and constraint enforcement all testable independently. |
