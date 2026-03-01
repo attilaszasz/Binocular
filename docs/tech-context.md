@@ -322,6 +322,16 @@ Even on private networks, basic security hygiene is required.
 - **Backend paths**: `backend/src/db/` (connection, migrations), `backend/src/models/`, `backend/src/repositories/`, `backend/src/utils/`
 - **Test paths**: `backend/tests/` with temp-file SQLite fixtures per test
 
+### API Design Standards
+
+- **Error Envelope**: All error responses use a consistent structure: human-readable message + machine-readable error code + optional field identifier
+- **Mutation Responses**: All create/update endpoints return the complete updated resource in the response body (no follow-up GET needed)
+- **Resource Shape**: All resource representations include `id`, `created_at`, `updated_at` in ISO 8601 format
+- **Input Validation**: Validated at API boundary via Pydantic — non-empty trimmed names (max 200 chars), syntactically valid URLs, positive numeric values
+- **Cascade Safety**: Destructive operations on parent resources require explicit confirmation when child records exist
+- **Idempotent Actions**: State-transition endpoints (e.g., confirm update) are idempotent — safe to retry or double-invoke
+- **OpenAPI Documentation**: Auto-generated interactive docs grouped by resource type, browsable at `/docs`
+
 ### Cross-Cutting Standards
 
 - **Structured Logging**: `structlog` for all backend components (migration runner, connection lifecycle, repository errors)
