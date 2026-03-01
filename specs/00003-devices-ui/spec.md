@@ -83,7 +83,7 @@ A user has physically updated their Sony A7IV's firmware to version 3.00. On the
 
 ### User Story 5 - Add a New Device (Priority: P2)
 
-A user has just purchased a new Sony 50mm f/1.2 GM lens and wants to add it to their Binocular inventory. From the dashboard, they click an "Add Device" button. A form appears (as a modal or slide-over panel) allowing them to enter the device name, select an existing device type from a dropdown, and optionally enter the currently installed firmware version. They submit the form, and the new device immediately appears in the dashboard under the correct device type group.
+A user has just purchased a new Sony 50mm f/1.2 GM lens and wants to add it to their Binocular inventory. From the dashboard, they click an "Add Device" button. A slide-over panel (right-edge drawer) appears, allowing them to enter the device name, select an existing device type from a dropdown, and enter the currently installed firmware version. They submit the form, and the new device immediately appears in the dashboard under the correct device type group. All CRUD forms (add/edit device, create/edit module) use this same slide-over panel pattern for consistency. On mobile, the slide-over panel expands to full screen.
 
 **Why this priority**: Adding devices is how the inventory grows beyond its initial state. While the dashboard (P1) can display existing data, the system cannot be useful without the ability to register new devices. This is P2 rather than P1 because the API already supports device creation, and device data can be seeded through the API directly during initial setup. The frontend form is the natural user-facing layer for this operation.
 
@@ -91,29 +91,30 @@ A user has just purchased a new Sony 50mm f/1.2 GM lens and wants to add it to t
 
 **Acceptance Scenarios**:
 
-1. **Given** the user is on the dashboard and device types exist, **When** they click "Add Device", **Then** a form opens presenting fields for device name, device type (dropdown populated from existing types), and current firmware version (optional).
+1. **Given** the user is on the dashboard and device types exist, **When** they click "Add Device", **Then** a form opens presenting fields for device name (required), device type (required, dropdown populated from existing types), and current firmware version (required).
 2. **Given** the form is open, **When** the user fills in "Sony 50mm f/1.2 GM" as the name, selects "Sony E-Mount Lenses" as the device type, enters "01" as the current version, and submits, **Then** the form closes, the device appears under the "Sony E-Mount Lenses" group, and the "Total Devices" stat increments.
 3. **Given** the user submits the form with an empty name, **When** the submission is attempted, **Then** the form displays an inline validation error under the name field without closing (client-side validation).
-4. **Given** the user submits a device name that already exists under the same device type, **When** the backend responds with a duplicate name error, **Then** the form displays a meaningful error message (e.g., "A device with this name already exists in this type") without losing the user's input.
+4. **Given** the user submits a device name that already exists under the same device type, **When** the backend responds with a duplicate name error, **Then** the form displays an inline error message near the name field (e.g., "A device with this name already exists in this type") without losing the user's input.
 5. **Given** no device types exist yet, **When** the user clicks "Add Device", **Then** the form still opens but the device type dropdown is empty with guidance text (e.g., "No device types yet — create one first") and the submit button is disabled or the form provides a way to create a device type inline.
 
 ---
 
-### User Story 6 - Manage Device Types (Priority: P2)
+### User Story 6 - Manage Extension Modules / Device Types (Priority: P2)
 
-A user wants to create a new device type or edit an existing one. They can create a device type by providing a name and firmware source URL. They can also edit a device type's name, URL, and check frequency. Deleting a device type that has devices under it requires explicit confirmation showing how many devices will be removed.
+A user wants to add, edit, or remove extension modules — each of which defines a device type. From the Modules tab in the sidebar, the user sees a list of installed extension modules, each showing its name, associated firmware source URL, and device count. The user can create a new module (providing a name and firmware source URL), edit an existing module's name, URL, and check frequency, or delete a module. Deleting a module that has devices under its associated device type requires explicit confirmation showing how many devices will be removed. Modules and device types are the same concept in the UI — each extension module corresponds to exactly one device type.
 
-**Why this priority**: Device types are the organizational backbone — you cannot add devices without at least one device type. This is P2 because the API for device type management already exists and types can be created via API calls, but the UI forms make this accessible to all users. Paired with US5 since adding devices requires device types to exist.
+**Why this priority**: Extension modules (device types) are the organizational backbone — you cannot add devices without at least one module. This is P2 because the API for module/device type management already exists and can be driven through API calls, but the Modules tab makes this accessible to all users. Paired with US5 since adding devices requires at least one module/device type to exist.
 
-**Independent Test**: Can be fully tested by creating a device type via the form, verifying it appears as a group header on the dashboard, editing its name, and attempting to delete one with and without child devices.
+**Independent Test**: Can be fully tested by navigating to the Modules tab, creating a new module via the form, verifying it appears in the module list and as a group header on the dashboard, editing its name, and attempting to delete one with and without child devices.
 
 **Acceptance Scenarios**:
 
-1. **Given** the user wants to create a device type, **When** they access the device type creation form and enter a name (e.g., "Sony Alpha Bodies") and a firmware source URL, **Then** the new device type is persisted and appears as a group heading on the dashboard (with 0 devices initially).
-2. **Given** a device type "Sony Alpha Bodies" exists, **When** the user opens its edit form and changes the name to "Sony Alpha Camera Bodies", **Then** the dashboard group heading updates to reflect the new name.
-3. **Given** a device type has 3 devices, **When** the user initiates deletion, **Then** a confirmation dialog appears warning that 3 devices will also be removed and requiring the user to explicitly confirm before proceeding.
-4. **Given** a device type has 0 devices, **When** the user initiates deletion, **Then** the type is removed immediately without a cascade confirmation dialog.
-5. **Given** the user tries to create a device type with a name that already exists, **When** the backend responds with a duplicate error, **Then** the form displays a user-friendly error message without clearing the form.
+1. **Given** the user navigates to the Modules tab, **When** the tab loads, **Then** a list of installed extension modules is displayed, each showing its name, firmware source URL, and device count.
+2. **Given** the user wants to create a module, **When** they access the module creation form from the Modules tab and enter a name (e.g., "Sony Alpha Bodies") and a firmware source URL, **Then** the new module is persisted, appears in the Modules list, and a corresponding device type group heading appears on the dashboard (with 0 devices initially).
+3. **Given** a module "Sony Alpha Bodies" exists, **When** the user opens its edit form and changes the name to "Sony Alpha Camera Bodies", **Then** the Modules list and the dashboard group heading both update to reflect the new name.
+4. **Given** a module has 3 devices under its device type, **When** the user initiates deletion, **Then** a confirmation dialog appears warning that 3 devices will also be removed and requiring the user to explicitly confirm before proceeding.
+5. **Given** a module has 0 devices, **When** the user initiates deletion, **Then** the module is removed immediately without a cascade confirmation dialog.
+6. **Given** the user tries to create a module with a name that already exists, **When** the backend responds with a duplicate error, **Then** the form displays a user-friendly error message without clearing the form.
 
 ---
 
@@ -130,30 +131,28 @@ A user wants to update a device's details (correct a name, change the recorded f
 1. **Given** a device "Sony A7IV" exists, **When** the user opens its edit form and changes the name to "Sony A7 IV (Main)", **Then** the dashboard card displays the updated name after submission.
 2. **Given** a device has no notes, **When** the user opens the edit form and adds notes "Primary camera body", **Then** the notes are saved successfully.
 3. **Given** the user clicks "Delete" on a device, **When** a confirmation prompt appears, **Then** the user must confirm before the device is removed. Upon confirmation, the device disappears from the dashboard, and the stats bar totals update.
-4. **Given** the user opens the edit form and makes changes but then navigates away, **When** unsaved changes exist, **Then** a confirmation dialog warns them that changes will be lost.
 
 ---
 
 ### User Story 8 - View Placeholder Tabs (Priority: P3)
 
-The user navigates to Activity Logs, Modules, or Settings tabs. For this feature, these tabs render meaningful placeholder content that communicates their purpose and indicates they are upcoming features. The Activity Logs tab shows a description of what will appear there. The Modules tab shows a similar placeholder. The Settings tab displays a placeholder indicating where notification and scheduling configuration will live.
+The user navigates to Activity Logs or Settings tabs. For this feature, these tabs render meaningful placeholder content that communicates their purpose and indicates they are upcoming features. The Activity Logs tab shows a description of what will appear there. The Settings tab displays a placeholder indicating where notification and scheduling configuration will live.
 
-**Why this priority**: Placeholders prevent "dead ends" in the navigation — users clicking a tab and seeing nothing would question if the app is broken. However, the actual content for these tabs belongs to separate features (Activity Logging, Module Management, Alerting). Delivering stubs with clear messaging is sufficient for the core frontend MVP.
+**Why this priority**: Placeholders prevent "dead ends" in the navigation — users clicking a tab and seeing nothing would question if the app is broken. However, the actual content for these tabs belongs to separate features (Activity Logging, Alerting). Delivering stubs with clear messaging is sufficient for the core frontend MVP. Note: the Modules tab is partially functional (US6) and is not a placeholder.
 
-**Independent Test**: Can be tested by clicking each non-dashboard tab and verifying a styled placeholder with descriptive text renders correctly in both dark and light mode.
+**Independent Test**: Can be tested by clicking each placeholder tab and verifying a styled placeholder with descriptive text renders correctly in both dark and light mode.
 
 **Acceptance Scenarios**:
 
 1. **Given** the user clicks "Activity Logs" in the sidebar, **When** the tab loads, **Then** a styled placeholder appears with a title, an icon, and a short description of the upcoming feature (e.g., "System execution and scraping history will appear here").
-2. **Given** the user clicks "Modules" in the sidebar, **When** the tab loads, **Then** a placeholder appears describing extension module management.
-3. **Given** the user clicks "Settings" in the sidebar, **When** the tab loads, **Then** a placeholder appears describing notification and scheduling configuration.
-4. **Given** the user is in dark mode, **When** they view any placeholder tab, **Then** the placeholder is styled appropriately for the active theme.
+2. **Given** the user clicks "Settings" in the sidebar, **When** the tab loads, **Then** a placeholder appears describing notification and scheduling configuration.
+3. **Given** the user is in dark mode, **When** they view any placeholder tab, **Then** the placeholder is styled appropriately for the active theme.
 
 ---
 
 ### User Story 9 - Handle Empty Inventory State (Priority: P3)
 
-A first-time user opens Binocular with no devices or device types configured. Instead of seeing an empty page, the dashboard displays a welcoming empty state with clear guidance on how to get started — prompting them to create their first device type and add their first device. The stats bar shows zeros. The empty state adapts gracefully between desktop and mobile layouts.
+A first-time user opens Binocular with no devices or device types configured. Instead of seeing an empty page, the dashboard displays a welcoming empty state with clear guidance on how to get started — prompting them to create their first device type and add their first device. The stats bar shows zeros. The empty state uses the same responsive breakpoints as the dashboard (single-column on mobile, multi-column on desktop) without layout overflow or awkward spacing.
 
 **Why this priority**: The first-run experience sets the tone for the product. An empty, confusing page will cause users to abandon the tool. However, it's P3 because the core layout and device rendering (P1/P2) are functional without it — empty state is polish that improves adoption but doesn't block core workflows.
 
@@ -161,7 +160,7 @@ A first-time user opens Binocular with no devices or device types configured. In
 
 **Acceptance Scenarios**:
 
-1. **Given** the backend has no device types or devices, **When** the user loads the dashboard, **Then** the stats bar shows "Total Devices: 0", "Updates Available: 0", "Up to Date: 0" and a prominent empty state message appears below with getting-started guidance.
+1. **Given** the backend has no device types or devices, **When** the user loads the dashboard, **Then** the stats bar shows "Total Devices: 0", "Updates Available: 0", "Up to Date: 0" and a visually distinct empty state section appears below the stats bar with a heading, supportive text, and a getting-started call-to-action button.
 2. **Given** the empty state is displayed, **When** the user reads the guidance, **Then** it includes a clear call-to-action to create their first device type (e.g., a button or link to the device type creation form).
 3. **Given** the user is on mobile, **When** they view the empty state, **Then** the guidance text and call-to-action render cleanly without overflow or awkward spacing.
 
@@ -175,7 +174,7 @@ A first-time user opens Binocular with no devices or device types configured. In
 - What happens when a device type has no devices? The group heading should still appear with a "(0 devices)" indicator, or the empty group should be hidden with a note accessible elsewhere — consistent with the device type existing but being unpopulated.
 - What happens when the confirm update action fails due to a concurrent deletion (device removed between page load and button click)? The UI should show a "device not found" error and remove the stale card from the display.
 - What happens when the user opens the add/edit form and the API is unreachable? The form should display an error state when it cannot load prerequisite data (e.g., device type list) and should not let the user submit if submission will fail.
-- What happens when the user resizes their browser from desktop to mobile width while the sidebar is open? The sidebar should transition smoothly — either collapsing to the off-canvas mobile pattern or remaining visible per the new breakpoint.
+- What happens when the user resizes their browser from desktop to mobile width while the sidebar is open? The sidebar MUST follow the breakpoint rules (FR-001): at < 768px it collapses to the off-canvas mobile pattern; at ≥ 768px it remains fixed. No animation timing requirement — instant CSS-driven transition is acceptable.
 - What happens when the browser's `localStorage` is unavailable or full (e.g., private browsing restrictions)? The dark mode toggle should fall back to in-memory state (defaulting to OS preference) and continue functioning without errors, just without persistence across sessions.
 
 ## Requirements
@@ -185,25 +184,27 @@ A first-time user opens Binocular with no devices or device types configured. In
 - **FR-001**: System MUST render a responsive application shell with a fixed sidebar on desktop (≥ 768px) and a collapsible off-canvas sidebar on mobile (< 768px), matching the layout defined in the design mockup.
 - **FR-002**: System MUST provide a dark mode and light mode toggle in the top header bar that switches the entire interface between themes.
 - **FR-003**: System MUST detect the user's OS color scheme preference (`prefers-color-scheme`) and apply it as the default theme on first visit when no stored preference exists.
-- **FR-004**: System MUST persist the user's theme choice in browser local storage so it survives page refreshes and browser restarts.
+- **FR-004**: System MUST persist the user's theme choice in browser local storage so it survives page refreshes and browser restarts. If `localStorage` is unavailable (e.g., private browsing restrictions), the system MUST fall back to in-memory state defaulting to the OS preference and continue functioning without errors — persistence is lost but the toggle remains operational.
 - **FR-005**: System MUST apply the stored theme preference before the first visible render to prevent a flash of the incorrect theme.
 - **FR-006**: System MUST render a sidebar navigation with four items — Inventory, Activity Logs, Modules, Settings — using client-side routing that switches content without full page reloads.
 - **FR-007**: System MUST display a sticky top header bar showing the current section title and the theme toggle, as shown in the design mockup.
-- **FR-008**: System MUST display an inventory dashboard as the default landing view containing: (a) a summary stats row with total devices, updates available, and up-to-date counts; (b) device cards grouped by device type.
-- **FR-009**: System MUST render each device as a card showing: device name, last-checked timestamp (relative or absolute), locally recorded firmware version, latest detected firmware version, and a visual status indicator for the tri-state: "update available" (visually prominent), "up to date" (neutral/positive), or "never checked" (distinct from up to date).
+- **FR-008**: System MUST display an inventory dashboard as the default landing view containing: (a) a summary stats row with total devices, updates available, and up-to-date counts; (b) device cards grouped by device type. Device type groups with zero devices MUST still display their group heading with a "(0 devices)" indicator.
+- **FR-009**: System MUST render each device as a card showing: device name (truncated with ellipsis if it exceeds the card width, with the full name visible on hover via tooltip), last-checked timestamp (relative or absolute), locally recorded firmware version, latest detected firmware version, and a visual status indicator for the tri-state: "update available" (visually prominent), "up to date" (neutral/positive), or "never checked" (distinct from up to date).
 - **FR-010**: System MUST provide a "Confirm Update" (or "Sync Local") action button on each device card that has an update available. Clicking it MUST call the backend confirm endpoint and update the card and stats in place without a page refresh.
 - **FR-011**: System MUST NOT display the confirm action on devices that have never been checked or that are already up to date.
-- **FR-012**: System MUST provide an "Add Device" form accessible from the dashboard that collects: device name (required), device type (required, selected from existing types), and current firmware version (optional).
+- **FR-012**: System MUST provide an "Add Device" form accessible from the dashboard that collects: device name (required), device type (required, selected from existing types), and current firmware version (required), consistent with the backend API contract.
 - **FR-013**: System MUST provide an "Edit Device" form accessible from each device card that allows modification of: device name, current firmware version, and notes.
-- **FR-014**: System MUST provide forms for creating and editing device types that collect: name (required), firmware source URL (required), and check frequency (optional, with a sensible default).
+- **FR-014**: System MUST provide a Modules tab accessible from the sidebar that lists installed extension modules (each defining a device type) and provides forms for creating and editing modules that collect: name (required), firmware source URL (required), and check frequency (optional, default: 360 minutes per the API contract). The form MUST also display a disabled/read-only field for extension module file association with a note indicating this capability is coming in a future release (Feature 2.3). The `extension_module_id` is sent as null until advanced module management is available.
 - **FR-015**: System MUST provide a delete action for devices and device types. Deleting a device type with child devices MUST present a confirmation dialog showing the count of devices that will also be removed before proceeding.
-- **FR-016**: System MUST validate form inputs on the client side before submission: non-empty required fields, trimmed whitespace, and maximum length enforcement (names ≤ 200 characters, URLs ≤ 2048 characters, notes ≤ 2000 characters) consistent with backend validation rules.
-- **FR-017**: System MUST display user-friendly error messages when API requests fail, mapping server-reported error conditions (e.g., duplicate name, resource not found, validation failure, cascade conflict, missing version data) to human-readable descriptions shown inline near the relevant UI element.
+- **FR-016**: System MUST validate form inputs on the client side before submission: non-empty required fields, trimmed whitespace, and maximum length enforcement (names ≤ 200 characters, firmware versions ≤ 100 characters, URLs ≤ 2048 characters, notes ≤ 2000 characters) consistent with backend validation rules.
+- **FR-017**: System MUST display user-friendly error messages when API requests fail, mapping server-reported error conditions (e.g., duplicate name, resource not found, validation failure, cascade conflict, missing version data, internal server error) to human-readable descriptions shown inline near the relevant UI element.
 - **FR-018**: System MUST disable form submit buttons and action buttons during pending API requests to prevent duplicate submissions.
-- **FR-019**: System MUST render placeholder views for Activity Logs, Modules, and Settings tabs that communicate the purpose of each section and indicate they are part of upcoming features.
+- **FR-019**: System MUST render placeholder views for Activity Logs and Settings tabs that communicate the purpose of each section and indicate they are part of upcoming features. The Modules tab is partially functional (FR-014) and is not a placeholder.
 - **FR-020**: System MUST render a contextual empty state on the dashboard when no device types or devices exist, with guidance text and a call-to-action to create the first device type.
 - **FR-021**: System MUST update the statistics bar (total devices, updates available, up to date) reactively whenever a device is added, edited, deleted, or confirmed — without requiring a manual page refresh.
 - **FR-022**: System MUST ensure all interactive elements (buttons, links, form controls) are accessible via keyboard navigation (Tab, Enter, Space) and have visible focus indicators.
+- **FR-023**: System MUST provide a visible "Refresh" button on the dashboard that re-fetches all device and device type data from the backend API. The dashboard does NOT automatically poll for updates — data refreshes only in response to user-initiated actions (confirm, add, edit, delete) or an explicit Refresh click.
+- **FR-024**: System MUST display skeleton placeholder screens (matching the layout structure: stats row skeletons, device card skeletons) during the initial dashboard data fetch and when switching to the Modules tab. Skeleton screens are replaced by actual content once data arrives. Inline spinners are used for individual action buttons (covered by FR-018).
 
 ### Key Entities
 
@@ -231,8 +232,9 @@ A first-time user opens Binocular with no devices or device types configured. In
 - **Depends on Feature 00001 (Database Schema & Models)**: Indirectly, through the API layer. The frontend does not access the database directly.
 - Assumes the backend serves the frontend as static files through the backend web server (single-port architecture as defined in project instructions).
 - Assumes single-user environment — no concurrent multi-user state conflicts to manage in the UI.
-- Assumes the backend API is the source of truth for all data. The frontend does not maintain a local database or offline cache in V1.
-- The Activity Logs, Modules, and Settings tabs are delivered as placeholders only. Their full functionality belongs to separate features (Feature 4.1, Feature 2.3, Feature 4.2 respectively).
+- Assumes the backend API is the source of truth for all data. The frontend does not maintain a local database or offline cache in V1. Data freshness follows a manual-refresh model — the dashboard fetches data on load and updates only via user-initiated actions or an explicit Refresh button. No automatic background polling.
+- The Activity Logs and Settings tabs are delivered as placeholders only. Their full functionality belongs to separate features (Feature 4.1 and Feature 4.2 respectively). The Modules tab is partially functional — it provides basic extension module / device type CRUD but defers advanced module management (upload, enable/disable, detailed configuration) to Feature 2.3.
+- Filter and sort controls are explicitly deferred from V1. The grouped-by-type dashboard display is sufficient for the expected inventory size (5–50 devices). The backend API supports filtering/sorting for future frontend use.
 
 ## Compliance Check
 
@@ -244,7 +246,7 @@ A first-time user opens Binocular with no devices or device types configured. In
 No external services, databases, or additional ports introduced. The spec explicitly states single-port architecture through the backend web server. Theme persistence uses browser `localStorage` — no server-side session store needed.
 
 #### II. Extension-First Architecture — **PASS**
-No vendor-specific logic is embedded in the frontend. Device types and devices are treated generically throughout. Vendor names ("Sony Alpha Bodies") appear only as illustrative examples in acceptance scenarios, not as hard-coded UI logic. The Modules tab is correctly deferred as a placeholder.
+No vendor-specific logic is embedded in the frontend. Device types and devices are treated generically throughout. Vendor names ("Sony Alpha Bodies") appear only as illustrative examples in acceptance scenarios, not as hard-coded UI logic. The Modules tab is partially functional (US6/FR-014) — providing basic extension module / device type CRUD — with advanced module management deferred to Feature 2.3.
 
 #### III. Responsible Scraping — **N/A** (correctly out of scope)
 This spec covers the frontend UI layer only. No HTTP scraping occurs from the browser client. All data is consumed from the backend API, which is responsible for enforcing scraping policies.
