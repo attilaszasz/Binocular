@@ -23,6 +23,7 @@ class DeviceTypeCreate(DeviceTypeBase):
 class DeviceTypeUpdate(BaseModel):
     """Patch payload for a device type."""
 
+    name: str | None = Field(default=None, min_length=1)
     firmware_source_url: str | None = Field(default=None, min_length=1)
     extension_module_id: int | None = None
     check_frequency_minutes: int | None = Field(default=None, gt=0)

@@ -26,14 +26,14 @@
 
 **Purpose**: Add dependencies, create package structure, and configure developer tooling.
 
-- [ ] T001 Add httpx and debugpy dev dependencies to pyproject.toml
-- [ ] T002 [P] Create .vscode/launch.json with "Binocular: Debug API" configuration per quickstart.md
-- [ ] T003 [P] Create backend/src/api/ package with __init__.py
-- [ ] T004 [P] Create backend/src/api/schemas/ package with __init__.py
-- [ ] T005 [P] Create backend/src/api/routes/ package with __init__.py
-- [ ] T006 [P] Create backend/src/services/ package with __init__.py
-- [ ] T007 [P] Create backend/tests/test_api/ package with __init__.py
-- [ ] T008 [P] Create backend/tests/test_services/ package with __init__.py
+- [X] T001 Add httpx and debugpy dev dependencies to pyproject.toml
+- [X] T002 [P] Create .vscode/launch.json with "Binocular: Debug API" configuration per quickstart.md
+- [X] T003 [P] Create backend/src/api/ package with __init__.py
+- [X] T004 [P] Create backend/src/api/schemas/ package with __init__.py
+- [X] T005 [P] Create backend/src/api/routes/ package with __init__.py
+- [X] T006 [P] Create backend/src/services/ package with __init__.py
+- [X] T007 [P] Create backend/tests/test_api/ package with __init__.py
+- [X] T008 [P] Create backend/tests/test_services/ package with __init__.py
 
 **Checkpoint**: Package structure ready — foundational modules can now be created.
 
@@ -45,16 +45,16 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T009 Create domain exception hierarchy (BinocularError, NotFoundError, DuplicateNameError, ValidationError, CascadeBlockedError, NoLatestVersionError) in backend/src/services/exceptions.py (AD-2)
-- [ ] T010 [P] Create ErrorResponse Pydantic schema with detail, error_code, and optional field in backend/src/api/schemas/errors.py (FR-016)
-- [ ] T011 Create FastAPI exception handlers mapping domain exceptions to HTTP error envelope in backend/src/api/exception_handlers.py (AD-2, FR-016)
-- [ ] T012 [P] Create correlation ID and structured request-logging middleware in backend/src/api/middleware.py (FR-020, FR-021)
-- [ ] T013 Create FastAPI app factory with lifespan, middleware registration, exception handlers, and router mounts in backend/src/main.py (AD-6)
-- [ ] T014 Create dependency injection factories (get_connection, repos, services) in backend/src/api/dependencies.py
-- [ ] T015 [P] Create health check endpoint (GET /api/v1/health) in backend/src/api/routes/health.py
-- [ ] T016 Create httpx.AsyncClient and test-app fixtures in backend/tests/test_api/conftest.py
-- [ ] T017 Write integration tests for health endpoint and error envelope consistency in backend/tests/test_api/test_errors.py
-- [ ] T049 Create Settings(BaseSettings) configuration model with BINOCULAR_DB_PATH, host, port, and log_level defaults in backend/src/config.py (Principle IV)
+- [X] T009 Create domain exception hierarchy (BinocularError, NotFoundError, DuplicateNameError, ValidationError, CascadeBlockedError, NoLatestVersionError) in backend/src/services/exceptions.py (AD-2)
+- [X] T010 [P] Create ErrorResponse Pydantic schema with detail, error_code, and optional field in backend/src/api/schemas/errors.py (FR-016)
+- [X] T011 Create FastAPI exception handlers mapping domain exceptions to HTTP error envelope in backend/src/api/exception_handlers.py (AD-2, FR-016)
+- [X] T012 [P] Create correlation ID and structured request-logging middleware in backend/src/api/middleware.py (FR-020, FR-021)
+- [X] T013 Create FastAPI app factory with lifespan, middleware registration, exception handlers, and router mounts in backend/src/main.py (AD-6)
+- [X] T014 Create dependency injection factories (get_connection, repos, services) in backend/src/api/dependencies.py
+- [X] T015 [P] Create health check endpoint (GET /api/v1/health) in backend/src/api/routes/health.py
+- [X] T016 Create httpx.AsyncClient and test-app fixtures in backend/tests/test_api/conftest.py
+- [X] T017 Write integration tests for health endpoint and error envelope consistency in backend/tests/test_api/test_errors.py
+- [X] T049 Create Settings(BaseSettings) configuration model with BINOCULAR_DB_PATH, host, port, and log_level defaults in backend/src/config.py (Principle IV)
 
 **Checkpoint**: Foundation ready — app starts, health responds, error envelopes are consistent. User story implementation can now begin.
 
@@ -70,16 +70,16 @@
 
 > **Write these tests FIRST — they MUST fail until implementation is complete.**
 
-- [ ] T018 [P] [US1] Write integration tests for device type CRUD (create, get, list, update, simple delete, duplicate name) in backend/tests/test_api/test_device_types.py
-- [ ] T019 [P] [US1] Write unit tests for DeviceTypeService CRUD and error translation in backend/tests/test_services/test_device_type_service.py
+- [X] T018 [P] [US1] Write integration tests for device type CRUD (create, get, list, update, simple delete, duplicate name) in backend/tests/test_api/test_device_types.py
+- [X] T019 [P] [US1] Write unit tests for DeviceTypeService CRUD and error translation in backend/tests/test_services/test_device_type_service.py
 
 ### Implementation for User Story 1
 
-- [ ] T020 [P] [US1] Add name field to DeviceTypeUpdate model in backend/src/models/device_type.py (AD-8)
-- [ ] T021 [P] [US1] Add get_device_count() and get_all_with_counts() methods to DeviceTypeRepo in backend/src/repositories/device_type_repo.py (AD-5)
-- [ ] T022 [P] [US1] Create DeviceTypeCreateRequest, DeviceTypeUpdateRequest, and DeviceTypeResponse schemas in backend/src/api/schemas/device_type.py (AD-7, FR-008, FR-008a–c)
-- [ ] T023 [US1] Create DeviceTypeService with create, get, list, update, delete and duplicate-name error translation in backend/src/services/device_type_service.py (AD-2)
-- [ ] T024 [US1] Implement device type routes (GET list, POST create, GET by id, PATCH update, DELETE simple) in backend/src/api/routes/device_types.py
+- [X] T020 [P] [US1] Add name field to DeviceTypeUpdate model in backend/src/models/device_type.py (AD-8)
+- [X] T021 [P] [US1] Add get_device_count() and get_all_with_counts() methods to DeviceTypeRepo in backend/src/repositories/device_type_repo.py (AD-5)
+- [X] T022 [P] [US1] Create DeviceTypeCreateRequest, DeviceTypeUpdateRequest, and DeviceTypeResponse schemas in backend/src/api/schemas/device_type.py (AD-7, FR-008, FR-008a–c)
+- [X] T023 [US1] Create DeviceTypeService with create, get, list, update, delete and duplicate-name error translation in backend/src/services/device_type_service.py (AD-2)
+- [X] T024 [US1] Implement device type routes (GET list, POST create, GET by id, PATCH update, DELETE simple) in backend/src/api/routes/device_types.py
 
 **Checkpoint**: Device type CRUD fully functional. Tests from T018/T019 should now pass.
 
@@ -95,14 +95,14 @@
 
 > **Write these tests FIRST — they MUST fail until implementation is complete.**
 
-- [ ] T025 [P] [US2] Write integration tests for device CRUD (nested create, get, list, update, delete, duplicate name within type, cross-type duplicate allowed) in backend/tests/test_api/test_devices.py
-- [ ] T026 [P] [US2] Write unit tests for DeviceService CRUD and response enrichment in backend/tests/test_services/test_device_service.py
+- [X] T025 [P] [US2] Write integration tests for device CRUD (nested create, get, list, update, delete, duplicate name within type, cross-type duplicate allowed) in backend/tests/test_api/test_devices.py
+- [X] T026 [P] [US2] Write unit tests for DeviceService CRUD and response enrichment in backend/tests/test_services/test_device_service.py
 
 ### Implementation for User Story 2
 
-- [ ] T027 [P] [US2] Create DeviceCreateRequest, DeviceUpdateRequest, and DeviceResponse schemas with derived status and device_type_name in backend/src/api/schemas/device.py (AD-4, AD-7, FR-008, FR-008a–c)
-- [ ] T028 [US2] Create DeviceService with create, get, list, update, delete, status derivation, and device_type_name enrichment in backend/src/services/device_service.py (AD-2, AD-4)
-- [ ] T029 [US2] Implement device routes (POST nested create under type, GET list, GET by id, PATCH update, DELETE) in backend/src/api/routes/devices.py (AD-1)
+- [X] T027 [P] [US2] Create DeviceCreateRequest, DeviceUpdateRequest, and DeviceResponse schemas with derived status and device_type_name in backend/src/api/schemas/device.py (AD-4, AD-7, FR-008, FR-008a–c)
+- [X] T028 [US2] Create DeviceService with create, get, list, update, delete, status derivation, and device_type_name enrichment in backend/src/services/device_service.py (AD-2, AD-4)
+- [X] T029 [US2] Implement device routes (POST nested create under type, GET list, GET by id, PATCH update, DELETE) in backend/src/api/routes/devices.py (AD-1)
 
 **Checkpoint**: Device CRUD fully functional with enriched responses. Tests from T025/T026 should now pass.
 
@@ -118,13 +118,13 @@
 
 > **Write these tests FIRST — they MUST fail until implementation is complete.**
 
-- [ ] T030 [US3] Write integration tests for single-device confirm (version sync, idempotency, never-checked rejection) in backend/tests/test_api/test_confirm.py
+- [X] T030 [US3] Write integration tests for single-device confirm (version sync, idempotency, never-checked rejection) in backend/tests/test_api/test_confirm.py
 
 ### Implementation for User Story 3
 
-- [ ] T031 [P] [US3] Create confirm response and BulkConfirmResponse schemas in backend/src/api/schemas/actions.py
-- [ ] T032 [US3] Add confirm_update method to DeviceService with idempotency and NoLatestVersionError in backend/src/services/device_service.py (FR-003–FR-005)
-- [ ] T033 [US3] Implement POST /api/v1/devices/{id}/confirm route in backend/src/api/routes/actions.py (AD-3)
+- [X] T031 [P] [US3] Create confirm response and BulkConfirmResponse schemas in backend/src/api/schemas/actions.py
+- [X] T032 [US3] Add confirm_update method to DeviceService with idempotency and NoLatestVersionError in backend/src/services/device_service.py (FR-003–FR-005)
+- [X] T033 [US3] Implement POST /api/v1/devices/{id}/confirm route in backend/src/api/routes/actions.py (AD-3)
 
 **Checkpoint**: Single-device confirm fully functional. Tests from T030 should now pass. MVP complete — all P1 stories delivered.
 
@@ -140,12 +140,12 @@
 
 > **Write these tests FIRST — they MUST fail until implementation is complete.**
 
-- [ ] T034 [US4] Write integration tests for cascade deletion (reject without flag, accept with flag, empty type needs no flag) in backend/tests/test_api/test_device_types.py
+- [X] T034 [US4] Write integration tests for cascade deletion (reject without flag, accept with flag, empty type needs no flag) in backend/tests/test_api/test_device_types.py
 
 ### Implementation for User Story 4
 
-- [ ] T035 [US4] Add cascade-safe delete logic to DeviceTypeService (check device count, raise CascadeBlockedError or delete with children) in backend/src/services/device_type_service.py (FR-010)
-- [ ] T036 [US4] Update DELETE /api/v1/device-types/{id} route to accept confirm_cascade query parameter in backend/src/api/routes/device_types.py
+- [X] T035 [US4] Add cascade-safe delete logic to DeviceTypeService (check device count, raise CascadeBlockedError or delete with children) in backend/src/services/device_type_service.py (FR-010)
+- [X] T036 [US4] Update DELETE /api/v1/device-types/{id} route to accept confirm_cascade query parameter in backend/src/api/routes/device_types.py
 
 **Checkpoint**: Cascade-safe deletion working. Tests from T034 should now pass.
 
@@ -161,13 +161,13 @@
 
 > **Write these tests FIRST — they MUST fail until implementation is complete.**
 
-- [ ] T037 [US5] Write integration tests for filtering (by type, by status) and sorting (name, -name, last_checked_at, -last_checked_at, invalid values rejected) in backend/tests/test_api/test_devices.py
+- [X] T037 [US5] Write integration tests for filtering (by type, by status) and sorting (name, -name, last_checked_at, -last_checked_at, invalid values rejected) in backend/tests/test_api/test_devices.py
 
 ### Implementation for User Story 5
 
-- [ ] T038 [US5] Add get_all_filtered() with device_type_id, status, sort, and id tie-breaker to DeviceRepo in backend/src/repositories/device_repo.py (FR-012, FR-013, FR-013b)
-- [ ] T039 [US5] Add filter/sort orchestration and status-based in-memory filtering to DeviceService list method in backend/src/services/device_service.py
-- [ ] T040 [US5] Update GET /api/v1/devices route to accept device_type_id, status, and sort query parameters with validation in backend/src/api/routes/devices.py
+- [X] T038 [US5] Add get_all_filtered() with device_type_id, status, sort, and id tie-breaker to DeviceRepo in backend/src/repositories/device_repo.py (FR-012, FR-013, FR-013b)
+- [X] T039 [US5] Add filter/sort orchestration and status-based in-memory filtering to DeviceService list method in backend/src/services/device_service.py
+- [X] T040 [US5] Update GET /api/v1/devices route to accept device_type_id, status, and sort query parameters with validation in backend/src/api/routes/devices.py
 
 **Checkpoint**: Filtering and sorting working. Tests from T037 should now pass.
 
@@ -183,13 +183,13 @@
 
 > **Write these tests FIRST — they MUST fail until implementation is complete.**
 
-- [ ] T041 [US6] Write integration tests for bulk confirm (mixed states, idempotency, type filter, error reporting) in backend/tests/test_api/test_confirm.py
+- [X] T041 [US6] Write integration tests for bulk confirm (mixed states, idempotency, type filter, error reporting) in backend/tests/test_api/test_confirm.py
 
 ### Implementation for User Story 6
 
-- [ ] T042 [US6] Add bulk_confirm() method with best-effort per-device processing to DeviceRepo in backend/src/repositories/device_repo.py (FR-014)
-- [ ] T043 [US6] Add bulk_confirm_all method with summary generation to DeviceService in backend/src/services/device_service.py (FR-014, FR-014a, FR-015)
-- [ ] T044 [US6] Implement POST /api/v1/devices/confirm-all route with optional device_type_id filter in backend/src/api/routes/actions.py
+- [X] T042 [US6] Add bulk_confirm() method with best-effort per-device processing to DeviceRepo in backend/src/repositories/device_repo.py (FR-014)
+- [X] T043 [US6] Add bulk_confirm_all method with summary generation to DeviceService in backend/src/services/device_service.py (FR-014, FR-014a, FR-015)
+- [X] T044 [US6] Implement POST /api/v1/devices/confirm-all route with optional device_type_id filter in backend/src/api/routes/actions.py
 
 **Checkpoint**: Bulk confirm working. Tests from T041 should now pass. All user stories complete.
 
@@ -199,11 +199,11 @@
 
 **Purpose**: Observability, documentation, type safety, and validation of the complete feature.
 
-- [ ] T045 [P] Add audit event logging for state-changing operations to backend/src/services/device_type_service.py and backend/src/services/device_service.py (FR-022)
-- [ ] T046 [P] Configure OpenAPI metadata, tag descriptions, and response examples for interactive docs grouping in backend/src/main.py (FR-017)
-- [ ] T047 Run mypy --strict on backend/src/api/ and backend/src/services/ and fix type errors
-- [ ] T048 Validate specs/00002-inventory-api/quickstart.md integration scenarios against running API on localhost:8000
-- [ ] T050 Run latency benchmarks for CRUD and list endpoints against test fixtures and validate SC-008 thresholds in backend/tests/test_api/
+- [X] T045 [P] Add audit event logging for state-changing operations to backend/src/services/device_type_service.py and backend/src/services/device_service.py (FR-022)
+- [X] T046 [P] Configure OpenAPI metadata, tag descriptions, and response examples for interactive docs grouping in backend/src/main.py (FR-017)
+- [X] T047 Run mypy --strict on backend/src/api/ and backend/src/services/ and fix type errors
+- [X] T048 Validate specs/00002-inventory-api/quickstart.md integration scenarios against running API on localhost:8000
+- [X] T050 Run latency benchmarks for CRUD and list endpoints against test fixtures and validate SC-008 thresholds in backend/tests/test_api/
 
 ---
 
