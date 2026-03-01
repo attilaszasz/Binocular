@@ -301,3 +301,110 @@ The mockup shows a populated dashboard but no empty states. Since the app starts
 | UniFi Console | Device inventory grouping, firmware update indicators | https://ui.com/ |
 | Linear | Empty states, keyboard-first navigation, slide-over forms | https://linear.app/ |
 | Tailwind UI | Dark mode patterns, component accessibility, dashboard layouts | https://tailwindui.com/ |
+
+---
+
+## 8. Package Manager
+
+- **Decision**: Use `npm` with `package-lock.json` committed to the repository.
+- **Rationale**: Zero additional tooling — npm ships with Node.js and is the path of least resistance for a monorepo with a single `frontend/` workspace. The project instructions require "exact versions in a lock file"; `package-lock.json` with `npm ci` satisfies this. No workspaces or monorepo hoisting needed — the backend uses Python/Poetry, so there's no shared dependency tree.
+- **Alternatives**: pnpm (faster installs, stricter node_modules) rejected because it adds a global installation step and Docker layer; yarn rejected for similar reasons plus ongoing v1-vs-v4 fragmentation.
+- **Pitfalls**: Always use `npm ci` (not `npm install`) in CI and Docker builds to ensure reproducible installs from the lock file.
+
+---
+
+## 9. React Router
+
+- **Decision**: React Router v7 (latest stable) with a flat route configuration. Four top-level routes: `/` (Inventory dashboard, default), `/logs` (Activity Logs placeholder), `/modules` (Modules tab), `/settings` (Settings placeholder).
+- **Rationale**: React Router is the de facto routing library for React SPAs. The 4-tab layout maps naturally to 4 routes with a shared `AppShell` layout route wrapping sidebar + header. No nested routing needed — tab content is a single page, not a drill-down hierarchy. The `<NavLink>` component provides active-tab styling out of the box (FR-006, SC-008).
+- **Alternatives**: TanStack Router (excellent type safety but adds learning curve for a simple 4-route app); file-based routing (Remix convention) rejected — overkill for 4 routes.
+- **Pitfalls**: Configure the Vite dev server and FastAPI production server to return `index.html` for all unmatched routes (SPA fallback) so deep-linking and browser refresh work on `/modules`, etc.
+
+---
+
+## 10. State Management
+
+- **Decision**: TanStack Query v5 for all server state (device lists, device types, modules). Local UI state (sidebar open, theme toggle, form inputs) uses plain React `useState`/`useReducer`.
+- **Rationale**: TanStack Query eliminates manual loading/error/refetch boilerplate — every API call gets caching, background revalidation, and optimistic mutation support for free. The confirm action (FR-010) benefits from `useMutation` with `onMutate` for optimistic UI updates. Cache invalidation after create/edit/delete operations keeps the dashboard stats (FR-021) automatically in sync. There's no need for a global state library (Zustand, Redux) because there's no cross-cutting client-side state beyond the theme preference and sidebar toggle.
+- **Alternatives**: Plain `fetch` + `useState` (simpler but requires manual cache invalidation, loading states, and error handling for every endpoint — roughly doubles the boilerplate); Zustand (lightweight but doesn't address async data fetching, which is the main concern).
+- **Pitfalls**: Set `staleTime` generously (e.g., 30 seconds) since this is a single-user app — avoids unnecessary re-fetches. Disable refetchOnWindowFocus in development to prevent confusing re-renders.
+
+---
+
+## 11. API Client
+
+- **Decision**: Hand-written typed `fetch` wrapper in a single `frontend/src/api/` module. One function per API operation (e.g., `listDeviceTypes()`, `createDevice()`, `confirmDevice()`). Return types mirror the OpenAPI response schemas as TypeScript interfaces.
+- **Rationale**: With only 12 API endpoints, a code-generator (openapi-typescript-codegen, orval) adds tool complexity that exceeds the value. A hand-written client is ~150 lines, fully typed, and trivially maintainable. The base URL is `/api/v1` (same-origin), so no CORS configuration needed. Error responses are parsed into a typed `ApiError` structure matching the backend error envelope (`{ detail, error_code, field }`).
+- **Alternatives**: `openapi-fetch` or `orval` for auto-generated client — rejected because adding a code-gen step to the build pipeline is over-engineering for 12 endpoints. `axios` — rejected because the `fetch` API is built into all target browsers and avoids an extra dependency.
+- **Pitfalls**: Always check `response.ok` before parsing JSON — a common fetch pitfall is silently succeeding on 4xx/5xx. Centralize error parsing so error codes are available to TanStack Query's `onError` callbacks.
+
+---
+
+## 12. Form Management
+
+- **Decision**: React Hook Form for all CRUD forms (add/edit device, add/edit device type/module).
+- **Rationale**: React Hook Form provides uncontrolled inputs with minimal re-renders, built-in validation, and — critically — a `setError()` API that maps backend error responses directly to form fields. When the API returns `{ error_code: "DUPLICATE_NAME", field: "name" }`, the form can call `setError("name", { message: "A device with this name already exists" })` without custom plumbing. This directly supports FR-017 and SC-007 (inline error feedback).
+- **Alternatives**: Native form handling + `useState` (viable for 3-field forms but loses `setError()` integration and requires manual dirty/pristine tracking); Formik (heavier, re-renders on every keystroke by default, largely superseded).
+- **Pitfalls**: Keep validation schemas colocated with form components, not in a separate file — the forms are simple enough that centralized validation adds indirection without benefit.
+
+---
+
+## 13. Vite Dev Proxy
+
+- **Decision**: Configure Vite's `server.proxy` to forward `/api` requests to `http://localhost:8000` during development. The frontend dev server runs on port 5173 (Vite default).
+- **Rationale**: During development, the React app and FastAPI backend run as separate processes. The proxy avoids CORS issues and mirrors the production single-port setup. The `changeOrigin: true` setting ensures the backend sees the correct `Host` header. This is the standard Vite pattern for API proxying.
+- **Alternatives**: CORS middleware on the backend (viable but introduces config that doesn't exist in production); running both through a common reverse proxy (Caddy/nginx) — overkill for local dev.
+- **Pitfalls**: Ensure the proxy matches the full `/api` prefix so health checks and all versioned routes are forwarded. Websocket proxying is not needed (no WebSockets in V1).
+
+---
+
+## 14. Frontend Quality Gates
+
+- **Decision**: Biome (single tool for linting + formatting) plus `tsc --noEmit` for type checking. Addresses the Principle VII gap identified in the instructions check.
+- **Rationale**: Biome is the frontend equivalent of Ruff — a single, fast Rust-based tool that handles both linting and formatting with zero plugins. This mirrors the backend's single-tool approach. `tsc --noEmit` in strict mode is the TypeScript equivalent of `mypy --strict`. These three checks (`biome check`, `biome format --check`, `tsc --noEmit`) run as pre-merge gates alongside the Python `ruff` + `mypy` checks.
+- **Alternatives**: ESLint + Prettier (the traditional stack but requires two tools, plugin configuration, and resolving formatting conflicts between them); dprint (fast formatter but lacks linting).
+- **Pitfalls**: Biome's rule coverage is ~95% of ESLint's core + recommended rule sets as of 2025 — verify that any project-specific rules needed are supported. Pin the Biome version in `package.json` to avoid rule drift.
+
+---
+
+## 15. Testing Strategy
+
+- **Decision**: Vitest + React Testing Library (RTL) for component-level tests. One optional Playwright smoke test for the critical happy path (load dashboard → confirm device → verify stats update).
+- **Rationale**: Vitest is Vite-native (shared config, fast HMR-style test execution) and API-compatible with Jest. RTL encourages testing user behavior rather than implementation details — consistent with the project instructions' principle of testing "API behavior and integration boundaries, not internal implementation details." Playwright is reserved for a single smoke test only, to avoid the CI overhead (browser binaries, 10x slower execution) that full E2E coverage adds to a 5–50 device single-user tool.
+- **Alternatives**: Jest (viable but slower startup, requires separate config, no Vite integration); Cypress (heavier than Playwright, slower); full Playwright suite (excessive CI cost for the scope).
+- **Pitfalls**: Mock the API layer in component tests (using MSW or TanStack Query's test utilities) to keep tests fast and deterministic. Do not mock React Router — render components within a `MemoryRouter` for realistic route testing.
+
+---
+
+## 16. CSS Strategy
+
+- **Decision**: Tailwind CSS v3.4+ with `darkMode: 'class'` strategy. Dark mode is toggled by adding/removing the `dark` class on the `<html>` element.
+- **Rationale**: The `class` strategy gives programmatic control over the theme (required for manual toggle + localStorage persistence + OS preference fallback). The mockup already uses Tailwind utility classes throughout (`bg-slate-950`, `text-indigo-400`, etc.), so no conversion needed. The `tailwind.config.ts` file uses TypeScript for type-safe configuration.
+- **Alternatives**: `darkMode: 'media'` strategy (follows OS preference only, no manual toggle — doesn't meet FR-002/FR-004); CSS custom properties with `data-theme` attribute (more flexible but breaks Tailwind's `dark:` prefix convention and loses the mockup's existing class usage).
+- **Pitfalls**: Ensure the FOIT-prevention script (REC-3.2) in `index.html` applies the `dark` class before React hydrates. Use Tailwind's `h-dvh` utility for mobile viewport height (REC-2.3). Purge unused styles in production build for minimal CSS bundle.
+
+---
+
+## 17. Build Output & Integration
+
+- **Decision**: Vite builds to `frontend/dist/`. In production, FastAPI mounts this directory via `StaticFiles` at `/` with a catch-all fallback to `index.html` for SPA routing. The Docker build uses a multi-stage Dockerfile: Node stage runs `npm ci && npm run build`, Python stage copies `frontend/dist/` and serves it.
+- **Rationale**: This is the canonical single-port SPA pattern — the backend owns the HTTP port and serves both API routes (`/api/v1/*`) and static files (`/*`). The catch-all ensures browser refreshes on `/modules` or `/settings` don't 404. Multi-stage Docker keeps the final image small (no Node runtime in production).
+- **Alternatives**: Serving frontend via nginx sidecar (violates single-container principle); embedding build output in the Python package (complicates the build pipeline and makes frontend iteration harder).
+- **Pitfalls**: Route ordering matters — mount API routes first, then the static file catch-all, so `/api/*` requests never hit the SPA fallback. Set correct `Cache-Control` headers for hashed assets (`immutable, max-age=31536000`) vs. `index.html` (`no-cache`).
+
+---
+
+## Summary (Architecture Decisions)
+
+| Decision | Recommendation | Rationale |
+|----------|---------------|-----------|
+| Package Manager | npm + package-lock.json | Zero-setup, lock file satisfies project instructions |
+| Routing | React Router v7 (flat, 4 routes) | De facto standard, NavLink active styling, simple SPA layout |
+| Server State | TanStack Query v5 | Eliminates async boilerplate, native optimistic mutations |
+| API Client | Hand-written typed fetch wrapper | 12 endpoints don't justify code-gen tooling |
+| Forms | React Hook Form | setError() maps backend errors to form fields directly |
+| Dev Proxy | Vite server.proxy → localhost:8000 | Mirrors production single-port; no CORS config |
+| Quality Gates | Biome + tsc --noEmit | Ruff-equivalent single tool; addresses Principle VII |
+| Testing | Vitest + RTL; one Playwright smoke test | Vite-native, behavior-focused, minimal CI overhead |
+| CSS | Tailwind v3.4+, darkMode: 'class' | Mockup already uses Tailwind utilities; class strategy enables toggle |
+| Build & Serve | Vite → dist/, FastAPI StaticFiles, multi-stage Docker | Single-port, small image, SPA fallback |
