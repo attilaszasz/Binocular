@@ -12,4 +12,4 @@
 <!-- A reference document describing the project's tech stack, architecture, or constraints. -->
 <!-- Registered by /sddp-plan when a file is provided. Read on demand by downstream agents. -->
 
-**Path**: 
+**Path**: docs/tech-context.md
