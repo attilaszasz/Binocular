@@ -73,6 +73,8 @@ AppShell (layout route)
         └── SubmitButton (disabled during pending)
 ```
 
+**StrictMode**: The root mount in `main.tsx` wraps the entire application in `<React.StrictMode>` to surface impure components, missing cleanup, and stale closures during development. This is a zero-cost development-only guard that is stripped in production builds.
+
 ### AD-2: State Management — TanStack Query for Server State
 
 **Decision**: Use TanStack Query v5 for all server-state management (device lists, device types, module list, stats). Local UI state (sidebar open, theme, slide-over form visibility) uses plain React `useState`.
@@ -83,10 +85,16 @@ AppShell (layout route)
 - **Loading/error states for free**: Each `useQuery` call provides `isLoading`, `isError`, `error` — directly consumed by skeleton screens (FR-024) and error messages (FR-017).
 - **Manual refresh**: The Refresh button (FR-023) calls `queryClient.invalidateQueries()` to trigger a re-fetch.
 
-**Query key structure**:
-- `["device-types"]` — list all types (with device counts)
-- `["devices"]` — list all devices
-- `["devices", { device_type_id }]` — filtered by type (future use)
+**Query key structure** — centralized in a `queryKeys` factory object to prevent typos and enable targeted invalidation:
+```ts
+const queryKeys = {
+  deviceTypes: { all: () => ["device-types"] as const },
+  devices:     { all: () => ["devices"] as const,
+                 byType: (id: string) => ["devices", { device_type_id: id }] as const },
+} as const;
+```
+
+**Cache timing**: Set `staleTime: 30_000` (30 s) for the single-user context. Ensure `gcTime` ≥ `staleTime` on all query configurations to prevent garbage-collecting cache entries that are still logically fresh (TanStack Query default `gcTime` is 5 min, which satisfies this).
 
 **No global state library needed**: The only cross-cutting client state is theme preference (stored in `localStorage`, read on mount) and sidebar toggle (local `useState`). Neither warrants Zustand or Redux.
 
@@ -125,6 +133,11 @@ AppShell (layout route)
 
 *\* = required field*
 
+**Form lifecycle rules**:
+- **Reset on close**: Call `reset()` on the slide-over panel's close path (both cancel and successful submit) to prevent stale values when re-opening the form.
+- **Clear server errors on resubmit**: Call `clearErrors()` at the start of each new form submission to remove stale server-side field errors before the new request.
+- **Dropdown retention**: When adding multiple devices in sequence, the device type dropdown retains the last-used selection to reduce redundant input (WCAG 2.2 §3.3.7 Redundant Entry).
+
 ### AD-5: Dark Mode — Class Strategy with FOIT Prevention
 
 **Decision**: Tailwind's `darkMode: 'class'` strategy. A blocking `<script>` in `index.html` `<head>` reads `localStorage` and applies the `dark` class to `<html>` before React mounts, preventing flash of incorrect theme (FOIT).
@@ -134,6 +147,13 @@ AppShell (layout route)
 - The blocking script runs before any rendering, so the initial paint matches the user's saved preference — no white flash for dark-mode users (FR-005).
 - The toggle is a two-state switch (Sun/Moon icons from lucide-react, matching mockup) with OS preference as the initial default (FR-003). A three-state toggle (system/light/dark) is deferred to V2 — the two-state toggle is simpler and sufficient for V1.
 - `localStorage` key: `binocular-theme` with values `"dark"` or `"light"`. If `localStorage` is unavailable (FR-004), falls back to in-memory state defaulting to `prefers-color-scheme`.
+
+**Tailwind coding conventions**:
+- The `content` array in `tailwind.config.ts` must cover all template paths (`./index.html`, `./src/**/*.{ts,tsx}`) to prevent JIT from silently dropping used classes from the production build.
+- All Tailwind class names must be written as complete static literals — no dynamic string interpolation (e.g., `bg-${color}-500`) — so the JIT compiler can detect them.
+- `@apply` usage is restricted to ≤ 1 base/reset stylesheet (`index.css`); all component styling uses utility classes directly in JSX.
+
+**Focus indicators**: Use `focus-visible:` prefix (not bare `focus:`) on all focus ring styles so rings appear only during keyboard navigation, reducing visual noise for mouse users.
 
 ### AD-6: Routing — React Router v7 with Layout Route
 
@@ -150,6 +170,8 @@ AppShell (layout route)
 **Rationale**: The 4-tab SPA layout maps directly to 4 routes under a shared layout. `AppShell` renders the sidebar, header, and an `<Outlet>` for the active route's content. `<NavLink>` provides automatic active-tab styling (FR-006, SC-008). No data loading at the route level — TanStack Query handles data fetching inside components.
 
 **SPA fallback**: In production, FastAPI must return `index.html` for any path not matching `/api/*` — so browser refreshes on `/modules` or `/settings` work correctly.
+
+**Lazy loading**: Non-landing routes (`/logs`, `/modules`, `/settings`) are lazy-loaded via `React.lazy()` + `<Suspense>` to keep the initial bundle focused on the dashboard. The dashboard route is eagerly loaded since it is the default landing view.
 
 ### AD-7: Responsive Layout — Mockup-Aligned Breakpoints
 
@@ -207,6 +229,21 @@ AppShell (layout route)
 **Rationale**: The backend requires `?confirm_cascade=true` when child devices exist. The frontend must first check `device_count` (available in the `DeviceTypeResponse`) and conditionally show the cascade warning. A custom dialog (rather than `window.confirm()`) allows consistent styling in both themes and better UX.
 
 **Flow**: Delete button → if `device_count > 0`, show dialog → user confirms → `DELETE /device-types/{id}?confirm_cascade=true` → invalidate queries. If `device_count === 0`, delete directly with a simpler "Are you sure?" confirmation.
+
+### AD-12: Performance Budgets
+
+**Decision**: Enforce front-end performance budgets aligned with the 3-second load target (SC-001).
+
+| Metric | Target | Rationale |
+|---|---|---|
+| Main JS bundle (gzipped) | < 150 KB | Ensures < 3s load on broadband; React + Router + TanStack Query + RHF fit comfortably |
+| Production CSS bundle (gzipped) | ≤ 15 KB | Tailwind JIT with correct content paths and no wildcard safelist |
+| Total initial load (JS + CSS, gzipped) | < 250 KB | Generous ceiling for broadband; leaves room for icons and utilities |
+| CLS | < 0.1 | Skeleton screens with explicit dimensions prevent layout shift (AD-8) |
+
+**Font strategy**: System font stack only (`font-sans` default in Tailwind) — no external fonts loaded via `@import` or `<link>`. This eliminates a common SPA performance bottleneck and aligns with Principle I (no external services).
+
+**Icon imports**: All `lucide-react` imports must use named per-icon imports (`import { CheckCircle2 } from "lucide-react"`) — never namespace imports (`import * as Icons`) — to ensure tree shaking removes unused icons from the bundle.
 
 ## Project Structure
 
