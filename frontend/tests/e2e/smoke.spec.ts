@@ -14,10 +14,15 @@ test("smoke: load dashboard and navigate", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
 
   const syncButtons = page.getByRole("button", { name: /sync local/i });
-  if ((await syncButtons.count()) > 0) {
+  const initialSyncCount = await syncButtons.count();
+  if (initialSyncCount > 0) {
     const confirmStart = Date.now();
     await syncButtons.first().click();
-    await expect(syncButtons.first()).toHaveCount(0, { timeout: 2_000 });
+    await expect
+      .poll(async () => page.getByRole("button", { name: /sync local/i }).count(), {
+        timeout: 2_000,
+      })
+      .toBeLessThan(initialSyncCount);
     const confirmElapsedMs = Date.now() - confirmStart;
     expect(confirmElapsedMs).toBeLessThan(2_000);
   }

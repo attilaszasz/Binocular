@@ -5,6 +5,7 @@
       "name": "Binocular: Debug API",
       "type": "debugpy",
       "request": "launch",
+      "python": "/opt/homebrew/bin/python3.11",
       "module": "uvicorn",
       "args": [
         "backend.src.main:app",
@@ -16,9 +17,11 @@
       ],
       "cwd": "${workspaceFolder}",
       "env": {
+        "PYTHONPATH": "${workspaceFolder}",
         "BINOCULAR_DB_PATH": "${workspaceFolder}/data/binocular.db"
       },
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "justMyCode": true
     },
     {
       "name": "Binocular: Debug Frontend",
@@ -33,12 +36,13 @@
         "--host",
         "127.0.0.1",
         "--port",
-        "5173"
+        "5173",
+        "--strictPort"
       ],
       "console": "integratedTerminal",
       "serverReadyAction": {
-        "pattern": "Local:\\s+(https?://[A-Za-z0-9._:/-]+)",
-        "uriFormat": "%s",
+        "pattern": "Local:\\s+https?://(?:127\\.0\\.0\\.1|localhost):5173/?",
+        "uriFormat": "http://127.0.0.1:5173/",
         "action": "openExternally"
       }
     }

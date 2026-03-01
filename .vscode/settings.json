@@ -1,5 +1,6 @@
 {
     "github.copilot.chat.askQuestions.enabled": true,
+    "python.defaultInterpreterPath": "/opt/homebrew/bin/python3.11",
     "chat.promptFilesRecommendations": {
         "sddp-init": true,
         "sddp-specify": true,
