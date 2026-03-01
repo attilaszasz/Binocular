@@ -258,6 +258,12 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/DeviceResponse"
+        "422":
+          description: Validation error (invalid filter/sort values).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/v1/devices/{device_id}:
     parameters:
@@ -391,6 +397,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BulkConfirmResponse"
+        "422":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ──────────────────────────────────────────────
   # Health
@@ -424,6 +436,7 @@ components:
       required: true
       schema:
         type: integer
+        minimum: 1
       description: Unique identifier of a device type.
     DeviceId:
       name: device_id
@@ -431,6 +444,7 @@ components:
       required: true
       schema:
         type: integer
+        minimum: 1
       description: Unique identifier of a device.
 
   schemas:
@@ -460,6 +474,7 @@ components:
     # ── Device Type ──────────────────────────
     DeviceTypeCreateRequest:
       type: object
+      additionalProperties: false
       required: [name, firmware_source_url]
       properties:
         name:
@@ -471,6 +486,8 @@ components:
           type: string
           format: uri
           minLength: 1
+          maxLength: 2048
+          pattern: "^https?://.+"
           description: URL of the firmware source page.
         extension_module_id:
           type: integer
@@ -484,6 +501,7 @@ components:
 
     DeviceTypeUpdateRequest:
       type: object
+      additionalProperties: false
       description: >
         All fields are optional. Send only the fields to change.
         An empty object is treated as a no-op.
@@ -496,6 +514,8 @@ components:
           type: string
           format: uri
           minLength: 1
+          maxLength: 2048
+          pattern: "^https?://.+"
         extension_module_id:
           type: integer
           nullable: true
@@ -532,15 +552,16 @@ components:
         created_at:
           type: string
           format: date-time
-          description: ISO 8601 creation timestamp.
+          description: RFC 3339 UTC creation timestamp with millisecond precision.
         updated_at:
           type: string
           format: date-time
-          description: ISO 8601 last-modified timestamp.
+          description: RFC 3339 UTC last-modified timestamp with millisecond precision.
 
     # ── Device ───────────────────────────────
     DeviceCreateRequest:
       type: object
+      additionalProperties: false
       required: [name, current_version]
       properties:
         name:
@@ -551,14 +572,17 @@ components:
         current_version:
           type: string
           minLength: 1
+          maxLength: 100
           description: Currently installed firmware version.
         notes:
           type: string
           nullable: true
+          maxLength: 2000
           description: Optional user notes.
 
     DeviceUpdateRequest:
       type: object
+      additionalProperties: false
       description: >
         All fields are optional. Send only the fields to change.
         An empty object is treated as a no-op.
@@ -570,9 +594,11 @@ components:
         current_version:
           type: string
           minLength: 1
+          maxLength: 100
         notes:
           type: string
           nullable: true
+          maxLength: 2000
 
     DeviceResponse:
       type: object
@@ -608,7 +634,7 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: Timestamp of the last firmware check.
+          description: RFC 3339 UTC timestamp of the last firmware check with millisecond precision.
         notes:
           type: string
           nullable: true
@@ -619,9 +645,11 @@ components:
         created_at:
           type: string
           format: date-time
+          description: RFC 3339 UTC creation timestamp with millisecond precision.
         updated_at:
           type: string
           format: date-time
+          description: RFC 3339 UTC last-modified timestamp with millisecond precision.
 
     # ── Bulk Confirm ─────────────────────────
     BulkConfirmResponse:
