@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from backend.src.api.exception_handlers import register_exception_handlers
 from backend.src.api.middleware import CorrelationIdLoggingMiddleware
@@ -106,6 +107,11 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(CorrelationIdLoggingMiddleware)
     register_exception_handlers(app)
+
+    @app.get("/", include_in_schema=False)
+    async def root() -> RedirectResponse:
+        """Redirect root to interactive API docs."""
+        return RedirectResponse(url="/docs")
 
     app.include_router(health.router)
     app.include_router(device_types.router)
