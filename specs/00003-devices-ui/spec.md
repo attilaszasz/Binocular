@@ -23,6 +23,7 @@ A user opens Binocular in their browser and immediately sees a summary of their 
 3. **Given** a device has matching current and latest seen versions, **When** the user views its card, **Then** the latest version is displayed in a "healthy" visual style (e.g., green/emerald) and no update indicator is shown.
 4. **Given** a device has never been checked (no latest seen version), **When** the user views its card, **Then** the latest version area displays "Not checked" or equivalent, clearly distinguishable from "up to date."
 5. **Given** the user is on a smartphone, **When** they view the dashboard, **Then** the stats cards stack vertically, device cards take full width, and version comparisons remain readable without horizontal scrolling.
+6. **Given** the dashboard is loading data, **When** the user first sees the page, **Then** skeleton placeholders matching the stats row and device card layout are visible until data arrives (FR-024).
 
 ---
 
@@ -41,6 +42,7 @@ A user prefers to use Binocular in dark mode (the common preference for homelab 
 3. **Given** the user has switched to light mode, **When** they close the browser tab and reopen Binocular, **Then** the interface loads in light mode (their last-chosen preference persists).
 4. **Given** the application is in either mode, **When** the user inspects the interface, **Then** all text, icons, borders, and backgrounds maintain sufficient contrast for readability (no invisible text, no washed-out icons).
 5. **Given** the user changes their OS color scheme preference, **When** they have NOT previously set a manual preference in Binocular, **Then** the application follows the new OS preference on next load.
+6. **Given** the user has previously set light mode, **When** they reload the page, **Then** no dark-mode flash is visible before the interface renders in light mode (FR-005).
 
 ---
 
@@ -78,6 +80,7 @@ A user has physically updated their Sony A7IV's firmware to version 3.00. On the
 2. **Given** a device is confirmed, **When** the user views the stats bar, **Then** the "Updates Available" count decreases by 1 and the "Up to Date" count increases by 1.
 3. **Given** a device's confirm action fails (e.g., network error), **When** the user clicks the confirm button, **Then** an inline error message appears on or near the device card and the card reverts to its previous state (the version is NOT updated).
 4. **Given** the device has never been checked (no latest seen version), **When** the user views the card, **Then** no confirm button is shown — only devices with a detected version mismatch display the confirm action.
+5. **Given** a device card shows an update-available confirm button, **When** the user clicks the confirm button and the request is in flight, **Then** the button is visually disabled and a second click has no effect (FR-018).
 
 ---
 
@@ -181,15 +184,15 @@ A first-time user opens Binocular with no devices or device types configured. In
 
 ### Functional Requirements
 
-- **FR-001**: System MUST render a responsive application shell with a fixed sidebar on desktop (≥ 768px) and a collapsible off-canvas sidebar on mobile (< 768px), matching the layout defined in the design mockup.
+- **FR-001**: System MUST render a responsive application shell with a fixed sidebar on desktop (≥ 768px) and a collapsible off-canvas sidebar on mobile (< 768px), matching the layout defined in the [design mockup](../../docs/mockup.jsx).
 - **FR-002**: System MUST provide a dark mode and light mode toggle in the top header bar that switches the entire interface between themes.
 - **FR-003**: System MUST detect the user's OS color scheme preference (`prefers-color-scheme`) and apply it as the default theme on first visit when no stored preference exists.
 - **FR-004**: System MUST persist the user's theme choice in browser local storage so it survives page refreshes and browser restarts. If `localStorage` is unavailable (e.g., private browsing restrictions), the system MUST fall back to in-memory state defaulting to the OS preference and continue functioning without errors — persistence is lost but the toggle remains operational.
 - **FR-005**: System MUST apply the stored theme preference before the first visible render to prevent a flash of the incorrect theme.
 - **FR-006**: System MUST render a sidebar navigation with four items — Inventory, Activity Logs, Modules, Settings — using client-side routing that switches content without full page reloads.
-- **FR-007**: System MUST display a sticky top header bar showing the current section title and the theme toggle, as shown in the design mockup.
+- **FR-007**: System MUST display a sticky top header bar showing the current section title and the theme toggle, as shown in the [design mockup](../../docs/mockup.jsx).
 - **FR-008**: System MUST display an inventory dashboard as the default landing view containing: (a) a summary stats row with total devices, updates available, and up-to-date counts; (b) device cards grouped by device type. Device type groups with zero devices MUST still display their group heading with a "(0 devices)" indicator.
-- **FR-009**: System MUST render each device as a card showing: device name (truncated with ellipsis if it exceeds the card width, with the full name visible on hover via tooltip), last-checked timestamp (relative or absolute), locally recorded firmware version, latest detected firmware version, and a visual status indicator for the tri-state: "update available" (visually prominent), "up to date" (neutral/positive), or "never checked" (distinct from up to date).
+- **FR-009**: System MUST render each device as a card showing: device name (truncated with ellipsis if it exceeds the card width, with the full name visible on hover via tooltip), last-checked timestamp (displayed as a relative time such as "2 hours ago" with the absolute timestamp visible on hover via tooltip), locally recorded firmware version, latest detected firmware version, and a visual status indicator for the tri-state: "update available" (visually prominent, using a distinct color and icon), "up to date" (neutral/positive), or "never checked" (distinct from up to date).
 - **FR-010**: System MUST provide a "Confirm Update" (or "Sync Local") action button on each device card that has an update available. Clicking it MUST call the backend confirm endpoint and update the card and stats in place without a page refresh.
 - **FR-011**: System MUST NOT display the confirm action on devices that have never been checked or that are already up to date.
 - **FR-012**: System MUST provide an "Add Device" form accessible from the dashboard that collects: device name (required), device type (required, selected from existing types), and current firmware version (required), consistent with the backend API contract.
@@ -217,7 +220,7 @@ A first-time user opens Binocular with no devices or device types configured. In
 
 ### Measurable Outcomes
 
-- **SC-001**: Users can open Binocular and see their full device inventory — grouped by type with firmware versions and status indicators — within 3 seconds of page load on a standard broadband connection.
+- **SC-001**: Users can open Binocular and see their full device inventory — grouped by type with firmware versions and status indicators — within 3 seconds of page load when the server and client are on the same local network (≤ 5ms latency, ≥ 10 Mbps throughput).
 - **SC-002**: Users can add a new device to their inventory through the UI form and see it appear in the correct group on the dashboard within a single interaction session (no page refresh required).
 - **SC-003**: Users can confirm a firmware update with a single click on the device card and see the card and stats update immediately — the round-trip from button press to updated UI completes in under 2 seconds.
 - **SC-004**: The interface is fully usable on mobile devices (screen width 320px and above) — all content is readable, all actions are reachable, and no horizontal scrolling is required to perform core tasks.
