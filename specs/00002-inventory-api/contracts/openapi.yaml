@@ -1,0 +1,679 @@
+openapi: "3.1.0"
+info:
+  title: Binocular Inventory API
+  description: >
+    CRUD endpoints for managing device types and devices, plus firmware update
+    confirmation actions. Part of Feature 1.2 — Inventory API.
+  version: "0.1.0"
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (Uvicorn)
+
+tags:
+  - name: Device Types
+    description: Manage device type categories (firmware source groups).
+  - name: Devices
+    description: Manage individual tracked devices within device types.
+  - name: Actions
+    description: State-transition operations (confirm firmware updates).
+
+paths:
+  # ──────────────────────────────────────────────
+  # Device Types
+  # ──────────────────────────────────────────────
+  /api/v1/device-types:
+    get:
+      operationId: listDeviceTypes
+      tags: [Device Types]
+      summary: List all device types
+      description: Returns all device types with a count of child devices per type. No pagination in V1.
+      responses:
+        "200":
+          description: List of device types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeviceTypeResponse"
+    post:
+      operationId: createDeviceType
+      tags: [Device Types]
+      summary: Create a device type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceTypeCreateRequest"
+      responses:
+        "201":
+          description: Device type created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceTypeResponse"
+        "409":
+          description: Duplicate name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: "A device type named 'Sony Alpha Bodies' already exists."
+                error_code: DUPLICATE_NAME
+                field: name
+        "422":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/device-types/{device_type_id}:
+    parameters:
+      - $ref: "#/components/parameters/DeviceTypeId"
+    get:
+      operationId: getDeviceType
+      tags: [Device Types]
+      summary: Get a device type by ID
+      responses:
+        "200":
+          description: Device type found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceTypeResponse"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: "Device type not found."
+                error_code: NOT_FOUND
+    patch:
+      operationId: updateDeviceType
+      tags: [Device Types]
+      summary: Partially update a device type
+      description: >
+        Send only the fields to change. An empty body is a valid no-op that returns
+        the unchanged resource.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceTypeUpdateRequest"
+      responses:
+        "200":
+          description: Updated device type.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceTypeResponse"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteDeviceType
+      tags: [Device Types]
+      summary: Delete a device type
+      description: >
+        Requires `?confirm_cascade=true` when child devices exist. Without the flag,
+        deletion is rejected with the child device count.
+      parameters:
+        - name: confirm_cascade
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: When true, deletes the device type AND all child devices.
+      responses:
+        "204":
+          description: Device type deleted (no content).
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Cascade blocked — child devices exist and confirm_cascade is false.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: "Cannot delete 'Sony Alpha Bodies': 3 devices would also be deleted. Set confirm_cascade=true to proceed."
+                error_code: CASCADE_BLOCKED
+                field: null
+
+  # ──────────────────────────────────────────────
+  # Devices — nested creation
+  # ──────────────────────────────────────────────
+  /api/v1/device-types/{device_type_id}/devices:
+    parameters:
+      - $ref: "#/components/parameters/DeviceTypeId"
+    post:
+      operationId: createDevice
+      tags: [Devices]
+      summary: Create a device under a device type
+      description: >
+        Creates a device within the specified device type. The device_type_id in the path
+        is the parent context — no need to repeat it in the body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceCreateRequest"
+      responses:
+        "201":
+          description: Device created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "404":
+          description: Parent device type not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate device name within this type.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Devices — flat querying & individual operations
+  # ──────────────────────────────────────────────
+  /api/v1/devices:
+    get:
+      operationId: listDevices
+      tags: [Devices]
+      summary: List devices with optional filtering and sorting
+      description: >
+        Returns all devices (no pagination in V1). Supports filtering by device type
+        and by update status, and sorting by name or last-checked date.
+      parameters:
+        - name: device_type_id
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filter devices by parent device type.
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [update_available, up_to_date, never_checked]
+          description: Filter by update status (derived at query time).
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [name, -name, last_checked_at, -last_checked_at]
+            default: name
+          description: >
+            Sort field and direction. Prefix with `-` for descending.
+            Default: `name` (ascending, alphabetical).
+      responses:
+        "200":
+          description: List of devices.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeviceResponse"
+        "422":
+          description: Validation error (invalid filter/sort values).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/devices/{device_id}:
+    parameters:
+      - $ref: "#/components/parameters/DeviceId"
+    get:
+      operationId: getDevice
+      tags: [Devices]
+      summary: Get a device by ID
+      responses:
+        "200":
+          description: Device found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateDevice
+      tags: [Devices]
+      summary: Partially update a device
+      description: >
+        Send only the fields to change. An empty body is a valid no-op.
+        Name uniqueness is checked within the device's parent type.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceUpdateRequest"
+      responses:
+        "200":
+          description: Updated device.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate name within the same device type.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteDevice
+      tags: [Devices]
+      summary: Delete a device
+      responses:
+        "204":
+          description: Device deleted.
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Actions — confirm firmware update
+  # ──────────────────────────────────────────────
+  /api/v1/devices/{device_id}/confirm:
+    parameters:
+      - $ref: "#/components/parameters/DeviceId"
+    post:
+      operationId: confirmDeviceUpdate
+      tags: [Actions]
+      summary: Confirm a firmware update for a single device
+      description: >
+        Sets the device's current_version to its latest_seen_version. No request body needed.
+        Idempotent — succeeds without error if versions already match.
+        Rejects if the device has never been checked (no latest_seen_version).
+      responses:
+        "200":
+          description: Device updated (or unchanged if already confirmed).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "404":
+          description: Device not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Device has never been checked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: "Cannot confirm update: device has never been checked."
+                error_code: NO_LATEST_VERSION
+
+  /api/v1/devices/confirm-all:
+    post:
+      operationId: confirmAllDeviceUpdates
+      tags: [Actions]
+      summary: Bulk confirm all pending firmware updates
+      description: >
+        Confirms every device with a pending update (current_version != latest_seen_version).
+        Optionally scoped to a single device type. Best-effort — individual failures don't
+        roll back other confirmations. Idempotent.
+      parameters:
+        - name: device_type_id
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: When provided, only confirm devices under this device type.
+      responses:
+        "200":
+          description: Summary of bulk confirm results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkConfirmResponse"
+        "422":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ──────────────────────────────────────────────
+  # Health
+  # ──────────────────────────────────────────────
+  /api/v1/health:
+    get:
+      operationId: healthCheck
+      tags: [Device Types]
+      summary: Health check endpoint
+      description: Returns OK status. Used by Docker HEALTHCHECK.
+      responses:
+        "200":
+          description: Healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+# ──────────────────────────────────────────────
+# Components
+# ──────────────────────────────────────────────
+components:
+  parameters:
+    DeviceTypeId:
+      name: device_type_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Unique identifier of a device type.
+    DeviceId:
+      name: device_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Unique identifier of a device.
+
+  schemas:
+    # ── Error ────────────────────────────────
+    ErrorResponse:
+      type: object
+      required: [detail, error_code]
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message.
+        error_code:
+          type: string
+          description: Machine-readable error code.
+          enum:
+            - DUPLICATE_NAME
+            - NOT_FOUND
+            - VALIDATION_ERROR
+            - CASCADE_BLOCKED
+            - NO_LATEST_VERSION
+            - INTERNAL_ERROR
+        field:
+          type: string
+          nullable: true
+          description: The field that caused the error (when applicable).
+
+    # ── Device Type ──────────────────────────
+    DeviceTypeCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, firmware_source_url]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Unique display name for the device type.
+        firmware_source_url:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2048
+          pattern: "^https?://.+"
+          description: URL of the firmware source page.
+        extension_module_id:
+          type: integer
+          nullable: true
+          description: Optional reference to an extension module.
+        check_frequency_minutes:
+          type: integer
+          minimum: 1
+          default: 360
+          description: How often to check for updates (minutes).
+
+    DeviceTypeUpdateRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        All fields are optional. Send only the fields to change.
+        An empty object is treated as a no-op.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        firmware_source_url:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2048
+          pattern: "^https?://.+"
+        extension_module_id:
+          type: integer
+          nullable: true
+        check_frequency_minutes:
+          type: integer
+          minimum: 1
+
+    DeviceTypeResponse:
+      type: object
+      required:
+        - id
+        - name
+        - firmware_source_url
+        - extension_module_id
+        - check_frequency_minutes
+        - device_count
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        firmware_source_url:
+          type: string
+        extension_module_id:
+          type: integer
+          nullable: true
+        check_frequency_minutes:
+          type: integer
+        device_count:
+          type: integer
+          description: Number of devices belonging to this type.
+        created_at:
+          type: string
+          format: date-time
+          description: RFC 3339 UTC creation timestamp with millisecond precision.
+        updated_at:
+          type: string
+          format: date-time
+          description: RFC 3339 UTC last-modified timestamp with millisecond precision.
+
+    # ── Device ───────────────────────────────
+    DeviceCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, current_version]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Display name of the device.
+        current_version:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Currently installed firmware version.
+        notes:
+          type: string
+          nullable: true
+          maxLength: 2000
+          description: Optional user notes.
+
+    DeviceUpdateRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        All fields are optional. Send only the fields to change.
+        An empty object is treated as a no-op.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        current_version:
+          type: string
+          minLength: 1
+          maxLength: 100
+        notes:
+          type: string
+          nullable: true
+          maxLength: 2000
+
+    DeviceResponse:
+      type: object
+      required:
+        - id
+        - device_type_id
+        - name
+        - current_version
+        - latest_seen_version
+        - last_checked_at
+        - notes
+        - status
+        - device_type_name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+        device_type_id:
+          type: integer
+        device_type_name:
+          type: string
+          description: Name of the parent device type (for display in grouped views).
+        name:
+          type: string
+        current_version:
+          type: string
+        latest_seen_version:
+          type: string
+          nullable: true
+          description: Last detected firmware version (null = never checked).
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: RFC 3339 UTC timestamp of the last firmware check with millisecond precision.
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [never_checked, up_to_date, update_available]
+          description: Derived update status (computed at query time, not stored).
+        created_at:
+          type: string
+          format: date-time
+          description: RFC 3339 UTC creation timestamp with millisecond precision.
+        updated_at:
+          type: string
+          format: date-time
+          description: RFC 3339 UTC last-modified timestamp with millisecond precision.
+
+    # ── Bulk Confirm ─────────────────────────
+    BulkConfirmResponse:
+      type: object
+      required: [confirmed, skipped, errors]
+      properties:
+        confirmed:
+          type: integer
+          description: Number of devices successfully confirmed.
+        skipped:
+          type: integer
+          description: Number of devices skipped (already up to date or never checked).
+        errors:
+          type: integer
+          description: Number of devices that failed to confirm.
+        details:
+          type: array
+          description: Per-device error details (only present when errors > 0).
+          items:
+            type: object
+            properties:
+              device_id:
+                type: integer
+              device_name:
+                type: string
+              error:
+                type: string

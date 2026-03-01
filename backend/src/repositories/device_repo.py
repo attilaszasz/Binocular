@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import aiosqlite
@@ -22,6 +23,25 @@ def _now_iso() -> str:
 
 def _to_model(row: aiosqlite.Row) -> Device:
     return Device.model_validate(dict(row))
+
+
+@dataclass(frozen=True)
+class BulkConfirmErrorDetail:
+    """Per-device failure detail captured during bulk confirm operations."""
+
+    device_id: int
+    device_name: str
+    error: str
+
+
+@dataclass(frozen=True)
+class BulkConfirmResult:
+    """Summary result for bulk confirm execution."""
+
+    confirmed: int
+    skipped: int
+    errors: int
+    details: list[BulkConfirmErrorDetail]
 
 
 class DeviceRepo:
@@ -79,6 +99,54 @@ class DeviceRepo:
             cursor = await conn.execute(
                 "SELECT * FROM device WHERE device_type_id = ? ORDER BY id", (device_type_id,)
             )
+            rows = await cursor.fetchall()
+        return [_to_model(row) for row in rows]
+
+    async def get_all(self) -> list[Device]:
+        """Return all devices in deterministic default order."""
+
+        async with get_connection(self._db_path) as conn:
+            cursor = await conn.execute("SELECT * FROM device ORDER BY name ASC, id ASC")
+            rows = await cursor.fetchall()
+        return [_to_model(row) for row in rows]
+
+    async def get_all_filtered(
+        self,
+        device_type_id: int | None = None,
+        status: DeviceStatus | None = None,
+        sort: str = "name",
+    ) -> list[Device]:
+        """Return devices filtered by parent type and ordered by requested sort mode."""
+
+        _ = status
+        order_clause: str
+        if sort == "name":
+            order_clause = "name ASC, id ASC"
+        elif sort == "-name":
+            order_clause = "name DESC, id ASC"
+        elif sort == "last_checked_at":
+            order_clause = (
+                "CASE WHEN last_checked_at IS NULL THEN 1 ELSE 0 END ASC, "
+                "last_checked_at ASC, id ASC"
+            )
+        elif sort == "-last_checked_at":
+            order_clause = (
+                "CASE WHEN last_checked_at IS NULL THEN 1 ELSE 0 END ASC, "
+                "last_checked_at DESC, id ASC"
+            )
+        else:
+            raise ValueError(f"invalid sort value: {sort}")
+
+        query = "SELECT * FROM device"
+        parameters: list[object] = []
+        if device_type_id is not None:
+            query += " WHERE device_type_id = ?"
+            parameters.append(device_type_id)
+
+        query += f" ORDER BY {order_clause}"
+
+        async with get_connection(self._db_path) as conn:
+            cursor = await conn.execute(query, tuple(parameters))
             rows = await cursor.fetchall()
         return [_to_model(row) for row in rows]
 
@@ -155,6 +223,47 @@ class DeviceRepo:
         if refreshed is None:
             raise RuntimeError("failed to load device after confirm update")
         return refreshed
+
+    async def bulk_confirm(self, device_type_id: int | None = None) -> BulkConfirmResult:
+        """Confirm all devices with pending updates using best-effort processing."""
+
+        devices = await self.get_all_filtered(device_type_id=device_type_id, sort="name")
+        confirmed = 0
+        skipped = 0
+        errors = 0
+        details: list[BulkConfirmErrorDetail] = []
+
+        for device in devices:
+            if device.latest_seen_version is None:
+                skipped += 1
+                continue
+            current_status = derive_device_status(
+                device.current_version,
+                device.latest_seen_version,
+            )
+            if current_status != "update_available":
+                skipped += 1
+                continue
+
+            try:
+                await self.confirm_update(device.id)
+                confirmed += 1
+            except Exception as exc:
+                errors += 1
+                details.append(
+                    BulkConfirmErrorDetail(
+                        device_id=device.id,
+                        device_name=device.name,
+                        error=str(exc),
+                    )
+                )
+
+        return BulkConfirmResult(
+            confirmed=confirmed,
+            skipped=skipped,
+            errors=errors,
+            details=details,
+        )
 
     def get_status(self, device: Device) -> DeviceStatus:
         return derive_device_status(device.current_version, device.latest_seen_version)

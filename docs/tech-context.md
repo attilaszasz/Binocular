@@ -319,11 +319,38 @@ Even on private networks, basic security hygiene is required.
 ### Repository Layout
 
 - **Structure**: Web application layout — `backend/` (Python/FastAPI) + `frontend/` (React/Vite/Tailwind)
-- **Backend paths**: `backend/src/db/` (connection, migrations), `backend/src/models/`, `backend/src/repositories/`, `backend/src/utils/`
-- **Test paths**: `backend/tests/` with temp-file SQLite fixtures per test
+- **Backend paths**: `backend/src/db/` (connection, migrations), `backend/src/models/`, `backend/src/repositories/`, `backend/src/utils/`, `backend/src/api/`, `backend/src/services/`
+- **Test paths**: `backend/tests/` with temp-file SQLite fixtures per test; `backend/tests/test_api/` for integration tests via `httpx.AsyncClient`
+
+### API Architecture
+
+- **Routing Pattern**: Hybrid — nested routes for resource creation under a parent (`POST /api/v1/device-types/{id}/devices`), flat routes for querying and individual operations (`GET/PATCH/DELETE /api/v1/devices/{id}`)
+- **Service Layer**: Thin service classes in `backend/src/services/` wrap repository calls and translate low-level exceptions into typed domain exceptions
+- **Exception Handling**: Domain exceptions (`NotFoundError`, `DuplicateNameError`, `CascadeBlockedError`, `NoLatestVersionError`) caught by registered FastAPI exception handlers and mapped to the error envelope format
+- **State Transitions**: Custom action endpoints (`POST /…/confirm`) for operations that are state transitions, not generic field updates — following Google API Design Guide custom methods pattern
+- **API Versioning**: All routes prefixed with `/api/v1/`
+
+### API Design Standards
+
+- **Error Envelope**: All error responses use a consistent structure: human-readable `detail` + machine-readable `error_code` + optional `field` identifier
+- **Error Codes**: Fixed vocabulary — `DUPLICATE_NAME`, `NOT_FOUND`, `VALIDATION_ERROR`, `CASCADE_BLOCKED`, `NO_LATEST_VERSION`, `INTERNAL_ERROR`
+- **Mutation Responses**: All create/update endpoints return the complete updated resource in the response body (no follow-up GET needed)
+- **Resource Shape**: All resource representations include `id`, `created_at`, `updated_at` in ISO 8601 format
+- **Input Validation**: Validated at API boundary via Pydantic — non-empty trimmed names (max 200 chars), syntactically valid URLs, positive numeric values
+- **Cascade Safety**: Destructive operations on parent resources require explicit confirmation (`?confirm_cascade=true`) when child records exist
+- **Idempotent Actions**: State-transition endpoints (e.g., confirm update) are idempotent — safe to retry or double-invoke
+- **OpenAPI Documentation**: Auto-generated interactive docs grouped by resource type, browsable at `/docs`
+- **Response Enrichment**: API responses include derived fields (e.g., `status`, `device_count`, `device_type_name`) computed at query time, not stored
+
+### Developer Experience
+
+- **Entry Point**: `backend/src/main.py` — FastAPI app factory with Uvicorn
+- **F5 Debugging**: `.vscode/launch.json` with `debugpy` launching Uvicorn with `--reload`
+- **DB Path Config**: `BINOCULAR_DB_PATH` environment variable, defaults to `./data/binocular.db` locally, `/app/data/binocular.db` in Docker
 
 ### Cross-Cutting Standards
 
-- **Structured Logging**: `structlog` for all backend components (migration runner, connection lifecycle, repository errors)
+- **Structured Logging**: `structlog` for all backend components (migration runner, connection lifecycle, repository errors, API requests)
 - **Dependency Pinning**: Exact versions in lock file (`poetry.lock` or `requirements.txt` with hashes) — required by project instructions
 - **Type Safety**: All Python code must pass `mypy --strict`; all API payloads validated through Pydantic models
+- **Testing**: `pytest` + `pytest-asyncio` for async tests; `httpx.AsyncClient` for API integration tests; isolated temp-file SQLite per test
