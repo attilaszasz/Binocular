@@ -31,7 +31,7 @@ Build the FastAPI REST API layer that exposes the repository CRUD operations fro
 | II. Extension-First Architecture | PASS | API layer is device-agnostic. Extension module association is a generic FK attribute on device types. No vendor-specific logic. |
 | III. Responsible Scraping | N/A | No web requests in this feature. Inventory management only. |
 | IV. Type Safety & Validation | PASS | All request/response payloads validated via Pydantic models. Consistent error envelope with typed error codes. All code targets `mypy --strict`. Structured logging via `structlog`. |
-| V. Test-First Development | PASS | Integration tests using `httpx.AsyncClient` + FastAPI TestClient with isolated temp-file SQLite. Spec provides GWT scenarios for all user stories. |
+| V. Test-First Development | PASS | Integration tests using `httpx.AsyncClient` + FastAPI TestClient with isolated temp-file SQLite. Spec provides GWT scenarios for all user stories. Task ordering enforces test-first: test tasks precede implementation tasks within each user story phase. |
 | VI. Technology Stack | PASS | FastAPI + SQLite. `uvicorn` for serving. No new frameworks. httpx added as test dependency only. |
 | VII. Development Workflow | PASS | Auto-generated OpenAPI docs at `/docs`, tagged by resource type. `.vscode/launch.json` for F5 debugging. |
 
@@ -176,6 +176,7 @@ backend/
 │   │   │   ├── devices.py         # /api/v1/devices routes + nested creation
 │   │   │   ├── actions.py         # /api/v1/devices/{id}/confirm, confirm-all
 │   │   │   └── health.py         # /api/v1/health
+│   │   ├── middleware.py           # Correlation ID + structured request logging
 │   │   ├── dependencies.py        # FastAPI Depends — repo & service factories
 │   │   └── exception_handlers.py  # Domain exception → HTTP error envelope
 │   ├── services/                  # NEW — thin service layer
