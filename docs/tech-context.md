@@ -354,3 +354,36 @@ Even on private networks, basic security hygiene is required.
 - **Dependency Pinning**: Exact versions in lock file (`poetry.lock` or `requirements.txt` with hashes) — required by project instructions
 - **Type Safety**: All Python code must pass `mypy --strict`; all API payloads validated through Pydantic models
 - **Testing**: `pytest` + `pytest-asyncio` for async tests; `httpx.AsyncClient` for API integration tests; isolated temp-file SQLite per test
+
+### Frontend Architecture
+
+- **Stack**: React 18+ with TypeScript (strict mode), Tailwind CSS v3.4+ (`darkMode: 'class'`), built with Vite 5+; served as static files through FastAPI `StaticFiles` (single-port)
+- **Application Shell**: Fixed sidebar navigation on desktop (≥ 768px), off-canvas hamburger menu on mobile (< 768px); sticky top header with page title and theme toggle
+- **Navigation**: React Router v7 (client-side SPA) — four routes: `/` (Inventory), `/logs` (Activity Logs), `/modules` (Modules), `/settings` (Settings) under a shared `AppShell` layout route
+- **State Management**: TanStack Query v5 for server state (devices, device types, stats); plain `useState` for local UI state (sidebar, theme). No global state library needed.
+- **API Client**: Hand-written typed `fetch` wrapper in `frontend/src/api/` — one function per API operation, typed interfaces mirror OpenAPI schemas from Feature 00002
+- **Forms**: React Hook Form for all CRUD forms; `setError()` maps backend error codes directly to form fields for inline validation feedback
+- **Dark Mode**: System preference detection (`prefers-color-scheme`) with manual toggle (two-state: light/dark); choice persisted in `localStorage` key `binocular-theme`; FOIT-prevention blocking `<script>` in `index.html <head>` applies `dark` class before React mounts
+- **Icons**: lucide-react (bundled, no CDN dependency)
+- **Component Organization**: Feature-based directory structure (`features/dashboard/`, `features/modules/`, `features/forms/`, `features/placeholders/`) with shared components in `components/`
+- **Placeholder Pattern**: Non-implemented tabs (Activity Logs, Settings) render styled placeholder views describing upcoming functionality. Modules tab is partially functional — basic device type CRUD with deferred advanced module management.
+
+### Frontend-Backend Integration
+
+- **Data Flow**: Frontend is a thin API consumer; backend API is the single source of truth for all data (no local DB, no offline cache in V1). Manual-refresh model — data fetches on load, updates via user-initiated actions or explicit Refresh button.
+- **Cache Strategy**: TanStack Query cache with generous `staleTime` (~30s). Mutations invalidate relevant query keys to keep stats and lists in sync (FR-021). Manual Refresh button calls `queryClient.invalidateQueries()`.
+- **Optimistic Updates**: Confirm action (Sync Local) uses TanStack Query `useMutation` with `onMutate` for optimistic UI update and `onError` rollback. Other mutations (add/edit/delete) wait for server confirmation.
+- **Error Handling**: Backend error envelope (`{ detail, error_code, field }`) parsed by the API client into typed `ApiError`. Three layers: form-level (setError on field), action-level (inline banners), page-level (error state with Retry).
+- **Validation**: Client-side validation via React Hook Form mirrors backend rules (non-empty trimmed names ≤ 200 chars, firmware versions ≤ 100 chars, valid URLs ≤ 2048 chars, notes ≤ 2000 chars) for immediate feedback; backend remains authoritative
+- **Mutation Pattern**: All create/update/confirm actions use backend responses to update UI state in place (no follow-up GET needed)
+- **Tri-State Status**: Device update status (update available / up to date / never checked) is derived from backend data, displayed with distinct visual treatments (color + icon + text label)
+
+### Frontend Tooling & Quality Gates
+
+- **Package Manager**: npm with `package-lock.json` committed; `npm ci` in CI and Docker for reproducible installs
+- **Linting & Formatting**: Biome (single Rust-based tool — frontend equivalent of Ruff) for lint + format
+- **Type Checking**: `tsc --noEmit` in strict mode — frontend equivalent of `mypy --strict`
+- **Testing**: Vitest + React Testing Library for component tests; one Playwright smoke test for the critical happy path. MSW or TanStack Query test utilities for API mocking.
+- **Build**: Vite builds to `frontend/dist/`. Multi-stage Docker: Node stage runs `npm ci && npm run build`, Python stage (`python:3.11-slim`) copies `dist/` and serves via FastAPI `StaticFiles` with SPA catch-all fallback.
+- **Dev Proxy**: Vite `server.proxy` forwards `/api` to `http://localhost:8000` during development (port 5173). No CORS configuration needed.
+- **F5 Debugging**: Compound VS Code launch configuration ("Binocular: Full Stack") starts both FastAPI backend (debugpy, port 8000) and Vite dev server (port 5173) simultaneously. Breakpoints work in both Python and TypeScript.
