@@ -69,7 +69,7 @@
 ### Implementation for User Story 2
 
 - [ ] T010 [US2] Add `model: string | null` to `Device` interface and `model?: string` to `DeviceCreateRequest` and `DeviceUpdateRequest` interfaces in `frontend/src/api/types.ts`
-- [ ] T011 [US2] Display model as secondary label below device name in `frontend/src/features/dashboard/DeviceCard.tsx` — render `device.model` in `text-sm text-gray-500` below the name when present; render "No model set" in `text-xs text-gray-400 italic` when null (FR-010)
+- [ ] T011 [US2] Display model as secondary label below device name in `frontend/src/features/dashboard/DeviceCard.tsx` — render `device.model` in `text-sm text-gray-500` below the name when present; render "No model set" in `text-xs text-gray-400 italic` when null (FR-008)
 
 **Checkpoint**: Devices with a model show the identifier below the name. Devices without a model show the "No model set" placeholder. The display updates automatically when the API returns the model field.
 

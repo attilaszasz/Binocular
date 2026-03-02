@@ -80,9 +80,9 @@ When a user opens the "Add Device" or "Edit Device" form in the web interface, a
 - **FR-005**: System MUST canonicalize the model attribute by trimming leading and trailing whitespace before validation and persistence, consistent with existing string field handling.
 - **FR-006**: System MUST enforce a maximum length of **100 characters** on the model attribute (matching the `current_version` field limit) and reject values exceeding this limit with a `VALIDATION_ERROR` response consistent with the existing API error contract.
 - **FR-007**: System MUST preserve the model attribute when the firmware version confirm action is performed (the dedicated confirm endpoint that sets current version to the latest detected version). Executing the confirm action MUST NOT clear or alter the model value.
-- **FR-010**: System MUST display the model as a secondary label on its own line below the device name, rendered in muted/smaller text. Devices without a model MUST display "No model set" in the same secondary-label position, in a visually subdued style distinct from devices that have a model value.
-- **FR-011**: System MUST include a "Model" input field on the add-device and edit-device forms, marked as optional, with contextual help text explaining its purpose and providing manufacturer-specific examples.
-- **FR-012**: System MUST preserve existing devices without a model when the model attribute is introduced — existing devices receive a null model value with no disruption to their current functionality.
+- **FR-008**: System MUST display the model as a secondary label on its own line below the device name, rendered in muted/smaller text. Devices without a model MUST display "No model set" in the same secondary-label position, in a visually subdued style distinct from devices that have a model value.
+- **FR-009**: System MUST include a "Model" input field on the add-device and edit-device forms, marked as optional, with contextual help text explaining its purpose and providing manufacturer-specific examples.
+- **FR-010**: System MUST preserve existing devices without a model when the model attribute is introduced — existing devices receive a null model value with no disruption to their current functionality.
 
 ### Key Entities
 
@@ -93,9 +93,9 @@ When a user opens the "Add Device" or "Edit Device" form in the web interface, a
 ### Measurable Outcomes
 
 - **SC-001**: 100% of created or updated devices persist and return the model value; the model is visible on every device representation in the inventory within the same session — round-trip from data entry to display with zero data loss.
-- **SC-003**: Devices without a model retain all existing capabilities (display, edit, confirm) with zero errors — the model field is purely additive and does not affect existing workflows.
-- **SC-004**: After the model attribute is introduced, 100% of existing devices remain accessible with zero data loss and zero required user intervention — no migration steps, no broken workflows.
-- **SC-005**: Users can add or change a device's model at any time through the edit form with zero additional steps beyond saving the edit.
+- **SC-002**: Devices without a model retain all existing capabilities (display, edit, confirm) with zero errors — the model field is purely additive and does not affect existing workflows.
+- **SC-003**: After the model attribute is introduced, 100% of existing devices remain accessible with zero data loss and zero required user intervention — no migration steps, no broken workflows.
+- **SC-004**: Users can add or change a device's model at any time through the edit form with zero additional steps beyond saving the edit.
 
 ## Dependencies & Assumptions
 
@@ -127,7 +127,7 @@ When a user opens the "Add Device" or "Edit Device" form in the web interface, a
 ### Session 2026-03-02
 
 - Q: What is the maximum character length for the `model` field? → A: 100 characters, matching `current_version`. Applied to FR-006.
-- Q: How should the model identifier appear on the device card? → A: Secondary label on its own line below the device name, rendered in muted/smaller text. Applied to FR-010 and US2 acceptance scenario 1.
+- Q: How should the model identifier appear on the device card? → A: Secondary label on its own line below the device name, rendered in muted/smaller text. Applied to FR-008 and US2 acceptance scenario 1.
 - Q: Does "update confirmation" in FR-007 refer to the firmware confirm endpoint? → A: Yes. FR-007 and US1 acceptance scenario 6 updated to reference the confirm action explicitly.
 - Q: What is the scope of "all device representations" in FR-004? → A: Scoped to the existing CRUD and confirm endpoint responses (list, detail, create, update, confirm). Future endpoints inherit the field through the shared response schema. Applied to FR-004.
 - Q: Should model be case-preserved on persist? → A: Yes, stored as-is after trimming. Extension module is responsible for case-sensitivity during firmware lookup. Consistent with existing assumptions.

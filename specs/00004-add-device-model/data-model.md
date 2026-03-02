@@ -97,7 +97,7 @@ erDiagram
 
 ## Impact on Existing Data
 
-- **Existing rows**: All existing devices receive `model = NULL`. No data loss, no required user intervention (FR-012, SC-004).
+- **Existing rows**: All existing devices receive `model = NULL`. No data loss, no required user intervention (FR-010, SC-003).
 - **Existing constraints**: The `UNIQUE(device_type_id, name)` constraint is unaffected — `model` is not part of any unique index.
 - **Backward compatibility**: All queries using `SELECT *` automatically pick up the new column. Explicit column lists in INSERT statements must be updated.
 

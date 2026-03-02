@@ -14,7 +14,7 @@ Add an optional `model` attribute to the device entity — a manufacturer model 
 **Language/Version**: Python 3.11+
 **Primary Dependencies**: FastAPI, Pydantic v2, aiosqlite, React, Tailwind CSS, Vite
 **Storage**: SQLite (WAL mode) — single `ALTER TABLE` migration
-**Testing**: pytest + pytest-asyncio + httpx.AsyncClient (backend), Vitest + React Testing Library (frontend)
+**Testing**: pytest + pytest-asyncio + httpx.AsyncClient (backend); frontend test infrastructure not yet established
 **Target Platform**: Linux server (Docker container, `python:3.11-slim`)
 **Project Type**: web (FastAPI backend + React frontend)
 **Performance Goals**: No new performance requirements — single column addition has negligible impact
@@ -72,7 +72,7 @@ Add an optional `model` attribute to the device entity — a manufacturer model 
 
 **Decision**: Display the model as a secondary label on its own line below the device name in `DeviceCard.tsx`, using Tailwind's `text-sm text-gray-500` (or equivalent muted style). Devices without a model show "No model set" in the same position with an even more subdued style (e.g., `text-xs text-gray-400 italic`).
 
-**Rationale**: FR-010 and US2-AS1/AS2 specify the model as a secondary label below the name. This follows the existing card layout pattern where the device name is the primary heading. The "No model set" placeholder prevents confusing blank space and signals to users that the field exists (US2-AS2).
+**Rationale**: FR-008 and US2-AS1/AS2 specify the model as a secondary label below the name. This follows the existing card layout pattern where the device name is the primary heading. The "No model set" placeholder prevents confusing blank space and signals to users that the field exists (US2-AS2).
 
 ### AD-6: Amendment-Only Changes — No New Files in Core Backend
 
@@ -151,7 +151,6 @@ Note: `actions.py` (confirm endpoint) calls `_to_response()` from the devices ro
 | `backend/tests/test_services/test_device_service.py` | Update test data to include `model` |
 | `backend/tests/test_api/test_devices.py` | Add model to request/response assertions; add model validation tests |
 | `backend/tests/test_api/test_confirm.py` | Assert model unchanged after confirm |
-| `frontend/tests/` | Update DeviceCard and DeviceForm component tests |
 
 ## Project Structure
 
@@ -207,8 +206,6 @@ frontend/
 │       └── forms/
 │           ├── DeviceForm.tsx                      # AMENDED — model field
 │           └── validation.ts                      # AMENDED — model limit
-└── tests/
-    └── features/                                  # AMENDED — component tests
 ```
 
 **Structure Decision**: Web application (frontend + backend). All changes are amendments to existing files from Features 00001–00003, with the sole exception of the new migration file. This is a vertical-slice feature touching every layer but introducing no new modules or structural complexity.
