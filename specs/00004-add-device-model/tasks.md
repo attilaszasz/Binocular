@@ -19,7 +19,7 @@
 
 **Purpose**: Add the model column to the device table via migration
 
-- [ ] T001 Create database migration `backend/src/db/migrations/002_add_device_model.sql` with `ALTER TABLE device ADD COLUMN model TEXT NULL`
+- [X] T001 Create database migration `backend/src/db/migrations/002_add_device_model.sql` with `ALTER TABLE device ADD COLUMN model TEXT NULL`
 
 ---
 
@@ -29,8 +29,8 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T002 [P] Add `model: str | None = None` to `DeviceBase` and `DeviceUpdate` in `backend/src/models/device.py`
-- [ ] T003 [P] Add `model` to the explicit column list and parameter bindings in `DeviceRepo.create()` INSERT statement in `backend/src/repositories/device_repo.py`
+- [X] T002 [P] Add `model: str | None = None` to `DeviceBase` and `DeviceUpdate` in `backend/src/models/device.py`
+- [X] T003 [P] Add `model` to the explicit column list and parameter bindings in `DeviceRepo.create()` INSERT statement in `backend/src/repositories/device_repo.py`
 
 **Checkpoint**: Domain model and repository now support the model field — all SELECT/UPDATE paths handle it automatically via existing dynamic patterns (SELECT *, model_dump exclude_unset). Only create() required explicit update.
 
@@ -46,15 +46,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T004 [P] [US1] Update repo integration tests to include model in create/read/update assertions in `backend/tests/test_repositories/test_device_repo.py` — add model to DeviceCreate payloads, assert model persisted on get, assert model updatable, assert duplicate model allowed
-- [ ] T005 [P] [US1] Update service integration tests to pass model through create/update flows in `backend/tests/test_services/test_device_service.py` — add model to DeviceCreate payloads, assert model present in DeviceResult
-- [ ] T006 [P] [US1] Update API device tests for model in CRUD responses in `backend/tests/test_api/test_devices.py` — add model to create requests, assert model in create/get/list/update responses, test model validation (max length, whitespace trimming, empty-to-null), test omitted model defaults to null
-- [ ] T007 [P] [US1] Update confirm tests to assert model unchanged after confirm in `backend/tests/test_api/test_confirm.py` — create device with model, confirm update, assert model value preserved in confirm response
+- [X] T004 [P] [US1] Update repo integration tests to include model in create/read/update assertions in `backend/tests/test_repositories/test_device_repo.py` — add model to DeviceCreate payloads, assert model persisted on get, assert model updatable, assert duplicate model allowed
+- [X] T005 [P] [US1] Update service integration tests to pass model through create/update flows in `backend/tests/test_services/test_device_service.py` — add model to DeviceCreate payloads, assert model present in DeviceResult
+- [X] T006 [P] [US1] Update API device tests for model in CRUD responses in `backend/tests/test_api/test_devices.py` — add model to create requests, assert model in create/get/list/update responses, test model validation (max length, whitespace trimming, empty-to-null), test omitted model defaults to null
+- [X] T007 [P] [US1] Update confirm tests to assert model unchanged after confirm in `backend/tests/test_api/test_confirm.py` — create device with model, confirm update, assert model value preserved in confirm response
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Add `model` field to `DeviceCreateRequest`, `DeviceUpdateRequest`, and `DeviceResponse` in `backend/src/api/schemas/device.py` — model is `str | None = Field(default=None, max_length=100)`, add `"model"` to `_trim_strings` validators in both request schemas, add empty-after-trim-to-None canonicalization for model field
-- [ ] T009 [US1] Add `model=device.model` to the `_to_response()` function's `DeviceResponse(...)` constructor in `backend/src/api/routes/devices.py`
+- [X] T008 [P] [US1] Add `model` field to `DeviceCreateRequest`, `DeviceUpdateRequest`, and `DeviceResponse` in `backend/src/api/schemas/device.py` — model is `str | None = Field(default=None, max_length=100)`, add `"model"` to `_trim_strings` validators in both request schemas, add empty-after-trim-to-None canonicalization for model field
+- [X] T009 [US1] Add `model=device.model` to the `_to_response()` function's `DeviceResponse(...)` constructor in `backend/src/api/routes/devices.py`
 
 **Checkpoint**: All backend API endpoints now accept, validate, persist, and return the model field. Tests from T004–T007 should pass. The confirm endpoint preserves model by design (FR-007).
 
@@ -68,8 +68,8 @@
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] Add `model: string | null` to `Device` interface and `model?: string` to `DeviceCreateRequest` and `DeviceUpdateRequest` interfaces in `frontend/src/api/types.ts`
-- [ ] T011 [US2] Display model as secondary label below device name in `frontend/src/features/dashboard/DeviceCard.tsx` — render `device.model` in `text-sm text-gray-500` below the name when present; render "No model set" in `text-xs text-gray-400 italic` when null (FR-008)
+- [X] T010 [US2] Add `model: string | null` to `Device` interface and `model?: string` to `DeviceCreateRequest` and `DeviceUpdateRequest` interfaces in `frontend/src/api/types.ts`
+- [X] T011 [US2] Display model as secondary label below device name in `frontend/src/features/dashboard/DeviceCard.tsx` — render `device.model` in `text-sm text-gray-500` below the name when present; render "No model set" in `text-xs text-gray-400 italic` when null (FR-008)
 
 **Checkpoint**: Devices with a model show the identifier below the name. Devices without a model show the "No model set" placeholder. The display updates automatically when the API returns the model field.
 
@@ -83,9 +83,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T012 [P] [US3] Add `model: 100` to `fieldLimits` in `frontend/src/features/forms/validation.ts`
-- [ ] T013 [US3] Add `model: string` to `DeviceFormValues` interface and add a "Model" input field to the form in `frontend/src/features/forms/DeviceForm.tsx` — field is optional, includes help text "Manufacturer's model identifier — e.g., ILCE-7M4", uses `maxLength` validation with `fieldLimits.model`, trims on submit, empty-after-trim treated as undefined (no model)
-- [ ] T014 [US3] Wire model through create/edit callbacks in `frontend/src/features/dashboard/DashboardPage.tsx` — pass `model` in `DeviceCreateRequest` on create, pass `model` in `DeviceUpdateRequest` on edit, populate `model` in form `initialValues` when editing an existing device
+- [X] T012 [P] [US3] Add `model: 100` to `fieldLimits` in `frontend/src/features/forms/validation.ts`
+- [X] T013 [US3] Add `model: string` to `DeviceFormValues` interface and add a "Model" input field to the form in `frontend/src/features/forms/DeviceForm.tsx` — field is optional, includes help text "Manufacturer's model identifier — e.g., ILCE-7M4", uses `maxLength` validation with `fieldLimits.model`, trims on submit, empty-after-trim treated as undefined (no model)
+- [X] T014 [US3] Wire model through create/edit callbacks in `frontend/src/features/dashboard/DashboardPage.tsx` — pass `model` in `DeviceCreateRequest` on create, pass `model` in `DeviceUpdateRequest` on edit, populate `model` in form `initialValues` when editing an existing device
 
 **Checkpoint**: Users can enter, edit, and clear model values through the UI forms. The complete vertical slice (form → API → database → API → card display) is functional.
 
@@ -95,8 +95,8 @@
 
 **Purpose**: Final validation and seed data update
 
-- [ ] T015 Update mock seed data to include model values for sample devices in `backend/scripts/seed_mock_data.py` (if device seed entries exist)
-- [ ] T016 Run quickstart.md verification checklist — validate all 8 integration scenarios from `specs/00004-add-device-model/quickstart.md`
+- [X] T015 Update mock seed data to include model values for sample devices in `backend/scripts/seed_mock_data.py` (if device seed entries exist)
+- [X] T016 Run quickstart.md verification checklist — validate all 8 integration scenarios from `specs/00004-add-device-model/quickstart.md`
 
 ---
 

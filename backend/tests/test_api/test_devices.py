@@ -31,6 +31,7 @@ async def test_device_crud_with_enriched_response(client: AsyncClient) -> None:
         json={
             "name": "Sony A7IV",
             "current_version": "3.01",
+            "model": "  ILCE-7M4  ",
             "notes": " Primary body ",
         },
     )
@@ -40,6 +41,7 @@ async def test_device_crud_with_enriched_response(client: AsyncClient) -> None:
     assert created["device_type_id"] == device_type_id
     assert created["device_type_name"] == "Sony Alpha Bodies"
     assert created["status"] == "never_checked"
+    assert created["model"] == "ILCE-7M4"
     assert created["notes"] == "Primary body"
 
     device_id = int(created["id"])
@@ -47,19 +49,29 @@ async def test_device_crud_with_enriched_response(client: AsyncClient) -> None:
     get_response = await client.get(f"/api/v1/devices/{device_id}")
     assert get_response.status_code == 200
     assert get_response.json()["name"] == "Sony A7IV"
+    assert get_response.json()["model"] == "ILCE-7M4"
 
     update_response = await client.patch(
         f"/api/v1/devices/{device_id}",
-        json={"notes": " Favorite for travel "},
+        json={"notes": " Favorite for travel ", "model": "  ILCE-7M4A  "},
     )
     assert update_response.status_code == 200
     assert update_response.json()["notes"] == "Favorite for travel"
+    assert update_response.json()["model"] == "ILCE-7M4A"
 
     list_response = await client.get("/api/v1/devices")
     assert list_response.status_code == 200
     rows = list_response.json()
     assert len(rows) == 1
     assert rows[0]["device_type_name"] == "Sony Alpha Bodies"
+    assert rows[0]["model"] == "ILCE-7M4A"
+
+    clear_model_response = await client.patch(
+        f"/api/v1/devices/{device_id}",
+        json={"model": "   "},
+    )
+    assert clear_model_response.status_code == 200
+    assert clear_model_response.json()["model"] is None
 
     delete_response = await client.delete(f"/api/v1/devices/{device_id}")
     assert delete_response.status_code == 204
@@ -149,3 +161,35 @@ async def test_device_list_filtering_and_sorting(client: AsyncClient, db_path: s
     invalid_sort = await client.get("/api/v1/devices?sort=created_at")
     assert invalid_sort.status_code == 422
     assert invalid_sort.json()["error_code"] == "VALIDATION_ERROR"
+
+
+async def test_device_model_optional_and_validation(client: AsyncClient) -> None:
+    """Model should be optional, trim input, and enforce max length."""
+
+    device_type_id = await _create_device_type(client, "Sony Models")
+
+    omitted_response = await client.post(
+        f"/api/v1/device-types/{device_type_id}/devices",
+        json={"name": "No Model", "current_version": "1.0"},
+    )
+    assert omitted_response.status_code == 201
+    assert omitted_response.json()["model"] is None
+
+    whitespace_response = await client.post(
+        f"/api/v1/device-types/{device_type_id}/devices",
+        json={"name": "Whitespace Model", "current_version": "1.0", "model": "   "},
+    )
+    assert whitespace_response.status_code == 201
+    assert whitespace_response.json()["model"] is None
+
+    too_long_response = await client.post(
+        f"/api/v1/device-types/{device_type_id}/devices",
+        json={
+            "name": "Too Long Model",
+            "current_version": "1.0",
+            "model": "M" * 101,
+        },
+    )
+    assert too_long_response.status_code == 422
+    assert too_long_response.json()["error_code"] == "VALIDATION_ERROR"
+    assert too_long_response.json()["field"] == "model"

@@ -25,6 +25,7 @@ export interface Device {
   device_type_name: string;
   name: string;
   current_version: string;
+  model: string | null;
   latest_seen_version: string | null;
   last_checked_at: string | null;
   notes: string | null;
@@ -50,12 +51,14 @@ export interface DeviceTypeUpdateRequest {
 export interface DeviceCreateRequest {
   name: string;
   current_version: string;
+  model?: string;
   notes?: string;
 }
 
 export interface DeviceUpdateRequest {
   name?: string;
   current_version?: string;
+  model?: string;
   notes?: string;
 }
 

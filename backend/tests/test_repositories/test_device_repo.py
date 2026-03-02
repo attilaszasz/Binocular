@@ -29,16 +29,26 @@ async def test_device_crud(repos: tuple[DeviceTypeRepo, DeviceRepo]) -> None:
     )
 
     created = await device_repo.create(
-        DeviceCreate(device_type_id=device_type.id, name="24-70 GM II", current_version="1.0")
+        DeviceCreate(
+            device_type_id=device_type.id,
+            name="24-70 GM II",
+            current_version="1.0",
+            model="SEL2470GM2",
+        )
     )
 
     loaded = await device_repo.get_by_id(created.id)
     assert loaded is not None
     assert loaded.name == "24-70 GM II"
+    assert loaded.model == "SEL2470GM2"
 
-    updated = await device_repo.update(created.id, DeviceUpdate(notes="favorite lens"))
+    updated = await device_repo.update(
+        created.id,
+        DeviceUpdate(notes="favorite lens", model="SEL2470GM2A"),
+    )
     assert updated is not None
     assert updated.notes == "favorite lens"
+    assert updated.model == "SEL2470GM2A"
 
     by_type = await device_repo.get_by_type(device_type.id)
     assert len(by_type) == 1
@@ -68,17 +78,38 @@ async def test_device_unique_constraints(db_path: str) -> None:
     )
 
     await device_repo.create(
-        DeviceCreate(device_type_id=type_a.id, name="A7IV", current_version="1.0")
+        DeviceCreate(
+            device_type_id=type_a.id,
+            name="A7IV",
+            current_version="1.0",
+            model="ILCE-7M4",
+        )
     )
     with pytest.raises(aiosqlite.IntegrityError):
         await device_repo.create(
             DeviceCreate(device_type_id=type_a.id, name="A7IV", current_version="1.1")
         )
 
-    # Same name is allowed in different type.
-    await device_repo.create(
-        DeviceCreate(device_type_id=type_b.id, name="A7IV", current_version="2.0")
+    same_model_same_type = await device_repo.create(
+        DeviceCreate(
+            device_type_id=type_a.id,
+            name="A7IV Body 2",
+            current_version="1.0",
+            model="ILCE-7M4",
+        )
     )
+    assert same_model_same_type.model == "ILCE-7M4"
+
+    # Same name is allowed in different type.
+    cross_type_duplicate = await device_repo.create(
+        DeviceCreate(
+            device_type_id=type_b.id,
+            name="A7IV",
+            current_version="2.0",
+            model="ILCE-7M4",
+        )
+    )
+    assert cross_type_duplicate.model == "ILCE-7M4"
 
 
 async def test_confirm_update_happy_path(repos: tuple[DeviceTypeRepo, DeviceRepo]) -> None:

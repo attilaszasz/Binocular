@@ -1,6 +1,7 @@
 export const fieldLimits = {
   name: 200,
   version: 100,
+  model: 100,
   url: 2048,
   notes: 2000,
 };

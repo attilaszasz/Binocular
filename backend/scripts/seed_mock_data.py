@@ -17,6 +17,7 @@ from backend.src.repositories.device_type_repo import DeviceTypeRepo
 @dataclass(frozen=True)
 class DeviceSeed:
     name: str
+    model: str | None
     current_version: str
     latest_seen_version: str | None
     checked_hours_ago: int | None
@@ -50,6 +51,7 @@ DEVICES_BY_TYPE: dict[str, list[DeviceSeed]] = {
     "Sony Alpha Bodies": [
         DeviceSeed(
             name="Sony A7 IV",
+            model="ILCE-7M4",
             current_version="2.00",
             latest_seen_version="3.00",
             checked_hours_ago=12,
@@ -57,6 +59,7 @@ DEVICES_BY_TYPE: dict[str, list[DeviceSeed]] = {
         ),
         DeviceSeed(
             name="Sony A7C II",
+            model="ILCE-7M3A",
             current_version="1.10",
             latest_seen_version="1.10",
             checked_hours_ago=6,
@@ -64,6 +67,7 @@ DEVICES_BY_TYPE: dict[str, list[DeviceSeed]] = {
         ),
         DeviceSeed(
             name="Sony FX30",
+            model=None,
             current_version="3.00",
             latest_seen_version=None,
             checked_hours_ago=None,
@@ -73,12 +77,14 @@ DEVICES_BY_TYPE: dict[str, list[DeviceSeed]] = {
     "Sony E-Mount Lenses": [
         DeviceSeed(
             name="Sony 24-70mm f/2.8 GM II",
+            model="SEL2470GM2",
             current_version="2",
             latest_seen_version="2",
             checked_hours_ago=24,
         ),
         DeviceSeed(
             name="Sony 50mm f/1.2 GM",
+            model="SEL50F12GM",
             current_version="1",
             latest_seen_version="2",
             checked_hours_ago=48,
@@ -87,12 +93,14 @@ DEVICES_BY_TYPE: dict[str, list[DeviceSeed]] = {
     "Panasonic Lumix Bodies": [
         DeviceSeed(
             name="Panasonic S5 II",
+            model="DC-S5M2",
             current_version="1.0",
             latest_seen_version="1.2",
             checked_hours_ago=8,
         ),
         DeviceSeed(
             name="Panasonic GH6",
+            model="DC-GH6",
             current_version="2.5",
             latest_seen_version="2.5",
             checked_hours_ago=36,
@@ -166,6 +174,7 @@ async def seed(db_path: str, reset: bool) -> tuple[int, int]:
                     DeviceCreate(
                         device_type_id=device_type_id,
                         name=item.name,
+                        model=item.model,
                         current_version=item.current_version,
                         latest_seen_version=item.latest_seen_version,
                         last_checked_at=checked_at,
@@ -177,6 +186,7 @@ async def seed(db_path: str, reset: bool) -> tuple[int, int]:
                 await device_repo.update(
                     existing_device.id,
                     DeviceUpdate(
+                        model=item.model,
                         current_version=item.current_version,
                         latest_seen_version=item.latest_seen_version,
                         last_checked_at=checked_at,

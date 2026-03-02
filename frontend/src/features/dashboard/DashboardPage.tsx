@@ -164,6 +164,7 @@ export function DashboardPage() {
               payload: {
                 name: values.name,
                 current_version: values.currentVersion,
+                model: values.model,
                 notes: values.notes,
               },
             });
@@ -189,6 +190,7 @@ export function DashboardPage() {
             initialValues={{
               name: editingDevice.name,
               currentVersion: editingDevice.current_version,
+              model: editingDevice.model ?? "",
               notes: editingDevice.notes ?? "",
               deviceTypeId: editingDevice.device_type_id,
             }}
@@ -200,6 +202,7 @@ export function DashboardPage() {
                 payload: {
                   name: values.name,
                   current_version: values.currentVersion,
+                  model: values.model,
                   notes: values.notes,
                 },
               });

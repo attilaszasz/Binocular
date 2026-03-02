@@ -63,11 +63,11 @@ curl -X PATCH http://localhost:8000/api/v1/devices/1 \
 
 ## Verification Checklist
 
-- [ ] New device with model: model persisted and displayed
-- [ ] New device without model: created successfully, shows "No model set"
-- [ ] Edit to add model: model saved and visible
-- [ ] Edit to clear model: model removed, shows "No model set"
-- [ ] Confirm action: model unchanged
-- [ ] Existing devices: accessible with null model, no errors
-- [ ] Whitespace trimming: "  ILCE-7M4  " stored as "ILCE-7M4"
-- [ ] Max length: 101-character model rejected with validation error
+- [X] New device with model: model persisted and displayed
+- [X] New device without model: created successfully, shows "No model set"
+- [X] Edit to add model: model saved and visible
+- [X] Edit to clear model: model removed, shows "No model set"
+- [X] Confirm action: model unchanged
+- [X] Existing devices: accessible with null model, no errors
+- [X] Whitespace trimming: "  ILCE-7M4  " stored as "ILCE-7M4"
+- [X] Max length: 101-character model rejected with validation error

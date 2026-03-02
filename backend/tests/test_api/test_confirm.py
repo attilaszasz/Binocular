@@ -21,10 +21,20 @@ async def _create_device_type(client: AsyncClient, name: str) -> int:
     return int(response.json()["id"])
 
 
-async def _create_device(client: AsyncClient, device_type_id: int, name: str, version: str) -> int:
+async def _create_device(
+    client: AsyncClient,
+    device_type_id: int,
+    name: str,
+    version: str,
+    model: str | None = None,
+) -> int:
+    payload = {"name": name, "current_version": version}
+    if model is not None:
+        payload["model"] = model
+
     response = await client.post(
         f"/api/v1/device-types/{device_type_id}/devices",
-        json={"name": name, "current_version": version},
+        json=payload,
     )
     assert response.status_code == 201
     return int(response.json()["id"])
@@ -37,7 +47,7 @@ async def test_single_device_confirm_happy_path_and_idempotency(
     """Confirm should sync versions and remain safe to repeat."""
 
     device_type_id = await _create_device_type(client, "Sony Confirm")
-    device_id = await _create_device(client, device_type_id, "A7IV", "2.00")
+    device_id = await _create_device(client, device_type_id, "A7IV", "2.00", model="ILCE-7M4")
 
     repo = DeviceRepo(db_path)
     await repo.update_latest_version(device_id, "3.01", datetime.now(UTC))
@@ -48,12 +58,14 @@ async def test_single_device_confirm_happy_path_and_idempotency(
     assert first_payload["current_version"] == "3.01"
     assert first_payload["latest_seen_version"] == "3.01"
     assert first_payload["status"] == "up_to_date"
+    assert first_payload["model"] == "ILCE-7M4"
 
     second_response = await client.post(f"/api/v1/devices/{device_id}/confirm")
     assert second_response.status_code == 200
     second_payload = second_response.json()
     assert second_payload["current_version"] == "3.01"
     assert second_payload["status"] == "up_to_date"
+    assert second_payload["model"] == "ILCE-7M4"
 
 
 async def test_single_device_confirm_rejects_never_checked(client: AsyncClient) -> None:

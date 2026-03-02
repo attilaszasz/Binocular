@@ -24,12 +24,18 @@ async def test_fresh_database_applies_initial_schema(tmp_path: Path) -> None:
         cursor = await conn.execute("SELECT version FROM schema_version LIMIT 1;")
         version_row = await cursor.fetchone()
 
-    assert applied == [1]
+    assert applied == [1, 2]
     assert {"device_type", "device", "app_config", "extension_module", "check_history"}.issubset(
         table_names
     )
     assert version_row is not None
-    assert int(version_row[0]) == 1
+    assert int(version_row[0]) == 2
+
+    async with get_connection(db_file) as conn:
+        cursor = await conn.execute("PRAGMA table_info(device);")
+        columns = await cursor.fetchall()
+    column_names = {str(row[1]) for row in columns}
+    assert "model" in column_names
 
 
 async def test_migration_runner_applies_scripts_in_order(tmp_path: Path) -> None:
@@ -69,5 +75,5 @@ async def test_migration_runner_is_idempotent(tmp_path: Path) -> None:
     first = await run_migrations(db_file, migrations_dir=migrations_dir)
     second = await run_migrations(db_file, migrations_dir=migrations_dir)
 
-    assert first == [1]
+    assert first == [1, 2]
     assert second == []

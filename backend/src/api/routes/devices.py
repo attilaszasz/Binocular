@@ -22,6 +22,7 @@ def _to_response(result: DeviceResult) -> DeviceResponse:
 		device_type_name=result.device_type_name,
 		name=device.name,
 		current_version=device.current_version,
+		model=device.model,
 		latest_seen_version=device.latest_seen_version,
 		last_checked_at=device.last_checked_at,
 		notes=device.notes,

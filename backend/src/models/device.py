@@ -16,6 +16,7 @@ class DeviceBase(BaseModel):
     device_type_id: int
     name: str = Field(min_length=1)
     current_version: str = Field(min_length=1)
+    model: str | None = None
     latest_seen_version: str | None = None
     last_checked_at: datetime | None = None
     notes: str | None = None
@@ -30,6 +31,7 @@ class DeviceUpdate(BaseModel):
 
     name: str | None = Field(default=None, min_length=1)
     current_version: str | None = Field(default=None, min_length=1)
+    model: str | None = None
     latest_seen_version: str | None = None
     last_checked_at: datetime | None = None
     notes: str | None = None
