@@ -10,6 +10,15 @@ export interface DeviceFormValues {
   name: string;
   deviceTypeId: number;
   currentVersion: string;
+  model: string;
+  notes: string;
+}
+
+export interface DeviceFormSubmitValues {
+  name: string;
+  deviceTypeId: number;
+  currentVersion: string;
+  model?: string;
   notes: string;
 }
 
@@ -19,7 +28,7 @@ interface DeviceFormProps {
   initialValues?: DeviceFormValues;
   isSubmitting: boolean;
   onCancel: () => void;
-  onSubmit: (values: DeviceFormValues) => Promise<void>;
+  onSubmit: (values: DeviceFormSubmitValues) => Promise<void>;
 }
 
 function getInitialDeviceTypeId(deviceTypes: DeviceType[]): number {
@@ -55,6 +64,7 @@ export function DeviceForm({
     return {
       name: "",
       currentVersion: "",
+      model: "",
       notes: "",
       deviceTypeId: getInitialDeviceTypeId(deviceTypes),
     };
@@ -75,9 +85,12 @@ export function DeviceForm({
     clearErrors();
 
     try {
+      const trimmedModel = values.model.trim();
+
       await onSubmit({
         name: values.name.trim(),
         currentVersion: values.currentVersion.trim(),
+        model: trimmedModel.length > 0 ? trimmedModel : undefined,
         notes: values.notes.trim(),
         deviceTypeId: values.deviceTypeId,
       });
@@ -99,6 +112,10 @@ export function DeviceForm({
         }
         if (error.field === "current_version") {
           setError("currentVersion", { message: error.message });
+          return;
+        }
+        if (error.field === "model") {
+          setError("model", { message: error.message });
           return;
         }
       }
@@ -179,6 +196,26 @@ export function DeviceForm({
         {errors.currentVersion ? (
           <p className="mt-1 text-xs text-red-600">{errors.currentVersion.message}</p>
         ) : null}
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium" htmlFor="device-model">
+          Model <span className="text-slate-500 dark:text-slate-400">(optional)</span>
+        </label>
+        <input
+          id="device-model"
+          type="text"
+          {...register("model", {
+            validate: {
+              maxLen: (value) => maxLength(value, fieldLimits.model),
+            },
+          })}
+          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950"
+        />
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Manufacturer&apos;s model identifier — e.g., ILCE-7M4
+        </p>
+        {errors.model ? <p className="mt-1 text-xs text-red-600">{errors.model.message}</p> : null}
       </div>
 
       <div>

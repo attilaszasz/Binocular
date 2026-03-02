@@ -59,17 +59,19 @@ class DeviceRepo:
                     device_type_id,
                     name,
                     current_version,
+                    model,
                     latest_seen_version,
                     last_checked_at,
                     notes,
                     created_at,
                     updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     payload.device_type_id,
                     payload.name,
                     payload.current_version,
+                    payload.model,
                     payload.latest_seen_version,
                     payload.last_checked_at.isoformat().replace("+00:00", "Z")
                     if payload.last_checked_at is not None

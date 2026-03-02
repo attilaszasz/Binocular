@@ -40,20 +40,31 @@ async def test_device_service_crud_and_enrichment(
 
     created = await service.create(
         parent.id,
-        DeviceCreate(device_type_id=parent.id, name="A7IV", current_version="3.01"),
+        DeviceCreate(
+            device_type_id=parent.id,
+            name="A7IV",
+            current_version="3.01",
+            model="ILCE-7M4",
+        ),
     )
     assert created.device.id > 0
     assert created.device_type_name == "Sony Alpha"
     assert created.status == "never_checked"
+    assert created.device.model == "ILCE-7M4"
 
     loaded = await service.get(created.device.id)
     assert loaded.device.name == "A7IV"
+    assert loaded.device.model == "ILCE-7M4"
 
     listed = await service.list()
     assert len(listed) == 1
 
-    updated = await service.update(created.device.id, DeviceUpdate(notes="Updated note"))
+    updated = await service.update(
+        created.device.id,
+        DeviceUpdate(notes="Updated note", model="ILCE-7M4A"),
+    )
     assert updated.device.notes == "Updated note"
+    assert updated.device.model == "ILCE-7M4A"
 
     await service.delete(created.device.id)
     with pytest.raises(NotFoundError):

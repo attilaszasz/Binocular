@@ -55,6 +55,16 @@ export function DeviceCard({
             {device.name}
           </h3>
           <p
+            className={
+              device.model
+                ? "mt-1 text-sm text-slate-500 dark:text-slate-400"
+                : "mt-1 text-xs italic text-slate-400 dark:text-slate-500"
+            }
+            title={device.model ?? "No model set"}
+          >
+            {device.model ?? "No model set"}
+          </p>
+          <p
             className="mt-1 text-xs text-slate-500 dark:text-slate-400"
             title={device.last_checked_at ?? "Never checked"}
           >

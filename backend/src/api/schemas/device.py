@@ -22,12 +22,20 @@ class DeviceCreateRequest(BaseModel):
 
     name: str = Field(min_length=1, max_length=200)
     current_version: str = Field(min_length=1, max_length=100)
+    model: str | None = Field(default=None, max_length=100)
     notes: str | None = Field(default=None, max_length=2000)
 
-    @field_validator("name", "current_version", "notes", mode="before")
+    @field_validator("name", "current_version", "model", "notes", mode="before")
     @classmethod
     def _trim_strings(cls, value: str | None) -> str | None:
         return _trim_or_none(value)
+
+    @field_validator("model", mode="after")
+    @classmethod
+    def _empty_model_to_none(cls, value: str | None) -> str | None:
+        if value == "":
+            return None
+        return value
 
 
 class DeviceUpdateRequest(BaseModel):
@@ -37,12 +45,20 @@ class DeviceUpdateRequest(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=200)
     current_version: str | None = Field(default=None, min_length=1, max_length=100)
+    model: str | None = Field(default=None, max_length=100)
     notes: str | None = Field(default=None, max_length=2000)
 
-    @field_validator("name", "current_version", "notes", mode="before")
+    @field_validator("name", "current_version", "model", "notes", mode="before")
     @classmethod
     def _trim_strings(cls, value: str | None) -> str | None:
         return _trim_or_none(value)
+
+    @field_validator("model", mode="after")
+    @classmethod
+    def _empty_model_to_none(cls, value: str | None) -> str | None:
+        if value == "":
+            return None
+        return value
 
 
 class DeviceResponse(BaseModel):
@@ -55,6 +71,7 @@ class DeviceResponse(BaseModel):
     device_type_name: str
     name: str
     current_version: str
+    model: str | None
     latest_seen_version: str | None
     last_checked_at: datetime | None
     notes: str | None

@@ -348,6 +348,12 @@ Even on private networks, basic security hygiene is required.
 - **F5 Debugging**: `.vscode/launch.json` with `debugpy` launching Uvicorn with `--reload`
 - **DB Path Config**: `BINOCULAR_DB_PATH` environment variable, defaults to `./data/binocular.db` locally, `/app/data/binocular.db` in Docker
 
+### Device Identity Model
+
+- **Display Name vs. Model Identifier**: Each device has a user-chosen display name (e.g., "My A7IV") and an optional manufacturer model identifier (e.g., "ILCE-7M4"). The display name is for the user's inventory organization; the model identifier is the search key used by extension modules when looking up firmware on manufacturer pages.
+- **Extension Module Contract**: When performing a firmware check, the extension module receives the device's model identifier (not the display name) as the search term for the firmware source URL. Devices without a model set are skipped during automated checks.
+- **No Uniqueness on Model**: Multiple devices may share the same model identifier (e.g., a user owning two copies of the same camera body). No unique constraint is enforced.
+
 ### Cross-Cutting Standards
 
 - **Structured Logging**: `structlog` for all backend components (migration runner, connection lifecycle, repository errors, API requests)
