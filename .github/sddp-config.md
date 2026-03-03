@@ -5,11 +5,11 @@
 
 ## Product Document
 
-**Path**: docs/binocular-product-brief.md
+**Path**: 
 
 ## Technical Context Document
 
 <!-- A reference document describing the project's tech stack, architecture, or constraints. -->
 <!-- Registered by /sddp-plan when a file is provided. Read on demand by downstream agents. -->
 
-**Path**: docs/tech-context.md
+**Path**: 
