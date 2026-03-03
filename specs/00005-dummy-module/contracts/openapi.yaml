@@ -1,0 +1,278 @@
+openapi: "3.1.0"
+info:
+  title: Binocular Extension Modules API
+  description: >
+    Endpoints for managing extension modules: listing registered modules,
+    triggering module reload/re-scan, and executing firmware checks.
+    Part of Feature 00005 — Module Interface Contract & Mock Execution.
+  version: "0.1.0"
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (Uvicorn)
+
+tags:
+  - name: Modules
+    description: Extension module registry and execution operations.
+
+paths:
+  # ──────────────────────────────────────────────
+  # Extension Modules
+  # ──────────────────────────────────────────────
+  /api/v1/modules:
+    get:
+      operationId: listModules
+      tags: [Modules]
+      summary: List all registered extension modules
+      description: >
+        Returns all extension modules in the registry with their current
+        status (active/inactive), metadata, and last error if any.
+        Modules are returned in alphabetical order by filename.
+      responses:
+        "200":
+          description: List of registered modules.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModuleResponse"
+
+  /api/v1/modules/reload:
+    post:
+      operationId: reloadModules
+      tags: [Modules]
+      summary: Trigger module directory re-scan
+      description: >
+        Re-scans the modules directory, re-imports and re-validates all
+        module files, and updates the registry. Returns the updated list
+        of all registered modules. Modules whose files have been removed
+        from disk are deactivated.
+      responses:
+        "200":
+          description: Reload complete. Returns updated module list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleReloadResponse"
+
+  /api/v1/devices/{device_id}/check:
+    parameters:
+      - $ref: "#/components/parameters/DeviceId"
+    post:
+      operationId: executeCheck
+      tags: [Modules]
+      summary: Execute a firmware check for a device
+      description: >
+        Invokes the extension module assigned to the device's device type,
+        passing the firmware source URL and device model identifier.
+        Returns the validated check result or an error description.
+        A check history entry is always recorded regardless of outcome.
+      responses:
+        "200":
+          description: Check executed successfully. Returns the check result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckExecutionResponse"
+        "404":
+          description: Device not found, or device type has no assigned module.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                device_not_found:
+                  summary: Device does not exist
+                  value:
+                    detail: "Device not found."
+                    error_code: NOT_FOUND
+                no_module:
+                  summary: No module assigned to device type
+                  value:
+                    detail: "Device type 'Canon RF Lenses' has no extension module assigned."
+                    error_code: NOT_FOUND
+                    field: extension_module_id
+        "422":
+          description: Device is missing required fields for check execution.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: "Device 'Sony FX30' has no model identifier set."
+                error_code: VALIDATION_ERROR
+                field: model
+        "500":
+          description: Internal error during module execution.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    DeviceId:
+      name: device_id
+      in: path
+      required: true
+      description: Numeric device identifier.
+      schema:
+        type: integer
+        minimum: 1
+
+  schemas:
+    # ──────────────────────────────
+    # Module Schemas
+    # ──────────────────────────────
+    ModuleResponse:
+      type: object
+      required:
+        - id
+        - filename
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Internal module registry ID.
+          example: 1
+        filename:
+          type: string
+          description: Module filename (e.g., `mock_module.py`).
+          example: mock_module.py
+        module_version:
+          type: string
+          nullable: true
+          description: Module's self-declared version from `MODULE_VERSION` constant.
+          example: "1.0.0"
+        supported_device_type:
+          type: string
+          nullable: true
+          description: Device type identifier from `SUPPORTED_DEVICE_TYPE` constant.
+          example: "mock_devices"
+        is_active:
+          type: boolean
+          description: Whether the module passed validation and is available for execution.
+          example: true
+        file_hash:
+          type: string
+          nullable: true
+          description: SHA-256 hash of the module file (for change detection).
+          example: "a1b2c3d4e5..."
+        last_error:
+          type: string
+          nullable: true
+          description: >
+            Human-readable description of the last validation or load error.
+            Null when the module is active and healthy.
+          example: null
+        loaded_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of last successful load.
+          example: "2026-03-03T12:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the module was first registered.
+          example: "2026-03-03T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp of last registry update.
+          example: "2026-03-03T12:00:00Z"
+
+    ModuleReloadResponse:
+      type: object
+      required:
+        - modules
+        - loaded_count
+        - error_count
+      properties:
+        modules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleResponse"
+          description: Full list of modules after reload.
+        loaded_count:
+          type: integer
+          description: Number of modules that loaded successfully.
+          example: 1
+        error_count:
+          type: integer
+          description: Number of modules that failed validation.
+          example: 0
+
+    CheckExecutionResponse:
+      type: object
+      required:
+        - device_id
+        - device_name
+        - outcome
+        - checked_at
+        - check_history_id
+      properties:
+        device_id:
+          type: integer
+          description: The device that was checked.
+          example: 1
+        device_name:
+          type: string
+          description: Human-readable device name.
+          example: "Sony A7 IV"
+        module_filename:
+          type: string
+          description: The module that was invoked.
+          example: "mock_module.py"
+        outcome:
+          type: string
+          enum: [success, error]
+          description: Whether the check succeeded or failed.
+          example: success
+        latest_version:
+          type: string
+          nullable: true
+          description: The firmware version found (null on error).
+          example: "3.00"
+        error_description:
+          type: string
+          nullable: true
+          description: Human-readable error message (null on success).
+          example: null
+        checked_at:
+          type: string
+          format: date-time
+          description: Timestamp of the check execution.
+          example: "2026-03-03T14:30:00Z"
+        check_history_id:
+          type: integer
+          description: The ID of the created check history entry.
+          example: 42
+
+    # Reuse existing error envelope from Feature 00002
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+        - error_code
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message.
+        error_code:
+          type: string
+          enum:
+            - NOT_FOUND
+            - VALIDATION_ERROR
+            - MODULE_ERROR
+            - INTERNAL_ERROR
+          description: Machine-readable error code.
+        field:
+          type: string
+          nullable: true
+          description: The field that caused the error, if applicable.
