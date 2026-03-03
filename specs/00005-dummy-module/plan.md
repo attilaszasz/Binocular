@@ -29,7 +29,7 @@ Define the Python extension module interface contract (function signature, manif
 |---|---|---|
 | I. Self-Contained Deployment | PASS | Second volume mount (`/app/modules`) for module files. No external services. Mock module seeded from internal staging directory. |
 | II. Extension-First Architecture | PASS | `importlib.util.spec_from_file_location` for loading (never `exec()`/`eval()`). `typing.Protocol` defines the contract. `inspect.signature()` validates at load time. `try/except` error boundaries per execution. `CheckResult` Pydantic model validates returns. `MODULE_VERSION` + `SUPPORTED_DEVICE_TYPE` manifest constants. |
-| III. Responsible Scraping | PASS | Host-provided `httpx.Client` (FR-016) centralizes robots.txt, User-Agent, per-domain rate limiting, and backoff. Modules cannot bypass. Response caching via `hishel` or manual cache layer. |
+| III. Responsible Scraping | PASS | Host-provided `httpx.Client` (FR-016) centralizes robots.txt, User-Agent, per-domain rate limiting, and backoff. Modules cannot bypass. Response caching layer deferred per AD-10 (library TBD). |
 | IV. Type Safety & Validation | PASS | All new code passes `mypy --strict`. Pydantic models for `CheckResult`, API request/response schemas, and `AppConfig` extension. Structured logging via `structlog`. No `print()`. |
 | V. Test-First Development | PASS | Contract compliance test fixtures. Module loader integration tests. Execution engine tests with mock/broken modules. API-level integration tests for all three endpoints. |
 | Technology Stack | PASS | Python 3.11, FastAPI, SQLite, httpx. No new technology categories introduced. |

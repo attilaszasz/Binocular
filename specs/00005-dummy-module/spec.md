@@ -2,7 +2,7 @@
 
 **Feature Branch**: `00005-dummy-module`  
 **Created**: 2026-03-03  
-**Status**: Draft  
+**Status**: Ready  
 **Input**: User description: "Epic 2: The Extension Engine. Feature 2.1: Module Interface Contract & Mock Execution — Define the exact Python function signature every module must implement. Create a Mock/Dummy module and the backend logic to execute it and return dummy version data."  
 **Product Document**: docs/binocular-product-brief.md
 

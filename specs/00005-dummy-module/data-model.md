@@ -106,12 +106,12 @@ Not a formal Pydantic model — validated via `hasattr()` and `inspect.signature
 | `MODULE_VERSION` | `str` | Yes | Semver string for the module itself |
 | `SUPPORTED_DEVICE_TYPE` | `str` | Yes | Matches a device type name/slug |
 
-### `ModuleInfo` — API Response Model
+### `ModuleResponse` — API Response Model
 
 **File**: `backend/src/api/schemas/modules.py`
 
 ```python
-class ModuleInfoResponse(BaseModel):
+class ModuleResponse(BaseModel):
     """API response for a registered extension module."""
     
     id: int
