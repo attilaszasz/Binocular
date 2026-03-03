@@ -354,6 +354,13 @@ Even on private networks, basic security hygiene is required.
 - **Extension Module Contract**: When performing a firmware check, the extension module receives the device's model identifier (not the display name) as the search term for the firmware source URL. Devices without a model set are skipped during automated checks.
 - **No Uniqueness on Model**: Multiple devices may share the same model identifier (e.g., a user owning two copies of the same camera body). No unique constraint is enforced.
 
+### Extension Module Execution Model
+
+- **Interface Contract**: Modules implement a standard check function accepting a firmware source URL, device model identifier, and host-provided HTTP client. Return value is a dict validated by the host against a Pydantic schema (required: `latest_version` string).
+- **Module Discovery**: `.py` files in the modules directory are discovered and loaded via `importlib` at startup. Load-time validation checks for the required function, correct signature, and mandatory manifest constants (`MODULE_VERSION`, `SUPPORTED_DEVICE_TYPE`).
+- **Fault Isolation**: Each module invocation is wrapped in an error boundary. Exceptions, invalid return values, and timeouts are caught and recorded in check history without affecting other modules or the core application.
+- **Responsible Scraping Enforcement**: The host provides a pre-configured HTTP client to modules that enforces all scraping rules (robots.txt, User-Agent, 2-second per-domain delay, exponential backoff on 429/5xx). Modules MUST use this client — they do not bring their own HTTP logic. This is the centralized enforcement model for Principle III.
+
 ### Cross-Cutting Standards
 
 - **Structured Logging**: `structlog` for all backend components (migration runner, connection lifecycle, repository errors, API requests)

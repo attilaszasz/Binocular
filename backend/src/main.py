@@ -12,22 +12,82 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.src.api.exception_handlers import register_exception_handlers
 from backend.src.api.middleware import CorrelationIdLoggingMiddleware
-from backend.src.api.routes import actions, device_types, devices, health
+from backend.src.api.routes import actions, device_types, devices, health, modules
 from backend.src.config import get_settings
 from backend.src.db.migration_runner import run_migrations
+from backend.src.engine.loader import ModuleLoader
+from backend.src.repositories.app_config_repo import AppConfigRepo
+from backend.src.repositories.check_history_repo import CheckHistoryRepo
+from backend.src.repositories.device_repo import DeviceRepo
+from backend.src.repositories.device_type_repo import DeviceTypeRepo
+from backend.src.repositories.extension_module_repo import ExtensionModuleRepo
+from backend.src.services.module_service import ModuleService
 from backend.src.utils.logging_config import configure_logging
+
+import shutil
+
+import structlog
 
 configure_logging()
 
+_logger = structlog.get_logger(__name__)
+
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    """Ensure SQLite migrations are applied on application startup."""
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Run startup tasks: migrations, module seeding, and initial module scan."""
 
     settings = get_settings()
     db_path = Path(settings.db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     await run_migrations(db_path)
+
+    # --- Module directory seeding (AD-6 / FR-013 / FR-013a) ---
+    modules_dir = getattr(app.state, "modules_dir", None)
+    if modules_dir is None:
+        modules_dir = Path(__file__).resolve().parents[1] / "modules"
+
+    modules_dir = Path(modules_dir)
+    modules_dir.mkdir(parents=True, exist_ok=True)
+
+    # Seed from _modules if modules directory is empty
+    staging_dir = Path(__file__).resolve().parents[1] / "_modules"
+    if staging_dir.exists() and not any(modules_dir.iterdir()):
+        count = 0
+        for src_file in staging_dir.iterdir():
+            if src_file.is_file() and src_file.suffix == ".py":
+                shutil.copy2(src_file, modules_dir / src_file.name)
+                count += 1
+        if count > 0:
+            _logger.info(
+                "module.seed.copy",
+                source=str(staging_dir),
+                destination=str(modules_dir),
+                file_count=count,
+            )
+
+    # --- Build module service and initial scan ---
+    resolved_db_path = str(db_path)
+    # Allow test overrides via app.state.db_path
+    if hasattr(app.state, "db_path"):
+        resolved_db_path = app.state.db_path
+
+    ext_mod_repo = ExtensionModuleRepo(resolved_db_path)
+    loader = ModuleLoader(modules_dir=modules_dir, repo=ext_mod_repo)
+    module_service = ModuleService(
+        loader=loader,
+        extension_module_repo=ext_mod_repo,
+        check_history_repo=CheckHistoryRepo(resolved_db_path),
+        device_repo=DeviceRepo(resolved_db_path),
+        device_type_repo=DeviceTypeRepo(resolved_db_path),
+        app_config_repo=AppConfigRepo(resolved_db_path),
+        db_path=resolved_db_path,
+    )
+    app.state.module_service = module_service
+
+    # Initial module scan
+    await loader.scan()
+
     yield
 
 
@@ -50,6 +110,7 @@ def create_app(frontend_dist: Path | None = None) -> FastAPI:
                 "description": "State-transition operations for firmware confirmations.",
             },
             {"name": "Health", "description": "Service health and readiness endpoint."},
+            {"name": "Modules", "description": "Extension module registry and execution."},
         ],
         responses={
             404: {
@@ -113,6 +174,7 @@ def create_app(frontend_dist: Path | None = None) -> FastAPI:
     app.include_router(device_types.router)
     app.include_router(devices.router)
     app.include_router(actions.router)
+    app.include_router(modules.router)
 
     dist_dir = frontend_dist or Path(__file__).resolve().parents[2] / "frontend" / "dist"
     index_file = dist_dir / "index.html"

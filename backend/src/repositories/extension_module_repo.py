@@ -142,3 +142,27 @@ class ExtensionModuleRepo:
             )
             await conn.commit()
         return await self.get_by_id(module_id)
+
+    async def activate(
+        self,
+        module_id: int,
+        *,
+        supported_device_type: str | None = None,
+    ) -> ExtensionModule | None:
+        """Mark a module as active, clearing any previous error."""
+        now = _now_iso()
+        async with get_connection(self._db_path) as conn:
+            await conn.execute(
+                """
+                UPDATE extension_module
+                SET is_active = 1,
+                    last_error = NULL,
+                    loaded_at = ?,
+                    supported_device_type = COALESCE(?, supported_device_type),
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (now, supported_device_type, now, module_id),
+            )
+            await conn.commit()
+        return await self.get_by_id(module_id)
