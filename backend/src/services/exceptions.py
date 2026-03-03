@@ -65,3 +65,26 @@ class NoLatestVersionError(BinocularError):
         super().__init__(
             f"Cannot confirm update for device {device_id}: no latest seen version exists."
         )
+
+
+class ModuleExecutionError(BinocularError):
+    """Raised when an extension module fails during execution."""
+
+    error_code = "MODULE_ERROR"
+    status_code = 500
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(detail)
+
+
+class NoModuleAssignedError(BinocularError):
+    """Raised when a device type has no extension module assigned."""
+
+    error_code = "NOT_FOUND"
+    status_code = 404
+
+    def __init__(self, device_type_name: str) -> None:
+        super().__init__(
+            f"Device type '{device_type_name}' has no extension module assigned.",
+            field="extension_module_id",
+        )

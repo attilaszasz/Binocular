@@ -28,26 +28,6 @@ class DeviceSeed:
 
 DEVICE_TYPES: list[dict[str, object]] = [
     {
-        "name": "Sony Alpha Bodies",
-        "firmware_source_url": "https://www.sony.com/electronics/support/interchangeable-lens-cameras-body/downloads",
-        "check_frequency_minutes": 360,
-    },
-    {
-        "name": "Sony E-Mount Lenses",
-        "firmware_source_url": "https://www.sony.com/electronics/support/lenses-e-mount-lenses/downloads",
-        "check_frequency_minutes": 720,
-    },
-    {
-        "name": "Panasonic Lumix Bodies",
-        "firmware_source_url": "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index.html",
-        "check_frequency_minutes": 360,
-    },
-    {
-        "name": "Canon RF Lenses",
-        "firmware_source_url": "https://www.usa.canon.com/support/firmware",
-        "check_frequency_minutes": 720,
-    },
-    {
         "name": "Mock Devices",
         "firmware_source_url": "https://example.com/firmware",
         "check_frequency_minutes": 360,
@@ -56,65 +36,6 @@ DEVICE_TYPES: list[dict[str, object]] = [
 ]
 
 DEVICES_BY_TYPE: dict[str, list[DeviceSeed]] = {
-    "Sony Alpha Bodies": [
-        DeviceSeed(
-            name="Sony A7 IV",
-            model="ILCE-7M4",
-            current_version="2.00",
-            latest_seen_version="3.00",
-            checked_hours_ago=12,
-            notes="Main camera body",
-        ),
-        DeviceSeed(
-            name="Sony A7C II",
-            model="ILCE-7M3A",
-            current_version="1.10",
-            latest_seen_version="1.10",
-            checked_hours_ago=6,
-            notes="Travel body",
-        ),
-        DeviceSeed(
-            name="Sony FX30",
-            model=None,
-            current_version="3.00",
-            latest_seen_version=None,
-            checked_hours_ago=None,
-            notes="Never checked yet",
-        ),
-    ],
-    "Sony E-Mount Lenses": [
-        DeviceSeed(
-            name="Sony 24-70mm f/2.8 GM II",
-            model="SEL2470GM2",
-            current_version="2",
-            latest_seen_version="2",
-            checked_hours_ago=24,
-        ),
-        DeviceSeed(
-            name="Sony 50mm f/1.2 GM",
-            model="SEL50F12GM",
-            current_version="1",
-            latest_seen_version="2",
-            checked_hours_ago=48,
-        ),
-    ],
-    "Panasonic Lumix Bodies": [
-        DeviceSeed(
-            name="Panasonic S5 II",
-            model="DC-S5M2",
-            current_version="1.0",
-            latest_seen_version="1.2",
-            checked_hours_ago=8,
-        ),
-        DeviceSeed(
-            name="Panasonic GH6",
-            model="DC-GH6",
-            current_version="2.5",
-            latest_seen_version="2.5",
-            checked_hours_ago=36,
-        ),
-    ],
-    "Canon RF Lenses": [],
     "Mock Devices": [
         DeviceSeed(
             name="Mock Camera Alpha",

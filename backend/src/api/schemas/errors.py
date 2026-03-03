@@ -12,6 +12,7 @@ ErrorCode = Literal[
     "VALIDATION_ERROR",
     "CASCADE_BLOCKED",
     "NO_LATEST_VERSION",
+    "MODULE_ERROR",
     "INTERNAL_ERROR",
 ]
 

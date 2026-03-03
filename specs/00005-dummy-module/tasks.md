@@ -19,9 +19,9 @@
 
 **Purpose**: Migration, package scaffolding, and test fixtures
 
-- [ ] T001 Create migration file backend/src/db/migrations/003_add_module_timeout.sql with ALTER TABLE app_config ADD COLUMN module_execution_timeout_seconds
-- [ ] T002 [P] Create engine package init backend/src/engine/__init__.py
-- [ ] T003 [P] Create test fixture module files in backend/tests/fixtures/modules/ (valid_module.py, missing_function.py, wrong_signature.py, syntax_error.py, missing_constants.py, raises_system_exit.py)
+- [X] T001 Create migration file backend/src/db/migrations/003_add_module_timeout.sql with ALTER TABLE app_config ADD COLUMN module_execution_timeout_seconds
+- [X] T002 [P] Create engine package init backend/src/engine/__init__.py
+- [X] T003 [P] Create test fixture module files in backend/tests/fixtures/modules/ (valid_module.py, missing_function.py, wrong_signature.py, syntax_error.py, missing_constants.py, raises_system_exit.py)
 
 ---
 
@@ -31,14 +31,14 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create CheckResult Pydantic model in backend/src/models/check_result.py (latest_version required, optional: download_url, release_date, release_notes, raw_versions, metadata)
-- [ ] T005 [P] Define ModuleProtocol (typing.Protocol) in backend/src/engine/protocol.py per AD-2
-- [ ] T006 [P] Add module_execution_timeout_seconds field (default=30, ge=5, le=300) to AppConfig and AppConfigUpdate in backend/src/models/app_config.py
-- [ ] T007 [P] Export CheckResult from backend/src/models/__init__.py
-- [ ] T008 [P] Add ModuleExecutionError and NoModuleAssignedError exception classes to backend/src/services/exceptions.py
-- [ ] T009 [P] Add MODULE_ERROR to ErrorCode literal type in backend/src/api/schemas/errors.py
-- [ ] T010 [P] Create module API response schemas (ModuleResponse, ModuleReloadResponse, CheckExecutionResponse) in backend/src/api/schemas/modules.py per contracts/openapi.yaml
-- [ ] T011 Create HTTP client factory in backend/src/engine/http_client.py (User-Agent header, connection/read timeouts per AD-4)
+- [X] T004 Create CheckResult Pydantic model in backend/src/models/check_result.py (latest_version required, optional: download_url, release_date, release_notes, raw_versions, metadata)
+- [X] T005 [P] Define ModuleProtocol (typing.Protocol) in backend/src/engine/protocol.py per AD-2
+- [X] T006 [P] Add module_execution_timeout_seconds field (default=30, ge=5, le=300) to AppConfig and AppConfigUpdate in backend/src/models/app_config.py
+- [X] T007 [P] Export CheckResult from backend/src/models/__init__.py
+- [X] T008 [P] Add ModuleExecutionError and NoModuleAssignedError exception classes to backend/src/services/exceptions.py
+- [X] T009 [P] Add MODULE_ERROR to ErrorCode literal type in backend/src/api/schemas/errors.py
+- [X] T010 [P] Create module API response schemas (ModuleResponse, ModuleReloadResponse, CheckExecutionResponse) in backend/src/api/schemas/modules.py per contracts/openapi.yaml
+- [X] T011 Create HTTP client factory in backend/src/engine/http_client.py (User-Agent header, connection/read timeouts per AD-4)
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 
@@ -54,12 +54,12 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T012 [P] [US2] Write Module Loader tests in backend/tests/test_engine/test_loader.py — cover: valid module loaded & registered, missing function → inactive, wrong signature → inactive, syntax error → inactive, missing constants → inactive, file hash change detection, _prefix and __init__.py exclusion, empty .py file handling
-- [ ] T013 [P] [US2] Write HTTP client factory tests in backend/tests/test_engine/test_http_client.py — cover: User-Agent string format, connection timeout, read timeout
+- [X] T012 [P] [US2] Write Module Loader tests in backend/tests/test_engine/test_loader.py — cover: valid module loaded & registered, missing function → inactive, wrong signature → inactive, syntax error → inactive, missing constants → inactive, file hash change detection, _prefix and __init__.py exclusion, empty .py file handling
+- [X] T013 [P] [US2] Write HTTP client factory tests in backend/tests/test_engine/test_http_client.py — cover: User-Agent string format, connection timeout, read timeout
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] Implement Module Loader in backend/src/engine/loader.py — discover files (exclude _ prefix, __init__.py), import via importlib.util.spec_from_file_location, validate (hasattr check_firmware + inspect.signature for 3 params + MODULE_VERSION + SUPPORTED_DEVICE_TYPE constants), compute SHA-256 file hash, register/upsert via ExtensionModuleRepo, maintain private module dict (never pollute sys.modules per AD-9), structured logging per plan logging events table
+- [X] T014 [US2] Implement Module Loader in backend/src/engine/loader.py — discover files (exclude _ prefix, __init__.py), import via importlib.util.spec_from_file_location, validate (hasattr check_firmware + inspect.signature for 3 params + MODULE_VERSION + SUPPORTED_DEVICE_TYPE constants), compute SHA-256 file hash, register/upsert via ExtensionModuleRepo, maintain private module dict (never pollute sys.modules per AD-9), structured logging per plan logging events table
 
 **Checkpoint**: Module loading pipeline works — valid modules register as active, broken modules as inactive with descriptive errors
 
@@ -75,17 +75,17 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T015 [P] [US1] Write Execution Engine tests in backend/tests/test_engine/test_executor.py — cover: successful execution → CheckResult validated → history recorded, module returns None → validation error recorded, exception during execution → error outcome recorded
-- [ ] T016 [P] [US1] Write ModuleService tests in backend/tests/test_services/test_module_service.py — cover: list modules, reload modules, execute check (happy path), execute check with no module assigned, execute check with missing device model
-- [ ] T017 [P] [US1] Write API endpoint tests in backend/tests/test_api/test_modules.py — cover: GET /api/v1/modules returns list, POST /api/v1/modules/reload returns updated counts, POST /api/v1/devices/{id}/check returns CheckExecutionResponse, 404 for unknown device, 404 for no module assigned, 422 for missing model field
+- [X] T015 [P] [US1] Write Execution Engine tests in backend/tests/test_engine/test_executor.py — cover: successful execution → CheckResult validated → history recorded, module returns None → validation error recorded, exception during execution → error outcome recorded
+- [X] T016 [P] [US1] Write ModuleService tests in backend/tests/test_services/test_module_service.py — cover: list modules, reload modules, execute check (happy path), execute check with no module assigned, execute check with missing device model
+- [X] T017 [P] [US1] Write API endpoint tests in backend/tests/test_api/test_modules.py — cover: GET /api/v1/modules returns list, POST /api/v1/modules/reload returns updated counts, POST /api/v1/devices/{id}/check returns CheckExecutionResponse, 404 for unknown device, 404 for no module assigned, 422 for missing model field
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Implement Execution Engine in backend/src/engine/executor.py — asyncio.to_thread() wrapping (AD-1), asyncio.wait_for() timeout (AD-7), error boundary catching SystemExit + Exception (AD-8), CheckResult.model_validate() on return dict (AD-5), record outcome via CheckHistoryRepo, structured logging per plan events table
-- [ ] T019 [US1] Implement ModuleService in backend/src/services/module_service.py — orchestrate loader + executor + repos, resolve device → device_type → module chain, list/reload/execute_check methods
-- [ ] T020 [US1] Add get_module_service factory to backend/src/api/dependencies.py
-- [ ] T021 [US1] Implement module API routes in backend/src/api/routes/modules.py — GET /api/v1/modules, POST /api/v1/modules/reload, POST /api/v1/devices/{id}/check per contracts/openapi.yaml
-- [ ] T022 [US1] Wire module router, module directory seeding (AD-6: copy _modules → modules if empty), and initial module scan into lifespan in backend/src/main.py
+- [X] T018 [US1] Implement Execution Engine in backend/src/engine/executor.py — asyncio.to_thread() wrapping (AD-1), asyncio.wait_for() timeout (AD-7), error boundary catching SystemExit + Exception (AD-8), CheckResult.model_validate() on return dict (AD-5), record outcome via CheckHistoryRepo, structured logging per plan events table
+- [X] T019 [US1] Implement ModuleService in backend/src/services/module_service.py — orchestrate loader + executor + repos, resolve device → device_type → module chain, list/reload/execute_check methods
+- [X] T020 [US1] Add get_module_service factory to backend/src/api/dependencies.py
+- [X] T021 [US1] Implement module API routes in backend/src/api/routes/modules.py — GET /api/v1/modules, POST /api/v1/modules/reload, POST /api/v1/devices/{id}/check per contracts/openapi.yaml
+- [X] T022 [US1] Wire module router, module directory seeding (AD-6: copy _modules → modules if empty), and initial module scan into lifespan in backend/src/main.py
 
 **Checkpoint**: Core execution pipeline works end-to-end — load module, invoke, validate result, record history, expose via API
 
@@ -101,11 +101,11 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T023 [US3] Write mock module integration test — cover: mock module seeded on empty directory, discovered and registered as active with correct metadata, execution returns deterministic data per model (MOCK-001→2.0.0, MOCK-002→1.5.0, MOCK-003→3.1.0-beta), MOCK-NOTFOUND returns None → validation error path, check_history entries recorded correctly
+- [X] T023 [US3] Write mock module integration test — cover: mock module seeded on empty directory, discovered and registered as active with correct metadata, execution returns deterministic data per model (MOCK-001→2.0.0, MOCK-002→1.5.0, MOCK-003→3.1.0-beta), MOCK-NOTFOUND returns None → validation error path, check_history entries recorded correctly
 
 ### Verification for User Story 3
 
-- [ ] T024 [US3] Validate mock_module.py contract compliance — verify MODULE_VERSION, SUPPORTED_DEVICE_TYPE, check_firmware(url, model, http_client) signature, docstrings, and deterministic response map match spec requirements (FR-011, FR-012)
+- [X] T024 [US3] Validate mock_module.py contract compliance — verify MODULE_VERSION, SUPPORTED_DEVICE_TYPE, check_firmware(url, model, http_client) signature, docstrings, and deterministic response map match spec requirements (FR-011, FR-012)
 
 **Checkpoint**: Mock module works end-to-end on fresh install — seeded, loaded, executable, results validated
 
@@ -121,12 +121,12 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation (extend test_executor.py)**
 
-- [ ] T025 [P] [US4] Write fault isolation tests in backend/tests/test_engine/test_executor.py — cover: SystemExit caught (not propagated), configurable timeout via app_config (asyncio.TimeoutError → error record), GeneratorExit and KeyboardInterrupt propagate normally, error description format matches spec guidance (prefix patterns: "Validation failed:", "Module error:", "Timeout:")
-- [ ] T026 [P] [US4] Write batch isolation test — execute multiple modules in sequence where one raises an exception, verify remaining modules execute normally and produce correct history entries
+- [X] T025 [P] [US4] Write fault isolation tests in backend/tests/test_engine/test_executor.py — cover: SystemExit caught (not propagated), configurable timeout via app_config (asyncio.TimeoutError → error record), GeneratorExit and KeyboardInterrupt propagate normally, error description format matches spec guidance (prefix patterns: "Validation failed:", "Module error:", "Timeout:")
+- [X] T026 [P] [US4] Write batch isolation test — execute multiple modules in sequence where one raises an exception, verify remaining modules execute normally and produce correct history entries
 
 ### Implementation for User Story 4
 
-- [ ] T027 [US4] Verify and harden error boundary in backend/src/engine/executor.py — ensure SystemExit catch order is correct (before Exception), timeout error description includes configured seconds, batch execution continues after individual failure
+- [X] T027 [US4] Verify and harden error boundary in backend/src/engine/executor.py — ensure SystemExit catch order is correct (before Exception), timeout error description includes configured seconds, batch execution continues after individual failure
 
 **Checkpoint**: Fault isolation verified — no broken module can crash the app or prevent other modules from running
 
@@ -136,9 +136,9 @@
 
 **Purpose**: Validation, type safety, and integration verification
 
-- [ ] T028 [P] Run mypy --strict on all new engine code (backend/src/engine/, backend/src/services/module_service.py, backend/src/api/schemas/modules.py, backend/src/api/routes/modules.py)
-- [ ] T029 [P] Run quickstart.md validation scenarios end-to-end
-- [ ] T030 Verify structured logging events match plan's logging events table (module.scan.start, module.load.success/failed/skipped, module.scan.complete, module.exec.start/success/error/timeout, module.seed.copy)
+- [X] T028 [P] Run mypy --strict on all new engine code (backend/src/engine/, backend/src/services/module_service.py, backend/src/api/schemas/modules.py, backend/src/api/routes/modules.py)
+- [X] T029 [P] Run quickstart.md validation scenarios end-to-end
+- [X] T030 Verify structured logging events match plan's logging events table (module.scan.start, module.load.success/failed/skipped, module.scan.complete, module.exec.start/success/error/timeout, module.seed.copy)
 
 ---
 

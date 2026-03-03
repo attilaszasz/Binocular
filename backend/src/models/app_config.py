@@ -23,6 +23,7 @@ class AppConfig(BaseModel):
     gotify_token: str | None = None
     notifications_enabled: bool = False
     check_history_retention_days: int = Field(default=90, gt=0)
+    module_execution_timeout_seconds: int = Field(default=30, ge=5, le=300)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -40,3 +41,4 @@ class AppConfigUpdate(BaseModel):
     gotify_token: str | None = None
     notifications_enabled: bool | None = None
     check_history_retention_days: int | None = Field(default=None, gt=0)
+    module_execution_timeout_seconds: int | None = Field(default=None, ge=5, le=300)
