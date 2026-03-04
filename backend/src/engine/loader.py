@@ -9,20 +9,16 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
-import inspect
 import types
 from pathlib import Path
-from typing import Any
 
 import structlog
 
+from backend.src.engine.validator import validate_static
 from backend.src.models.extension_module import ExtensionModuleCreate
 from backend.src.repositories.extension_module_repo import ExtensionModuleRepo
 
 logger = structlog.get_logger(__name__)
-
-_REQUIRED_PARAMS = ("url", "model", "http_client")
-_REQUIRED_CONSTANTS = ("MODULE_VERSION", "SUPPORTED_DEVICE_TYPE")
 
 
 class ModuleLoader:
@@ -70,33 +66,41 @@ class ModuleLoader:
                 self._ensure_loaded(py_file, filename)
                 continue
 
-            # Import and validate
+            # Static validation before import (FR-012)
+            static_result = validate_static(py_file)
+            if static_result.status != "pass":
+                error = "; ".join(e.message for e in static_result.errors)
+                logger.warning("module.load.failed", filename=filename, error=error, error_type="static_validation")
+                await self._register_or_update(filename, file_hash, is_active=False, error=error, mod=None)
+                error_count += 1
+                continue
+
+            # Import (static passed)
             try:
                 mod = self._safe_import(py_file)
-                error = self._validate_module(mod)
             except SystemExit:
                 error = "Module called sys.exit() during import"
-                mod = None
+                logger.warning("module.load.failed", filename=filename, error=error, error_type="import")
+                await self._register_or_update(filename, file_hash, is_active=False, error=error, mod=None)
+                error_count += 1
+                continue
             except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"
-                mod = None
-
-            if error is not None:
-                logger.warning("module.load.failed", filename=filename, error=error, error_type="validation")
-                await self._register_or_update(filename, file_hash, is_active=False, error=error, mod=mod)
+                logger.warning("module.load.failed", filename=filename, error=error, error_type="import")
+                await self._register_or_update(filename, file_hash, is_active=False, error=error, mod=None)
                 error_count += 1
-            else:
-                assert mod is not None
-                version = getattr(mod, "MODULE_VERSION", None)
-                device_type = getattr(mod, "SUPPORTED_DEVICE_TYPE", None)
-                logger.info("module.load.success", filename=filename, module_version=version, supported_device_type=device_type)
-                await self._register_or_update(
-                    filename, file_hash,
-                    is_active=True, error=None, mod=mod,
-                    module_version=version, supported_device_type=device_type,
-                )
-                self._registry[filename] = mod
-                loaded_count += 1
+                continue
+
+            version = getattr(mod, "MODULE_VERSION", None)
+            device_type = getattr(mod, "SUPPORTED_DEVICE_TYPE", None)
+            logger.info("module.load.success", filename=filename, module_version=version, supported_device_type=device_type)
+            await self._register_or_update(
+                filename, file_hash,
+                is_active=True, error=None, mod=mod,
+                module_version=version, supported_device_type=device_type,
+            )
+            self._registry[filename] = mod
+            loaded_count += 1
 
         # Deactivate modules whose files have been removed from disk
         all_registered = await self._repo.get_all()
@@ -136,7 +140,7 @@ class ModuleLoader:
         return files
 
     # ------------------------------------------------------------------
-    # Import and Validation
+    # Import
     # ------------------------------------------------------------------
 
     def _safe_import(self, path: Path) -> types.ModuleType:
@@ -149,53 +153,6 @@ class ModuleLoader:
         # Execute the module — do NOT add to sys.modules
         spec.loader.exec_module(mod)
         return mod
-
-    def _validate_module(self, mod: types.ModuleType) -> str | None:
-        """Validate a module against the interface contract.
-
-        Returns ``None`` on success, or a human-readable error string.
-        Validates per FR-004: (a) check_firmware exists, (b) callable,
-        (c) signature matches, (d) MODULE_VERSION present, (e) SUPPORTED_DEVICE_TYPE present,
-        and both are strings.
-        """
-        # (a) check_firmware exists
-        if not hasattr(mod, "check_firmware"):
-            return "Missing required function: check_firmware"
-
-        func = mod.check_firmware
-
-        # (b) callable
-        if not callable(func):
-            return "check_firmware is not callable"
-
-        # (c) signature — exactly 3 params: url, model, http_client
-        try:
-            sig = inspect.signature(func)
-        except (ValueError, TypeError) as exc:
-            return f"Cannot inspect check_firmware signature: {exc}"
-
-        params = list(sig.parameters.keys())
-        if params != list(_REQUIRED_PARAMS):
-            return (
-                f"check_firmware signature mismatch: expected parameters "
-                f"{list(_REQUIRED_PARAMS)}, got {params}"
-            )
-
-        # (d) + (e) manifest constants — must exist and be strings
-        missing: list[str] = []
-        non_string: list[str] = []
-        for const in _REQUIRED_CONSTANTS:
-            if not hasattr(mod, const):
-                missing.append(const)
-            elif not isinstance(getattr(mod, const), str):
-                non_string.append(const)
-
-        if missing:
-            return f"Missing required manifest constants: {', '.join(missing)}"
-        if non_string:
-            return f"Manifest constants must be strings: {', '.join(non_string)}"
-
-        return None
 
     # ------------------------------------------------------------------
     # Hash

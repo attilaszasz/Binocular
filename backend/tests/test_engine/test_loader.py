@@ -199,6 +199,59 @@ class TestModuleLoaderExclusions:
         assert len(modules) == 0
 
 
+class TestModuleLoaderStaticValidatorIntegration:
+    """Verify the loader uses validate_static() before _safe_import() (FR-012)."""
+
+    @pytest.mark.asyncio
+    async def test_binary_file_rejected_before_import(
+        self, modules_dir: Path, extension_module_repo: ExtensionModuleRepo
+    ) -> None:
+        """Binary files are caught by static pre-validation (ENCODING_ERROR)."""
+        bad = modules_dir / "binary_module.py"
+        bad.write_bytes(b"\x80\x81\x82\xff\xfe")
+
+        loader = ModuleLoader(modules_dir=modules_dir, repo=extension_module_repo)
+        await loader.scan()
+
+        modules = await extension_module_repo.get_all()
+        assert len(modules) == 1
+        assert modules[0].is_active is False
+        assert modules[0].last_error is not None
+        assert "UTF-8" in modules[0].last_error
+
+    @pytest.mark.asyncio
+    async def test_empty_file_rejected(
+        self, modules_dir: Path, extension_module_repo: ExtensionModuleRepo
+    ) -> None:
+        """0-byte files are caught by static pre-validation."""
+        empty = modules_dir / "empty_module.py"
+        empty.write_bytes(b"")
+
+        loader = ModuleLoader(modules_dir=modules_dir, repo=extension_module_repo)
+        await loader.scan()
+
+        modules = await extension_module_repo.get_all()
+        assert len(modules) == 1
+        assert modules[0].is_active is False
+        assert modules[0].last_error is not None
+
+    @pytest.mark.asyncio
+    async def test_multiple_static_errors_joined(
+        self, modules_dir: Path, extension_module_repo: ExtensionModuleRepo
+    ) -> None:
+        """Static validator errors are joined with '; ' in last_error."""
+        _copy_fixture("missing_constants.py", modules_dir)
+        loader = ModuleLoader(modules_dir=modules_dir, repo=extension_module_repo)
+        await loader.scan()
+
+        modules = await extension_module_repo.get_all()
+        assert len(modules) == 1
+        assert modules[0].last_error is not None
+        # Both missing constants should appear, joined by "; "
+        assert "MODULE_VERSION" in modules[0].last_error
+        assert "SUPPORTED_DEVICE_TYPE" in modules[0].last_error
+
+
 class TestModuleLoaderEmptyFile:
     """Empty .py file → inactive with descriptive error."""
 

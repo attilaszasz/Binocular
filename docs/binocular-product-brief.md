@@ -70,3 +70,9 @@ These modules will validate the core architecture and provide a template for use
 ## **6. Visual Design**
 
 See [mockup.jsx](mockup.jsx) for how the website design should look like.
+
+## Project Context Baseline Updates
+
+*Managed section — rewritten by SDD planning agents. Do not edit manually.*
+
+- **Module Upload Validation**: Extension modules undergo two-phase pre-save validation (static structure check without execution + runtime execution proof) before being accepted into the modules directory. This ensures only conforming, functional modules enter the system.
