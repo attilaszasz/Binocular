@@ -5,16 +5,13 @@ description: "Executes the implementation plan by processing and completing all 
 
 # Software Engineer — Implement Tasks Workflow
 
-You are the SDD Pilot **Software Engineer** agent. You execute the implementation plan by processing tasks phase-by-phase, writing code, and marking tasks complete.
-
-Report progress to the user at each major milestone.
-
 <rules>
+- Report progress at each major milestone
 - **tasks.md is the source of truth** for task completion state
 - NEVER start without `spec.md`, `plan.md`, AND `tasks.md`
-- Attempt auto-resolution of missing gate artifacts before halting
+- Attempt auto-resolution of missing gate artifacts before halting (see `references/gates.md` for gate logic)
 - Checklist gate failures trigger auto-evaluation (no user prompt unless evaluation fails twice)
-- **Artifact conventions** (`.github/skills/artifact-conventions/SKILL.md`): When marking tasks complete, the ONLY valid checkbox transition is `- [ ]` → `- [X]`. Never reverse (`[X]` → `[ ]`), never delete checkbox lines, never change task IDs (T###), requirement IDs (FR-###), or success criteria IDs (SC-###). Do NOT remove the Dependencies & Execution Order section or phase headers from tasks.md.
+- **Artifact conventions** (`.github/skills/artifact-conventions/SKILL.md`): When marking tasks complete, the ONLY valid checkbox transition is `- [ ]` → `- [X]`. Never reverse (`[X]` → `[ ]`), never delete checkbox lines, never change task IDs (T###), requirement IDs (FR-###), or success criteria IDs (SC-###). Do NOT remove the Dependencies section or phase headers from tasks.md.
 - **Execute ALL phases in ONE CONTINUOUS TURN** — this is a single uninterrupted run through all phases (Setup → Foundational → User Stories → Polish)
 - **NEVER yield control to user between phases** — do not stop, ask "what next?", or present options after completing a phase
 - **Ask the user for input when**: (1) Gate artifact resolution failure, (2) Checklist override decision (second failure only), (3) Sequential task failure requiring manual fix, (4) Final summary guidance if there are any skipped/failed tasks or review issues
@@ -31,47 +28,32 @@ Report progress to the user at each major milestone.
 
 <workflow>
 
-## 1. Gate Check
+## 1. Gate Check & Resume Detection
 
-**Delegate: Context Gatherer** (see `.github/agents/_context-gatherer.md` for methodology).
+Determine `FEATURE_DIR`: infer from the current git branch (`specs/<branch>/`) or from user context.
 
-- Check `HAS_SPEC`, `HAS_PLAN`, `HAS_TASKS` in the response.
-- **If any are `false`: Attempt Auto-Resolution**
-  1. Report: "Gate failed: Missing [artifact]. Attempting auto-resolution..."
-  2. Suggest the appropriate command to the user:
-     - Missing `spec.md`: `/sddp-specify`
-     - Missing `plan.md`: `/sddp-plan`
-     - Missing `tasks.md`: `/sddp-tasks`
-  3. Re-check context to verify resolution
-  4. If still failing after auto-resolution attempt, halt with error: "Gate check failed. Cannot proceed without [artifact]. Please create it manually."
-- **If all are `true`**: Continue to Checklist Gate.
+**Delegate: Context Gatherer** in **quick mode** — `FEATURE_DIR` is the resolved path (see `.github/agents/_context-gatherer.md` for methodology).
 
-### Checklist Gate
+Check `HAS_SPEC`, `HAS_PLAN`, `HAS_TASKS` in the response.
 
-**Delegate: Checklist Reader** (see `.github/agents/_checklist-reader.md` for methodology) with `FEATURE_DIR`.
+**Determine run mode:**
+- **Resume run**: All three flags are `true` AND at least one task in `FEATURE_DIR/tasks.md` is marked `[X]`.
+- **Fresh run**: No tasks are marked `[X]`, OR any gate artifact is missing.
 
-Parse the JSON report.
+**If resume run:**
+- Report: "Resuming — gates previously validated, skipping gate checks and project setup."
+- Proceed directly to Step 2.
 
-1. Display a summary table of the checklists (File | Total | Completed | Incomplete | Status).
-2. **If `overallStatus` is "FAIL"**:
-   - **Auto-evaluate (no user prompt on first attempt)**:
-   1. **Delegate: Test Evaluator** (see `.github/agents/_test-evaluator.md` for methodology) with `featureDir` set to `FEATURE_DIR` for each checklist file with status `"FAIL"`.
-     2. The evaluator will mark satisfied items `[X]`, amend artifacts to resolve gaps, and ask the user about ambiguous items.
-   3. After evaluation completes, re-check with Checklist Reader.
-     4. Display the updated summary table.
-     5. If `overallStatus` is now `"PASS"`: Continue to Step 2.
-   6. **If `overallStatus` is still `"FAIL"` (second attempt)**: Now prompt the user:
-        - "Auto-evaluate again" (try once more)
-        - "Proceed to implementation (Override)" (Recommended - continue despite incomplete checklists)
-        - "Stop and complete manually"
-       - Handle user choice: If Stop, halt. If Auto-evaluate, repeat evaluation. If Override, continue.
-3. **If `overallStatus` is "PASS" or "N/A"**: Continue.
+**If fresh run:**
+- Read and execute `references/gates.md` (artifact validation, checklist gate, and project setup).
+- After gates.md completes successfully, proceed to Step 2.
 
 ## 2. Load Implementation Context
 
 Read from `FEATURE_DIR`:
-- **Required**: plan.md
-- **If available**: spec.md, data-model.md, contracts/, research.md, quickstart.md
+- **Required (load now)**: plan.md, spec.md
+- **Required if available (load now)**: research.md
+- **Lazy-load (defer until needed)**: data-model.md, contracts/ — read these only when a task in the current phase references data models or API contracts. quickstart.md — read only during the Polish phase. This reduces upfront context-window consumption.
 
 **Delegate: Task Tracker** (see `.github/agents/_task-tracker.md` for methodology):
 - Provide `FEATURE_DIR`.
@@ -88,7 +70,7 @@ Read from `FEATURE_DIR`:
    - `remaining_count`: Length of `REMAINING_TASKS`
 4. Report: "Loaded [total_tasks] tasks: [completed_count] complete, [remaining_count] remaining"
 5. **If `remaining_count` is 0**: Report "✓ All tasks already complete", then skip to Step 6 (Validate Implementation)
-6. **If partially complete**: Note the last completed phase for context
+6. **If partially complete**: Note the last completed phase for context. Inform the user: "Resuming from checkpoint — [completed_count] tasks already done, processing [remaining_count] remaining. Completed tasks (marked `[X]` in `tasks.md`) are automatically skipped."
 
 Extract tech stack, architecture, and file structure from `plan.md`.
 
@@ -98,6 +80,8 @@ If `FEATURE_DIR/research.md` exists:
 - Read it first and extract implementation-relevant guidance.
 - Skip fresh research when the required libraries/patterns for current tasks are already covered.
 - Refresh only for unfamiliar libraries, complex integrations, or gaps tied to active tasks.
+
+Before delegating, report to the user: "🔍 Researching library documentation for upcoming tasks — this may take 15–30 seconds."
 
 **Delegate: Technical Researcher** (see `.github/agents/_technical-researcher.md` for methodology):
 - **Topics**: Official docs and API references only for unfamiliar, complex, critical, or currently uncovered technologies needed by active tasks.
@@ -111,21 +95,7 @@ Use the research findings to guide implementation.
 
 ## 4. Project Setup
 
-Create/verify ignore files based on the tech stack detected in plan.md:
-
-- Check if git repo → create/verify `.gitignore`
-- Check for Docker usage → create/verify `.dockerignore`
-- Check for linting tools → create/verify appropriate ignore files
-
-Use technology-specific patterns:
-- **Node.js**: `node_modules/`, `dist/`, `build/`, `*.log`, `.env*`
-- **Python**: `__pycache__/`, `*.pyc`, `.venv/`, `dist/`
-- **Java**: `target/`, `*.class`, `.gradle/`, `build/`
-- **Go**: `*.exe`, `*.test`, `vendor/`
-- **Rust**: `target/`, `debug/`, `release/`
-- **Universal**: `.DS_Store`, `Thumbs.db`, `.vscode/`, `.idea/`
-
-If ignore file already exists, append missing critical patterns only.
+> Executed via `references/gates.md` on fresh runs (Step 1 routing). Skipped on resume runs.
 
 ## 5. Execute Tasks
 
@@ -137,6 +107,7 @@ Iterate through `REMAINING_TASKS` (from Step 2). Process phase-by-phase in one u
 2. **Foundational next**: Tasks in "Phase 2: Foundational"
 3. **User Stories in priority order**: Tasks for US1, then US2, etc. - Tasks in "Phase 3+"
 4. **Polish last**: Tasks in "Phase: Polish"
+   - At the start of Polish phase, load `quickstart.md` (if available) and validate it against the implementation. Update quickstart content if it references outdated setup steps or integration scenarios.
 
 **Stopping conditions (only halt for these):**
 - Gate auto-resolution failed (caught earlier in Step 1)
@@ -144,11 +115,12 @@ Iterate through `REMAINING_TASKS` (from Step 2). Process phase-by-phase in one u
 - Critical system error preventing continuation
 
 **For each phase:**
-1. Count tasks in phase (from `REMAINING_TASKS` only)
-2. Report: "Starting Phase [N]: [Phase Name] ([task_count] tasks)"
-3. Process each incomplete task in the phase
-4. Run **Phase Review** on every task completed in this phase (see below)
-5. After phase completes and review is done, continue to the next phase (do NOT stop or ask for input)
+1. **Sync state** — Re-invoke **Task Tracker** to refresh `TASK_LIST`, `completed_tasks`, `REMAINING_TASKS`, and counts from `tasks.md` on disk. This catches any external changes and reconciles in-memory counts once per phase (not per task).
+2. Count tasks in phase (from `REMAINING_TASKS` only)
+3. Report: "Starting Phase [N]: [Phase Name] ([task_count] tasks)"
+4. Process each incomplete task in the phase
+5. Run **Phase Review** on every task completed in this phase (see below)
+6. After phase completes and review is done, continue to the next phase (do NOT stop or ask for input)
 
 **For each incomplete task in the current phase:**
 
@@ -163,12 +135,15 @@ Iterate through `REMAINING_TASKS` (from Step 2). Process phase-by-phase in one u
   - `Description`: Task description
   - `Context`: Relevant technical context from Plan/Research
   - `FilePath`: Target file path (extracted from description)
+  - `PlanPath`: `FEATURE_DIR/plan.md`
+  - `DataModelPath`: `FEATURE_DIR/data-model.md` (if file exists)
+  - `ContractsPath`: `FEATURE_DIR/contracts/` (if directory exists)
 
 - **Handle Result**:
   - If **SUCCESS**: 
     1. Mark completed in tasks.md (`- [ ]` → `- [X]`)
-      2. Re-invoke Task Tracker and refresh `TASK_LIST`, `completed_tasks`, `REMAINING_TASKS`, and counts
-      3. Report: "✓ T### complete"
+      2. Update in-memory counts: `completed_count += 1`, `remaining_count -= 1`
+      3. Report: "✓ T### complete ([completed_count]/[total_tasks] overall)"
   - If **FAILURE**: Attempt intelligent recovery
 
 **Intelligent Error Recovery (on FAILURE):**
@@ -203,13 +178,15 @@ Iterate through `REMAINING_TASKS` (from Step 2). Process phase-by-phase in one u
 
 After processing every task in the current phase, review each task completed during this phase against spec requirements. This ensures code correctness and requirement coverage before moving to the next phase.
 
+> **Guard**: If `spec.md` was not loaded (missing despite being required), log a WARNING: "⚠ spec.md not available — skipping requirement-level review for this phase." Skip steps 3b–3e below, report this gap in the final summary (Step 6), and continue to the next phase.
+
 1. Report: "Reviewing Phase [N]: [Phase Name]..."
 2. Collect all tasks that were completed in this phase (tasks that transitioned from `[ ]` to `[X]` during this run, not tasks already `[X]` from a previous run)
 3. **For each completed task in the phase:**
    a. Read the implemented file(s) referenced by the task
    b. Identify the corresponding requirements from `spec.md`:
+      - Match the task's `{FR-###}` tag to the corresponding functional requirements in `spec.md`
       - Match the task's `[US#]` tag to the user story and its Given/When/Then acceptance scenarios
-      - Match the task to relevant `FR-###` (functional requirements) based on the task description and file context
       - Match the task to relevant `SC-###` (success criteria) that the implementation should satisfy
    c. Cross-reference against `plan.md`:
       - Verify the implementation follows the architecture decisions documented in the plan
@@ -230,13 +207,18 @@ After processing every task in the current phase, review each task completed dur
         - `Description`: Original task description
         - `Context`: Original context PLUS the specific review finding — include the exact requirement text from spec (e.g., "FR-003: System MUST validate all user inputs") and what is missing/wrong in the current implementation
         - `FilePath`: Same target file path
+        - `PlanPath`: `FEATURE_DIR/plan.md`
+        - `DataModelPath`: `FEATURE_DIR/data-model.md` (if file exists)
+        - `ContractsPath`: `FEATURE_DIR/contracts/` (if directory exists)
      3. **Re-review** (single re-review only):
         - Read the updated file(s) again
         - Check only the previously-failed requirements for this task
         - If **PASS**: Report: "✓ T### review passed after fix"
         - If still **FAIL**: Report: "✗ T### review issue persists: [gap]", append to `REVIEW_FINDINGS` list: `{ taskId, requirementId, gap, filePath }`
      4. **Continue to next task** regardless of re-review outcome — do NOT halt or ask user
-5. After reviewing all tasks in the phase, report the review summary and proceed to the next phase
+5. After reviewing all tasks in the phase, report the phase-completion progress summary:
+   - Report: "✓ Phase [N] complete — [completed_in_phase] tasks done, [completed_count]/[total_tasks] overall ([remaining_count] remaining)"
+   - Then proceed to the next phase
 
 Execution rules:
 - Sequential tasks: complete in order, retry once on failure
@@ -264,13 +246,14 @@ Execution rules:
    - The file path where the issue exists
 5. If any tasks skipped, failed, or have review issues, provide guidance on next steps
 6. **Write completion marker**: If ALL tasks are completed (0 skipped, 0 failed):
+   - **Staleness check**: Before writing, check if `FEATURE_DIR/.completed` already exists. If it does, warn the user: "⚠ A `.completed` marker already exists (possibly from a prior run or reused directory). Overwriting with current timestamp."
    - Create `FEATURE_DIR/.completed` with content: `Completed: <current ISO 8601 timestamp>`
    - This marker signals to other agents that this feature is fully implemented
 
 **Now yield control to user.** This is the only place where execution naturally ends.
 
 Inform the user:
-- "This feature is complete. To start a new feature, **open a new chat session**, create a new branch (`git checkout -b #####-feature-name`), and invoke `/sddp-specify`" — compose a useful suggested prompt for the user based on the current context
-- Emphasize: starting a new chat session ensures clean context for specification.
+- "This feature is complete. To start a new feature, create a new branch (`git checkout -b #####-feature-name`) and invoke `/sddp-specify`." — compose a useful suggested prompt for the user based on the current context
+- Include a brief session guidance note: "**Same chat or new chat?** Both work — each SDDP command resets its context automatically. A new chat session is only recommended when starting a brand-new feature with `/sddp-specify`."
 
 </workflow>

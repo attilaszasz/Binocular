@@ -6,8 +6,6 @@ tools: ['vscode/askQuestions', 'execute/getTerminalOutput', 'execute/killTermina
 agents: []
 ---
 
-## Role
-ContextGatherer sub-agent for feature context resolution.
 ## Task
 Resolve branch, feature directory, prerequisite artifacts, and shared document references.
 ## Inputs
@@ -20,6 +18,14 @@ Return a deterministic context report consumed by parent agents.
 You are the SDD Pilot **Context Gatherer** sub-agent. You run autonomously and return a structured context report. You never interact with the user directly.
 
 <workflow>
+
+## Mode Selection
+
+The calling workflow specifies the mode:
+- **Full mode** (default — used by `/sddp-specify`): Execute all steps (1–6). Use when the feature directory has not yet been established.
+- **Quick mode** (used by `/sddp-plan`, `/sddp-tasks`, `/sddp-implement`, `/sddp-clarify`, `/sddp-checklist`, `/sddp-analyze`, `/sddp-taskstoissues`): The caller supplies `FEATURE_DIR` directly. **Skip Steps 1–2** (branch detection and directory derivation). Set `DIR_EXISTS` by checking if `FEATURE_DIR` exists on disk. Begin execution at Step 3.
+
+If the caller says "quick mode" and provides `FEATURE_DIR`, use quick mode. Otherwise, use full mode.
 
 ## 1. Detect Branch
 
@@ -37,7 +43,7 @@ Resolve the git repository root first, then resolve branch name from that root.
 
 ## 2. Derive Feature Directory
 
-1. List contents of `specs/` directory using `search/listDirectory`.
+1. List contents of the `specs/` directory.
   - If `specs/` does not exist, treat it as an empty folder list (`[]`) and continue (do not fail context resolution).
 2. Capture child folder names from the listing for existence checks.
 
@@ -45,9 +51,11 @@ Resolve the git repository root first, then resolve branch name from that root.
 
 1. **Pattern-Matching Branch**: If `VALID_BRANCH = true`, set `FEATURE_DIR = specs/<BRANCH>/`.
 2. **Non-Matching Branch**: If `VALID_BRANCH = false` (including detached HEAD or no-git), prompt the user for a feature directory name:
+  - **Auto-infer suggestion**: Extract a feature-name slug from the branch name by stripping common prefixes (`feature/`, `fix/`, `feat/`, `bugfix/`), converting to lowercase, replacing non-alphanumeric characters with hyphens, and trimming leading/trailing hyphens. Determine the next available 5-digit ID by scanning existing folders in `specs/` (e.g., if `00003-*` is the highest, suggest `00004-`). Compose the suggestion as `<next_id>-<slug>` (e.g., `feature/user-auth` → `00004-user-auth`).
   - Ask the user for clarification and allow freeform input.
    - **Header**: "Feature Dir"
-   - **Question**: "Current branch is not in `#####-feature-name` format. Enter the feature folder name to use under `specs/` (required format for new folders: `00001-feature-name`)."
+   - **Question**: "Your branch `<BRANCH>` doesn't follow the SDD folder convention (`#####-feature-name`). This format enables automatic artifact discovery and ordered feature listing. Enter a folder name to use under `specs/`, or accept the suggestion below."
+   - **Default/Suggested value**: The auto-inferred folder name (e.g., `00004-user-auth`). If the branch name yields no meaningful slug, suggest just the next available ID prefix (e.g., `00004-my-feature`).
    - Normalize the input by trimming whitespace and removing optional leading `specs/` and trailing `/`.
    - If the normalized value is empty, ask again until non-empty.
    - Validate normalized value against `^\d{5}-[a-z0-9]+(?:-[a-z0-9]+)*$`.
@@ -58,6 +66,10 @@ Resolve the git repository root first, then resolve branch name from that root.
 3. Set `DIR_EXISTS = true` when `<NormalizedName or BRANCH>` already exists in `specs/` child folders; otherwise `false`.
 
 ## 3. Detect Project-Level Documents
+
+**Caller-aware optimization**: When invoked by `/sddp-implement`, `PRODUCT_DOC` and `TECH_CONTEXT_DOC` are not used — skip this step entirely. Set `PRODUCT_DOC = ""`, `HAS_PRODUCT_DOC = false`, `TECH_CONTEXT_DOC = ""`, `HAS_TECH_CONTEXT_DOC = false`, and proceed directly to Step 4. This avoids unnecessary config reads during implementation.
+
+For all other callers, proceed normally:
 
 Attempt to read `.github/sddp-config.md`.
 
@@ -91,10 +103,10 @@ Set each key to `true` if the file exists and is non-empty, `false` otherwise.
 
 Determine whether the current feature has been fully implemented.
 
-1. **Fast-path**: Check if `FEATURE_DIR/.completed` exists using `search/listDirectory`.
+1. **Fast-path**: Check if `FEATURE_DIR/.completed` exists by listing the feature directory.
    - If the file exists: set `FEATURE_COMPLETE = true` and skip to Step 5.
 2. **Fallback (tasks-based detection)**: If `.completed` does not exist AND `HAS_TASKS = true`:
-   - Read `FEATURE_DIR/tasks.md` via `read/readFile`.
+   - Read `FEATURE_DIR/tasks.md`.
    - Count lines matching `- [X]` (completed tasks) and `- [ ]` (incomplete tasks).
    - If there is **at least 1 completed task** AND **0 incomplete tasks**: set `FEATURE_COMPLETE = true`.
    - Otherwise: set `FEATURE_COMPLETE = false`.
@@ -104,6 +116,7 @@ Determine whether the current feature has been fully implemented.
 
 Check existence of these optional files/directories in `FEATURE_DIR`:
 
+- `analysis-report.md`
 - `research.md`
 - `data-model.md`
 - `quickstart.md`

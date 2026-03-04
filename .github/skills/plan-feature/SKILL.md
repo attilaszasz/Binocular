@@ -5,16 +5,10 @@ description: "Orchestrates the implementation planning process — generating pl
 
 # Software Architect — Plan Feature Workflow
 
-You are the SDD Pilot **Software Architect** agent. You are the "Chief Architect" for the feature. You orchestrate the planning process by delegating deep-dive tasks to specialized roles.
-
-Report progress to the user at each major milestone.
-
 <rules>
-- NEVER start without a valid `spec.md` — direct user to `/sddp-specify` first
-- Instructions Check is a hard gate — violations must be justified or resolved
-- Resolve ALL `NEEDS CLARIFICATION` markers during the research phase
-- Use the plan template from `.github/skills/plan-authoring/assets/plan-template.md`
-- Ask the user for all user-facing decisions — tech stack preferences, architecture trade-offs, ambiguity resolution
+- Report progress at each major milestone
+- Follow all writing rules defined in `.github/skills/plan-authoring/SKILL.md` (read in Step 0) — including Instructions Check gate, NEEDS CLARIFICATION resolution, research consolidation, and artifact conventions
+- **Question batching**: Batch all user-facing questions into a single interaction point whenever possible. Never issue separate sequential prompts when one combined prompt would work. For example, combine tech-context and alignment questions into one round-trip.
 - **Delegation**: Use specialized roles for Data Modeling, API Contracts, and Compliance Auditing to save context window.
 - Research best practices and tech stack documentation before designing — **Delegate: Technical Researcher**
 - Reuse `FEATURE_DIR/research.md` when coverage is sufficient; refresh only gaps, stale areas, or user-requested updates
@@ -25,9 +19,11 @@ Report progress to the user at each major milestone.
 
 ## 1. Resolve Context
 
-**Delegate: Context Gatherer** (see `.github/agents/_context-gatherer.md` for methodology).
+Determine `FEATURE_DIR`: infer from the current git branch (`specs/<branch>/`) or from user context.
 
-- Require `HAS_SPEC = true`. If false: ERROR — suggest `/sddp-specify`.
+**Delegate: Context Gatherer** in **quick mode** — `FEATURE_DIR` is the resolved path (see `.github/agents/_context-gatherer.md` for methodology).
+
+- Require `HAS_SPEC = true`. If false: ERROR — "Missing `spec.md` at `FEATURE_DIR/spec.md`. This file is created by `/sddp-specify`. Run `/sddp-specify [brief feature description]` to create it."
 - If `plan.md` does not exist: read the plan template from `.github/skills/plan-authoring/assets/plan-template.md` and create `FEATURE_DIR/plan.md`.
 - If `plan.md` already exists: ask user whether to overwrite or refine.
 
@@ -52,11 +48,9 @@ Check if the user attached a file or referenced a technical context document pat
      - **Options**: "Replace" (recommended), "Keep existing"
    - If confirmed (or no prior document exists), write the new path to `.github/sddp-config.md` under the `## Technical Context Document` section's `**Path**:` field.
    - Store the file content as `TECH_CONTEXT_CONTENT`.
-4. **If nothing detected and no existing doc**: Ask the user:
-   - **Header**: "Tech Context"
-   - **Question**: "Do you have a technical context document (architecture, tech stack, constraints)? This will pre-populate planning context and be reused across features."
-   - **Options**: "No tech context document" (recommended) + free-form input enabled for entering a path.
-   - If a path is provided, validate and persist as in step 3.
+4. **If nothing detected and no existing doc**: Do NOT ask the user now. Instead:
+   - Set `TECH_CONTEXT_PENDING = true`.
+   - This question will be batched with the Step 2 Alignment questions to reduce serial round-trips.
 5. **If no document**: Set `TECH_CONTEXT_CONTENT` to empty. Planning proceeds normally with interactive Q&A.
 
 The technical context document path is persisted as a reference — the original file is read on demand. If the file moves or is deleted later, agents will handle the error gracefully.
@@ -64,6 +58,10 @@ The technical context document path is persisted as a reference — the original
 ## 2. Alignment & Pre-Research Gate
 
 1. Ask clarifying questions about tech stack, architecture trade-offs, and critical constraints.
+   - **If `TECH_CONTEXT_PENDING` is true**: Include the tech-context question in the same prompt batch:
+     - **Question** (as part of the batch): "Do you have a technical context document (architecture, tech stack, constraints)? This will pre-populate planning context and be reused across features."
+     - **Options**: "No tech context document" (recommended) + free-form input enabled for entering a path.
+     - If a path is provided after answers are received, validate the file exists, persist the path to `.github/sddp-config.md` under `## Technical Context Document` → `**Path**:`, and read the content into `TECH_CONTEXT_CONTENT`.
    - **If `TECH_CONTEXT_CONTENT` is available**: Extract relevant values (language, frameworks, storage, platform, constraints) from the document and pre-fill them as recommended options or defaults in the questions. Mention the source document so the user can confirm or override.
 2. **Delegate: Policy Auditor** (see `.github/agents/_policy-auditor.md` for methodology):
    - Task: "Validate 'FEATURE_DIR/spec.md' against project instructions."
@@ -90,6 +88,8 @@ For each `NEEDS CLARIFICATION` in the spec or plan template:
 
 ### 3b. Research Best Practices
 
+Before delegating, report to the user: "🔍 Researching tech stack best practices and architecture patterns — this may take 15–30 seconds."
+
 **Delegate: Technical Researcher** (see `.github/agents/_technical-researcher.md` for methodology):
 - **Topics**: Only uncovered or stale topics from official docs for chosen tech, feature-relevant architecture patterns, and critical reference implementations.
 - **Context**: The feature spec, tech stack from `plan.md`, and `TECH_CONTEXT_CONTENT` (if available — pass it as additional grounding context).
@@ -98,7 +98,7 @@ For each `NEEDS CLARIFICATION` in the spec or plan template:
 
 If reuse gate determines coverage is sufficient, skip delegation.
 
-Add the research findings to `FEATURE_DIR/research.md` alongside clarification research. Follow the `research.md` format defined in the plan-authoring skill — no code blocks, no reference tool comparison tables, decision-level findings only (~50–100 words per topic).
+Merge research findings into `FEATURE_DIR/research.md` alongside clarification research and rewrite the full file (do not append blindly). Follow the `research.md` format defined in the plan-authoring skill — no code blocks, no reference tool comparison tables, decision-level findings only (~50–100 words per topic), max 2 sources per topic, and keep the file at or below 4KB (consolidate first if existing content is above 3KB).
 
 Update `plan.md` Technical Context section with resolved values and research insights.
 - **If `TECH_CONTEXT_CONTENT` is available**: Use it as the baseline for field values, overlaying with user-confirmed choices from Step 2 and research findings. Reference the source document path in the Technical Context section.
@@ -116,11 +116,13 @@ Scan the resolved `spec.md` content and the Technical Context in `plan.md` to de
 - Terms found: `API`, `endpoint`, `route`, `REST`, `GraphQL`, `HTTP`, `webhook`, `request/response`, `server`, `client-server`, `RPC`
 - Technical Context `Project Type` is `web` or `mobile`
 
-**Safety net**: If *neither* signal category is detected, ask the user to confirm:
-- Header: "Design Artifacts"
-- Question: "No API surface or persistent data detected in the spec. Which design artifacts should be generated?"
-- Options: `Data Model only`, `API Contracts only`, `Both`, `Neither` (recommended: `Neither`)
-- Allow the user to override the auto-detection result.
+**Safety net**: If *neither* signal category is detected:
+- **If `Project Type` is `single`** (or not `web`/`mobile`): Silently default to `Neither`. Log: "No API surface or persistent data detected — skipping design artifacts (auto-default for single project type)." Do NOT prompt the user.
+- **If `Project Type` is `web` or `mobile`**: Ask the user to confirm:
+  - Header: "Design Artifacts"
+  - Question: "No API surface or persistent data detected in the spec. Which design artifacts should be generated?"
+  - Options: `Data Model only`, `API Contracts only`, `Both`, `Neither` (recommended: `Neither`)
+  - Allow the user to override the auto-detection result.
 
 Store the decisions as `GENERATE_DATA_MODEL` (true/false) and `GENERATE_CONTRACTS` (true/false).
 
@@ -150,10 +152,10 @@ Store the decisions as `GENERATE_DATA_MODEL` (true/false) and `GENERATE_CONTRACT
 
 **4.3 Quickstart & Structure (Main Agent)**
 - Create `FEATURE_DIR/quickstart.md` (Integration scenarios).
-- Fill "Source Code" section in `plan.md` based on Project Type.
+- Fill "Source Code" section in `plan.md` based on Project Type (refer to Project Structure Options in plan-authoring SKILL.md for reference layouts). The final `plan.md` must not contain HTML comments (`<!-- -->`), `[REPLACE: ...]` or `[REMOVE IF UNUSED]` markers, or template placeholder lines — strip all instructional artifacts before writing.
 
 **4.4 High-Level Architecture**
-- Add a mermaid diagram for the System Context / Component diagram in `plan.md`.
+- Add a mermaid diagram for the System Context / Component diagram in `plan.md`. Keep diagrams under **20 nodes** at component-level granularity (not class-level).
 - Ensure it aligns with the outputs from the DataModel and Contracts roles.
 
 ## 5. Post-Design Gate
@@ -208,6 +210,8 @@ Output:
 - Generated artifacts list
 - Instructions check status
 - Shared document amendment summary (updated/skipped/warnings)
-- Readiness for next phase (`/sddp-checklist` (optional) or `/sddp-tasks`) — for each option, compose a useful suggested prompt for the user based on the current context
+- Suggest next steps with explicit labels — for each option, compose a useful suggested prompt for the user based on the current context:
+  1. `/sddp-checklist` *(optional — recommended for safety-critical or compliance-sensitive features)* — compose a suggested prompt
+  2. `/sddp-tasks` *(required)* — compose a suggested prompt
 
 </workflow>

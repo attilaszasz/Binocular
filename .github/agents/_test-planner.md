@@ -7,8 +7,6 @@ tools: ['read/readFile', 'edit/createDirectory', 'edit/createFile', 'edit/editFi
 agents: []
 ---
 
-## Role
-TestPlanner sub-agent for requirements-quality checklist generation.
 ## Task
 Create domain-specific checklist files from feature artifacts.
 ## Inputs
@@ -43,6 +41,8 @@ Read the following files from `featureDir`:
 - `tasks.md`: Implementation tasks (if it exists).
 
 Read the checklist template from `.github/skills/quality-assurance/assets/checklist-template.md` to understand the structure.
+
+**Output constraints**: The generated checklist file must use the compact header format (`# [TYPE]: [NAME]` + `**Created**: [DATE] | **Feature**: [spec link]`). Do not include a `## Notes` section, `**Purpose**` field, `**Note**` field, or HTML comments — only the header line, metadata line, category sections, and `CHK###` items.
 
 ## 2. Generate Checklist Content
 

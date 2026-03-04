@@ -5,11 +5,8 @@ description: "Generates requirements quality checklists ('Unit Tests for English
 
 # QA Engineer — Generate Checklist Workflow
 
-You are the SDD Pilot **QA Engineer** agent. You generate requirements quality checklists — "Unit Tests for English" — that validate the quality, clarity, and completeness of requirements in a given domain.
-
-Report progress to the user at each major milestone.
-
 <rules>
+- Report progress at each major milestone
 - Checklists test REQUIREMENTS QUALITY, not implementation behavior
 - ✅ "Are error handling requirements defined for all API failure modes?" [Completeness]
 - ❌ "Verify the API returns proper error codes"
@@ -26,9 +23,11 @@ Report progress to the user at each major milestone.
 
 ## 1. Resolve Context
 
-**Delegate: Context Gatherer** (see `.github/agents/_context-gatherer.md` for methodology).
+Determine `FEATURE_DIR`: infer from the current git branch (`specs/<branch>/`) or from user context.
 
-- Require `HAS_SPEC = true` AND `HAS_PLAN = true`. If either false: ERROR with guidance.
+**Delegate: Context Gatherer** in **quick mode** — `FEATURE_DIR` is the resolved path (see `.github/agents/_context-gatherer.md` for methodology).
+
+- Require `HAS_SPEC = true` AND `HAS_PLAN = true`. If either false: ERROR — "Missing `[artifact]` at `FEATURE_DIR/[artifact]`. This file is created by `[/sddp-specify or /sddp-plan]`. Run the appropriate command to create it."
 
 ## 2. Clarify Intent
 
@@ -52,6 +51,8 @@ If `FEATURE_DIR/research.md` exists:
 - Read and reuse standards already relevant to selected domain/focus areas.
 - Refresh only missing, weak, or outdated domain guidance.
 
+Before delegating, report to the user: "🔍 Researching quality standards for the selected domain — this may take 15–30 seconds."
+
 **Delegate: Technical Researcher** (see `.github/agents/_technical-researcher.md` for methodology):
 - **Topics**: Industry-standard quality frameworks and checklists for the domain (e.g., OWASP Top 10 for security, WCAG for accessibility, ISO 25010 for general quality).
 - **Context**: The feature spec and the domain/focus areas from Step 2.
@@ -61,6 +62,7 @@ If `FEATURE_DIR/research.md` exists:
 If existing research fully covers the selected domain and focus areas, skip the delegation.
 
 Pass the research findings to the checklist generator to inform item creation.
+When persisting refreshed findings, merge by topic into `FEATURE_DIR/research.md` and rewrite the full file (do not append blindly). Enforce the plan-authoring research format, keep at most 2 sources per topic, and keep the file at or below 4KB (consolidate first if existing content is above 3KB).
 
 ## 4. Generate Checklist
 
@@ -104,6 +106,8 @@ Output:
   - Items remaining unchecked (if any — explain what still needs attention)
 - If any artifacts were amended, list the changes briefly
 - Remind user each invocation creates a new file
-- Suggest next steps (`/sddp-checklist` for another checklist, or `/sddp-tasks`) — for each option, compose a useful suggested prompt for the user based on the current context
+- Suggest next steps with explicit labels — for each option, compose a useful suggested prompt for the user based on the current context:
+  1. `/sddp-checklist` *(optional — run again for a different domain or focus area)* — compose a suggested prompt
+  2. `/sddp-tasks` *(required)* — compose a suggested prompt
 
 </workflow>

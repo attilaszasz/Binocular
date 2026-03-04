@@ -36,7 +36,7 @@ These formats are **structural contracts** consumed by parsers, trackers, and cr
 
 | Artifact | Format | Example |
 |----------|--------|---------|
-| Task | `- [ ] T### [P?] [US#?] Description with file path` | `- [ ] T012 [P] [US1] Create User model in src/models/user.py` |
+| Task | `- [ ] T### [P?] [US#?] {FR-###?} Description with file path` | `- [ ] T012 [P] [US1] {FR-005} Create User model in src/models/user.py` |
 | Requirement | `FR-###: System MUST [specific capability]` | `FR-001: System MUST validate email format on registration` |
 | Success Criterion | `SC-###: [Measurable, technology-agnostic outcome]` | `SC-001: Users can complete checkout in under 3 minutes` |
 | Checklist Item | `- [ ] CHK### <question> [Quality Dimension, Spec §X.Y]` | `- [ ] CHK001 Is the error handling strategy defined? [Completeness, Spec §3.2]` |
@@ -54,7 +54,7 @@ These sections are **structurally required** — removing them breaks downstream
 - Do NOT remove the **Technical Context** metadata block
 
 ### tasks.md
-- Do NOT remove the **Dependencies & Execution Order** section — it defines the phase graph that implementation agents traverse
+- Do NOT remove the **Dependencies** section — it defines the phase graph that implementation agents traverse
 - Do NOT remove phase headers — they delineate execution boundaries
 
 ### checklist files
@@ -76,7 +76,7 @@ Violations of these rules during `/sddp-analyze` are classified as:
 |-----------|----------|
 | Changed or removed a cross-referenced ID (T###, FR-###, SC-###, CHK###) | **CRITICAL** |
 | Reordered user story priorities without approval | **CRITICAL** |
-| Removed a required section (Instructions Check, Dependencies & Execution Order) | **CRITICAL** |
+| Removed a required section (Instructions Check, Dependencies) | **CRITICAL** |
 | Silently removed `[NEEDS CLARIFICATION]` marker | **HIGH** |
 | Reversed checkbox state (`[X]` → `[ ]`) without approval | **HIGH** |
 | Added unauthorized top-level section to spec.md | **MEDIUM** |

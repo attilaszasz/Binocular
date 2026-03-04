@@ -26,6 +26,15 @@ SDD enforces a strict phase order. Each phase produces artifacts that gate the n
 
 If a required artifact is missing, stop and direct the user to the correct prior phase.
 
+### Gate Failure Error Template
+
+When reporting a gate failure to the user, always include all three elements:
+1. **What is missing and where**: Name the missing artifact and its expected full path — e.g., "Missing `spec.md` at `specs/00001-user-auth/spec.md`"
+2. **Most likely cause**: Brief explanation — e.g., "This file is created by `/sddp-specify`. It does not exist yet in your feature directory."
+3. **Copy-pasteable fix command**: Include context from the branch/feature name — e.g., "`/sddp-specify Users can register and log in with email and password`"
+
+Never output a bare "Cannot proceed without [artifact]" without these three elements.
+
 ## Feature Directory Convention
 
 Every feature's artifacts live at `specs/<feature-folder>/`.
@@ -60,7 +69,7 @@ Checklists validate the QUALITY of requirements, not implementation behavior:
 - ✅ "Are error handling requirements defined for all API failure modes?"
 - ❌ "Verify the API returns proper error codes"
 
-See [references/quality-dimensions.md](references/quality-dimensions.md) for the full quality framework.
+The full quality framework is in [references/quality-dimensions.md](references/quality-dimensions.md) — read it only when performing quality analysis, checklist generation, or evaluating requirements quality. Not needed for general phase gating or directory convention lookups.
 
 ## Priority System
 
@@ -72,10 +81,11 @@ User stories in specs use priorities P1 (most critical) through P3+:
 ## Task Format
 
 ```
-- [ ] T### [P?] [US#?] Description with file path
+- [ ] T### [P?] [US#?] {FR-###?} Description with file path
 ```
 
 - `[P]` = parallelizable (different files, no dependencies)
 - `[US#]` = user story reference
+- `{FR-###}` = links task to functional requirement(s) from spec
 - Phases: Setup → Foundational (blocks all) → User Stories (by priority) → Polish
 - Mark completed: `- [ ]` → `- [X]`
