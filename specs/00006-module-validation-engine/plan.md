@@ -40,7 +40,7 @@ Build a two-phase validation engine for extension modules: (1) AST-based static 
 
 ### AD-1: AST-Based Static Analysis Without Execution
 
-`ast.parse()` analyzes module files structurally — walking `Module.body` for `FunctionDef` and `Assign` nodes — without importing or executing. The existing loader (00005) validates post-import; the new validator catches syntax/structure issues pre-execution. `SyntaxError` from `ast.parse()` gives syntax checking for free. AST cannot verify runtime behavior — that's the runtime phase's job.
+`ast.parse()` (with `type_comments=False`) analyzes module files structurally — walking `Module.body` for `FunctionDef` and `Assign`/`AnnAssign` nodes — without importing or executing. The existing loader (00005) validates post-import; the new validator catches syntax/structure issues pre-execution. `SyntaxError` from `ast.parse()` gives syntax checking for free (only `SYNTAX_ERROR` is reported in that case — further checks require a valid AST). AST cannot verify runtime behavior — that's the runtime phase's job.
 
 ### AD-2: Two-Phase Validation Pipeline
 
@@ -48,7 +48,7 @@ Strict order: Static → Runtime. Runtime skipped if static fails (FR-005). Verd
 
 ### AD-3: Reusable Static Validator — Loader Integration (FR-012)
 
-`validate_static(file_path, ...)` is a standalone public function in `validator.py`. The loader calls it before `_safe_import()`, replacing the post-import `_validate_module()`. Integration: `scan()` → `validate_static()` → if fail, register inactive with errors → if pass, `_safe_import()` → register active.
+`validate_static(file_path, ...)` is a standalone public function in `validator.py`. The loader calls it before `_safe_import()`, replacing the post-import `_validate_module()` which is removed. Integration: `scan()` → `validate_static()` → if fail, register inactive with errors (joined via `"; "` separator for `last_error` field) → if pass, `_safe_import()` → register active.
 
 ### AD-4: State-Free Engine (FR-011)
 
@@ -64,7 +64,7 @@ Static phase collects **all** issues in one pass (not just the first). Each maps
 
 ### AD-7: Runtime Phase Uses Existing Patterns
 
-Runtime loads via `importlib`, invokes `check_firmware()` via `asyncio.to_thread()` + `asyncio.wait_for()`, catches `SystemExit`, validates return with `CheckResult.model_validate()`. Same patterns as 00005's executor but without DB persistence.
+Runtime loads via `importlib`, invokes `check_firmware()` via `asyncio.to_thread()` + `asyncio.wait_for(timeout=timeout_seconds)`, catches `SystemExit`, validates return with `CheckResult.model_validate()`. Same patterns as 00005's executor but without DB persistence. Both `validate()` and `validate_runtime()` accept an explicit `timeout_seconds: int = 30` parameter — no database read, preserving FR-011 purity.
 
 ## Layer-by-Layer Change Map
 

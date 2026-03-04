@@ -44,7 +44,7 @@ After static validation passes, the user provides a test URL and device model. T
 
 ### Edge Cases
 
-- Binary data, non-UTF-8 encoding, or 0-byte file: static validation rejects before parsing.
+- Binary data, non-UTF-8 encoding, or 0-byte file: static validation rejects before parsing (`ENCODING_ERROR`).
 - File exceeding the configurable size limit: rejected before any validation.
 - Check function defined inside a class or nested function: reported as missing (only top-level definitions count).
 - Module calls `sys.exit()` during runtime: caught by error boundary, reported as runtime failure.
@@ -109,3 +109,9 @@ After static validation passes, the user provides a test URL and device model. T
 - Q: Should the runtime timeout cover import + invocation, or just invocation? → A: Single timeout covers the entire runtime phase (import + invocation). If importing alone exceeds the limit, it's caught and reported.
 - Q: Can multiple validations run in parallel? → A: Out of scope for V1. Single-user product makes concurrent uploads unlikely. Documented as a known limitation.
 - Q: Should the engine persist results to the database? → A: No — pure function returning ValidationResult. Persistence is the caller's responsibility, satisfying FR-009 standalone usability.
+- Q: Should extra parameters on `check_firmware` (e.g., `*args`, `**kwargs`, defaults) be accepted? → A: No. Exact 3-parameter match required (`url`, `model`, `http_client`). Extra params produce `INVALID_SIGNATURE`.
+- Q: Should the static validator check manifest constant value types at the AST level? → A: No — existence-only check. Type verification (must be `str`) is deferred to the runtime phase. Annotated assignments (`AnnAssign` nodes) are accepted alongside plain `Assign`.
+- Q: When a syntax error prevents AST walking, can other errors still be reported? → A: No. `ast.parse()` raises `SyntaxError` before any node walking. Only `SYNTAX_ERROR` is reported in that case. FR-003's "all issues" applies within a parseable file.
+- Q: What does "location" mean in error messages (SC-002)? → A: Line number when available from the AST node. Syntax errors include line and column from the `SyntaxError` exception. Missing-element errors report "module top level" when no specific line applies.
+- Q: What error code applies to a 0-byte file? → A: 0-byte files are rejected during pre-validation as `ENCODING_ERROR` (empty content has no valid Python to parse).
+- Q: What does `elapsed_seconds` measure? → A: Wall-clock time for the entire runtime phase — from start of module import through `check_firmware()` return.
