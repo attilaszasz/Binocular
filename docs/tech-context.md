@@ -338,6 +338,15 @@ Even on private networks, basic security hygiene is required.
 - **Resource Shape**: All resource representations include `id`, `created_at`, `updated_at` in ISO 8601 format
 - **Input Validation**: Validated at API boundary via Pydantic — non-empty trimmed names (max 200 chars), syntactically valid URLs, positive numeric values
 - **Cascade Safety**: Destructive operations on parent resources require explicit confirmation (`?confirm_cascade=true`) when child records exist
+
+### Extension Engine Architecture
+
+- **Module Contract (V1)**: Top-level `check_firmware(url, model, http_client)` function + module-level constants `MODULE_VERSION` (str), `SUPPORTED_DEVICE_TYPE` (str). Contract is hard-coded; changes require spec amendment.
+- **Loading Strategy**: `importlib.util.spec_from_file_location()` for isolated loading. Modules are never inserted into `sys.modules`. Never use `exec()`/`eval()`.
+- **Validation Pattern**: Two-phase pipeline — (1) AST-based static analysis (no execution, catches syntax/structure issues), (2) runtime execution with timeout and error boundary. Static phase is reusable as a pre-import gate.
+- **Error Boundary**: `try/except` wrapping catches both `Exception` and `SystemExit` (never `KeyboardInterrupt`). Broken modules cannot crash the host process.
+- **HTTP Client**: Host-provided `httpx.Client` with User-Agent, timeouts, and follow-redirects. Factory function (`create_http_client()`) available for standalone callers. Scraping enforcement centralized at client level.
+- **Execution Model**: Sync module functions wrapped in `asyncio.to_thread()` + `asyncio.wait_for()` for non-blocking timeout.
 - **Idempotent Actions**: State-transition endpoints (e.g., confirm update) are idempotent — safe to retry or double-invoke
 - **OpenAPI Documentation**: Auto-generated interactive docs grouped by resource type, browsable at `/docs`
 - **Response Enrichment**: API responses include derived fields (e.g., `status`, `device_count`, `device_type_name`) computed at query time, not stored
