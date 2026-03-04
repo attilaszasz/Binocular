@@ -55,16 +55,16 @@ After static validation passes, the user provides a test URL and device model. T
 
 ### Functional Requirements
 
-- **FR-001**: System MUST perform static validation of uploaded `.py` files without executing them — verifying the required check function exists as a top-level definition with the correct signature, and all mandatory manifest constants are present as top-level assignments.
+- **FR-001**: System MUST perform static validation of uploaded `.py` files without executing them.
 - **FR-002**: Static validation MUST check against the established module interface contract: function `check_firmware(url, model, http_client)` and manifest constants `MODULE_VERSION`, `SUPPORTED_DEVICE_TYPE`. The contract is hard-coded for V1.
 - **FR-003**: Static validation MUST report all detected issues (not just the first one) so the user can fix multiple problems in a single pass.
-- **FR-004**: Static validation MUST gracefully handle non-Python files, encoding errors, and files exceeding a configurable size limit (default: 100 KB).
+- **FR-004**: Static validation MUST reject non-Python files, encoding errors, and files exceeding a configurable size limit (default: 100 KB) with a structured error using the appropriate `ValidationErrorCode` (`ENCODING_ERROR` or `FILE_TOO_LARGE`).
 - **FR-005**: Runtime validation MUST only proceed if static validation passes; otherwise it MUST be skipped.
-- **FR-006**: Runtime validation MUST load the module, invoke its check function with the user-provided test URL, device model, and host-provided HTTP client, and validate the return value contains a non-empty `latest_version` string.
+- **FR-006**: Runtime validation MUST load the module, invoke its check function with the user-provided test URL, device model, and host-provided HTTP client, and validate the return value as a dict against the existing `CheckResult` model — which requires a non-empty `latest_version` string (whitespace-only is rejected).
 - **FR-007**: Runtime validation MUST enforce a configurable timeout (default: 30 seconds) covering the entire runtime phase (module import + function invocation) and catch all exceptions (including `SystemExit`) during execution, reporting failures without crashing the validation engine.
 - **FR-008**: The validation engine MUST return a structured result containing: per-phase status (pass/fail/skipped), per-phase error details, returned version string and elapsed time (if runtime succeeded), and an overall verdict that is pass only when both phases pass.
-- **FR-009**: The validation engine MUST be usable independently of the web application layer. It MUST ship a factory function for creating a correctly configured, scraping-compliant HTTP client so standalone callers do not need to construct their own.
-- **FR-010**: Runtime verification MUST use a scraping-compliant HTTP client consistent with Principle III. The web layer MAY pass its own pre-configured client; standalone callers MUST use the engine's factory.
+- **FR-009**: The validation engine MUST be usable independently of the web application layer.
+- **FR-010**: Runtime verification MUST use a scraping-compliant HTTP client configured per Principle III (User-Agent, robots.txt, per-domain delay, backoff). The web layer MAY pass its own pre-configured client; standalone callers MUST use the engine's `create_http_client()` factory.
 - **FR-011**: The validation engine is a pure function — it MUST return a structured ValidationResult and MUST NOT persist results to the database. Persistence is the caller's responsibility.
 - **FR-012**: The engine's static validation phase MUST be reusable by the module loader (Feature 00005) at startup/rescan time. Runtime verification runs only during user-initiated upload validation.
 
@@ -78,7 +78,7 @@ After static validation passes, the user provides a test URL and device model. T
 
 ### Measurable Outcomes
 
-- **SC-001**: A valid module passes static validation in under 1 second with zero false positives.
+- **SC-001**: A valid module passes static validation in under 1 second with zero false positives (valid modules incorrectly rejected) and zero false negatives (invalid modules incorrectly accepted).
 - **SC-002**: A defective module is rejected with at least one error per defect, each identifying the category and location.
 - **SC-003**: A correct module passes runtime verification and returns the version string and elapsed time.
 - **SC-004**: A module that throws, returns invalid data, or times out is reported as a failure — the engine never crashes.
