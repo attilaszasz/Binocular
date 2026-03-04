@@ -6,6 +6,12 @@ from backend.src.models.check_result import CheckResult
 from backend.src.models.device import Device, DeviceCreate, DeviceStatus, DeviceUpdate
 from backend.src.models.device_type import DeviceType, DeviceTypeCreate, DeviceTypeUpdate
 from backend.src.models.extension_module import ExtensionModule, ExtensionModuleCreate
+from backend.src.models.validation_result import (
+    PhaseResult,
+    ValidationError,
+    ValidationErrorCode,
+    ValidationResult,
+)
 
 __all__ = [
     "AppConfig",
@@ -22,4 +28,8 @@ __all__ = [
     "DeviceUpdate",
     "ExtensionModule",
     "ExtensionModuleCreate",
+    "PhaseResult",
+    "ValidationError",
+    "ValidationErrorCode",
+    "ValidationResult",
 ]
