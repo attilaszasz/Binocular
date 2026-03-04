@@ -358,6 +358,7 @@ Even on private networks, basic security hygiene is required.
 
 - **Interface Contract**: Modules implement a standard check function accepting a firmware source URL, device model identifier, and host-provided HTTP client. Return value is a dict validated by the host against a Pydantic schema (required: `latest_version` string).
 - **Module Discovery**: `.py` files in the modules directory are discovered and loaded via `importlib` at startup. Load-time validation checks for the required function, correct signature, and mandatory manifest constants (`MODULE_VERSION`, `SUPPORTED_DEVICE_TYPE`).
+- **Upload Validation**: Before a module is saved to the modules directory, it undergoes two-phase validation: (1) static structure check without execution (syntax, required function, correct signature, manifest constants) and (2) runtime execution proof against a user-provided URL and device model. Only modules passing both phases are accepted.
 - **Fault Isolation**: Each module invocation is wrapped in an error boundary. Exceptions, invalid return values, and timeouts are caught and recorded in check history without affecting other modules or the core application.
 - **Responsible Scraping Enforcement**: The host provides a pre-configured HTTP client to modules that enforces all scraping rules (robots.txt, User-Agent, 2-second per-domain delay, exponential backoff on 429/5xx). Modules MUST use this client — they do not bring their own HTTP logic. This is the centralized enforcement model for Principle III.
 
