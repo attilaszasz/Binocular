@@ -1,0 +1,325 @@
+openapi: "3.1.0"
+info:
+  title: Binocular Module Management API
+  description: >
+    Upload and delete extension modules. Extends the existing module
+    endpoints (GET /modules, POST /modules/reload) from Feature 00005.
+    Part of Feature 00007 — Module Management (API & UI).
+  version: "0.2.0"
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (Uvicorn)
+
+tags:
+  - name: Modules
+    description: Extension module upload, deletion, and management.
+
+paths:
+  /api/v1/modules:
+    post:
+      operationId: uploadModule
+      tags: [Modules]
+      summary: Upload a new extension module
+      description: >
+        Accepts a `.py` module file via multipart form upload. Validates
+        filename (regex, underscore prefix, duplicates), then runs the
+        two-phase validation pipeline: static (AST analysis) and optional
+        runtime (execution with test inputs). On success, saves the file
+        to the modules directory, triggers a registry rescan, and returns
+        the new module record. On failure, returns HTTP 400 with
+        structured per-phase error details.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: >
+                    The `.py` module file. Filename must match
+                    `^[a-zA-Z0-9][a-zA-Z0-9_-]*\.py$`. Max size 100 KB.
+                test_url:
+                  type: string
+                  format: uri
+                  description: >
+                    Optional firmware source URL for runtime validation.
+                    Must be provided together with `test_model` or both omitted.
+                  example: "https://example.com/firmware"
+                test_model:
+                  type: string
+                  description: >
+                    Optional device model identifier for runtime validation.
+                    Must be provided together with `test_url` or both omitted.
+                  example: "ILCE-7M4"
+      responses:
+        "201":
+          description: Module uploaded, validated, and registered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleResponse"
+              example:
+                id: 3
+                filename: "sony_alpha.py"
+                module_version: "1.0.0"
+                supported_device_type: "sony_alpha_cameras"
+                is_active: true
+                file_hash: "a1b2c3d4e5..."
+                last_error: null
+                loaded_at: "2026-03-05T14:00:00Z"
+                created_at: "2026-03-05T14:00:00Z"
+                updated_at: "2026-03-05T14:00:00Z"
+        "400":
+          description: >
+            Upload rejected. Covers: wrong file extension, invalid filename,
+            underscore-prefixed name, duplicate filename, file too large,
+            encoding error, structural validation failure, runtime validation
+            failure. Includes structured validation details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadErrorResponse"
+              examples:
+                wrong_extension:
+                  summary: Non-.py file submitted
+                  value:
+                    detail: "Only .py files are accepted."
+                    error_code: "VALIDATION_FAILED"
+                invalid_filename:
+                  summary: Filename contains invalid characters
+                  value:
+                    detail: "Filename 'my module!.py' does not match allowed pattern."
+                    error_code: "VALIDATION_FAILED"
+                underscore_prefix:
+                  summary: Reserved system module name
+                  value:
+                    detail: "Filenames starting with underscore are reserved for system modules."
+                    error_code: "VALIDATION_FAILED"
+                duplicate:
+                  summary: Module with same filename exists
+                  value:
+                    detail: "Module 'sony_alpha.py' already exists. Delete the existing module first or rename your file."
+                    error_code: "VALIDATION_FAILED"
+                structural_failure:
+                  summary: Static validation found issues
+                  value:
+                    detail: "Module validation failed."
+                    error_code: "VALIDATION_FAILED"
+                    validation_result:
+                      static_phase:
+                        status: "fail"
+                        errors:
+                          - code: "MISSING_FUNCTION"
+                            message: "Missing required function 'check_firmware'"
+                          - code: "MISSING_CONSTANT"
+                            message: "Missing required constant 'MODULE_VERSION'"
+                        version_found: null
+                        elapsed_seconds: null
+                      runtime_phase:
+                        status: "skipped"
+                        errors: []
+                        version_found: null
+                        elapsed_seconds: null
+                      overall_verdict: "fail"
+                runtime_failure:
+                  summary: Runtime validation failed
+                  value:
+                    detail: "Module validation failed."
+                    error_code: "VALIDATION_FAILED"
+                    validation_result:
+                      static_phase:
+                        status: "pass"
+                        errors: []
+                        version_found: null
+                        elapsed_seconds: 0.02
+                      runtime_phase:
+                        status: "fail"
+                        errors:
+                          - code: "RUNTIME_EXCEPTION"
+                            message: "ConnectionError: Failed to reach https://example.com/firmware"
+                        version_found: null
+                        elapsed_seconds: 5.1
+                      overall_verdict: "fail"
+                partial_test_fields:
+                  summary: Only one of test_url/test_model provided
+                  value:
+                    detail: "Both test_url and test_model must be provided together, or both omitted."
+                    error_code: "VALIDATION_FAILED"
+
+  /api/v1/modules/{filename}:
+    parameters:
+      - $ref: "#/components/parameters/ModuleFilename"
+    delete:
+      operationId: deleteModule
+      tags: [Modules]
+      summary: Delete an extension module
+      description: >
+        Removes the module file from the modules directory, deletes its
+        registry entry, and unloads it from the in-memory registry.
+        System modules (underscore-prefixed filenames) cannot be deleted.
+      responses:
+        "204":
+          description: Module deleted successfully. No response body.
+        "400":
+          description: Cannot delete a system module.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: "System module '_mock_module.py' cannot be deleted."
+                error_code: "VALIDATION_FAILED"
+        "404":
+          description: Module not found in the registry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: "Module 'nonexistent.py' not found."
+                error_code: "NOT_FOUND"
+
+components:
+  parameters:
+    ModuleFilename:
+      name: filename
+      in: path
+      required: true
+      description: >
+        Module filename including `.py` extension (e.g., `sony_alpha.py`).
+      schema:
+        type: string
+        pattern: "^[a-zA-Z0-9][a-zA-Z0-9_-]*\\.py$"
+
+  schemas:
+    ModuleResponse:
+      description: >
+        Registered extension module. Reuses the schema from Feature 00005.
+        See specs/00005-dummy-module/contracts/openapi.yaml for the full
+        definition. Key fields: id, filename, module_version,
+        supported_device_type, is_active, file_hash, last_error, loaded_at,
+        created_at, updated_at.
+      type: object
+      required: [id, filename, is_active, created_at, updated_at]
+      properties:
+        id:
+          type: integer
+        filename:
+          type: string
+        module_version:
+          type: string
+          nullable: true
+        supported_device_type:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        file_hash:
+          type: string
+          nullable: true
+        last_error:
+          type: string
+          nullable: true
+        loaded_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UploadErrorResponse:
+      description: >
+        Error response for upload rejections. Extends the standard error
+        envelope with an optional `validation_result` containing per-phase
+        details when structural or runtime validation was performed.
+      type: object
+      required: [detail, error_code]
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message.
+        error_code:
+          type: string
+          enum: ["VALIDATION_FAILED"]
+        field:
+          type: string
+          nullable: true
+        validation_result:
+          $ref: "#/components/schemas/ValidationResult"
+          nullable: true
+          description: >
+            Present when the file reached the validation pipeline.
+            Absent for pre-validation rejections (wrong extension,
+            duplicate filename, underscore prefix).
+
+    ValidationResult:
+      type: object
+      required: [static_phase, runtime_phase, overall_verdict]
+      properties:
+        static_phase:
+          $ref: "#/components/schemas/PhaseResult"
+        runtime_phase:
+          $ref: "#/components/schemas/PhaseResult"
+        overall_verdict:
+          type: string
+          enum: ["pass", "fail"]
+
+    PhaseResult:
+      type: object
+      required: [status, errors]
+      properties:
+        status:
+          type: string
+          enum: ["pass", "fail", "skipped"]
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationError"
+        version_found:
+          type: string
+          nullable: true
+        elapsed_seconds:
+          type: number
+          nullable: true
+
+    ValidationError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - SYNTAX_ERROR
+            - MISSING_FUNCTION
+            - INVALID_SIGNATURE
+            - MISSING_CONSTANT
+            - ENCODING_ERROR
+            - FILE_TOO_LARGE
+            - RUNTIME_EXCEPTION
+            - RUNTIME_TIMEOUT
+            - INVALID_RETURN_VALUE
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [detail, error_code]
+      properties:
+        detail:
+          type: string
+        error_code:
+          type: string
+        field:
+          type: string
+          nullable: true

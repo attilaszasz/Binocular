@@ -33,3 +33,20 @@ Browser `confirm()` dialogs are inaccessible and unstyled — use an in-page con
 OWASP upload guidance: allowlist extension (`.py`), reject null bytes and path traversal characters (`/`, `\`, `..`), strip leading dots or underscores when needed (or reject them). Filename should be stored and used exactly as uploaded (no UUID renaming) so users can correlate file names with module identifiers. Restrict to ASCII alphanumeric + underscore + hyphen + dot for maximum filesystem portability.
 
 - https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+
+## 6. FastAPI Multipart Upload with Validation Pipeline
+
+FastAPI's `UploadFile` provides async file access with `SpooledTemporaryFile` backing. For small files (<100 KB modules), `await file.read()` into memory is fine — no streaming needed. Write to a `tempfile.NamedTemporaryFile` for validation (the existing `validate()` pipeline operates on file paths), then `shutil.move()` to modules dir only on success. This avoids polluting the modules directory with invalid files. For multipart+fields, use `Form()` parameters alongside `UploadFile`. The frontend must use `FormData` (not JSON) and must NOT set `Content-Type` header (the browser adds the boundary automatically).
+
+- https://fastapi.tiangolo.com/tutorial/request-files/
+
+## Summary
+
+| Decision | Recommendation | Rationale |
+|----------|---------------|-----------|
+| Upload UX | Drag-and-drop + click-to-browse, single file | Modern standard, simple feedback model |
+| Module list | Table with status badges + inline errors | Self-hosted tool pattern (Home Assistant, Grafana) |
+| Error display | Inline block, all errors at once, grouped by phase | Persists while user edits; reduces re-submission friction |
+| Delete confirm | Two-step button pattern, auto-refresh list | Standard for low-risk single-record deletes |
+| Filename safety | Allowlist regex, reject path traversal + underscore prefix | OWASP guidance, filesystem portability |
+| Upload backend | UploadFile → temp file → validate → move on success | Avoids partial files in modules dir |

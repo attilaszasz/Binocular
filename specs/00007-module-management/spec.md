@@ -104,15 +104,19 @@ When uploading a module, a user can optionally provide a Test URL and Device Mod
 - **FR-011**: System MUST provide a delete endpoint that accepts a module filename, removes the module file from the modules directory and deletes its registry entry, and returns HTTP 204 No Content.
 - **FR-012**: The delete endpoint MUST reject attempts to delete system-shipped modules (identified by underscore-prefixed filenames in the shared `/modules/` directory).
 - **FR-013**: The module list endpoint MUST return all registered modules including: filename, declared version, supported device type, active/inactive status, and error description for inactive modules.
-- **FR-014**: The Modules page MUST display the module list with columns for filename, declared version, supported device type, and status badge (Active/Inactive).
+- **FR-014**: The Modules page MUST display the module list with columns for filename, declared version, supported device type, and status badge (Active/Inactive). Status badges MUST use color, text label, and icon together — never color alone — for accessibility.
 - **FR-015**: Inactive module rows MUST expose their failure reason without the user leaving the page (e.g., tooltip, expandable row, or inline text).
 - **FR-016**: The Modules page MUST provide a file upload interface — always visible above the module list — that supports both drag-and-drop and click-to-browse file selection.
 - **FR-017**: The upload form MUST include optional Test URL and Device Model fields to enable runtime validation on demand.
 - **FR-018**: Upload validation errors MUST be displayed inline within the upload form, with a message per error identifying its type and, where applicable, its location in the file.
 - **FR-019**: The Modules page MUST include a Reload button that triggers a module directory rescan and automatically refreshes the list.
 - **FR-020**: After a successful upload or deletion, the module list MUST refresh automatically without a full page reload.
-- **FR-021**: Delete actions MUST require explicit user confirmation before proceeding.
+- **FR-021**: Delete actions MUST require explicit user confirmation via an in-page confirmation dialog before proceeding. Browser-native `confirm()` dialogs MUST NOT be used.
 - **FR-022**: When no modules are registered, the Modules page MUST display an empty state that prompts the user to upload their first module.
+- **FR-023**: System MUST enforce a maximum upload file size (default 100 KB) and reject oversized files before reading the full content into memory or running any validation.
+- **FR-024**: Runtime validation MUST enforce a configurable execution timeout (default 30 seconds). If the module does not complete within the timeout, the upload MUST be rejected with a timeout error.
+- **FR-025**: The upload interface SHOULD perform client-side file extension filtering (`.py` only) for immediate user feedback; server-side validation remains authoritative.
+- **FR-026**: The upload form MUST display a loading/progress indicator during submission and MUST disable the submit button to prevent duplicate submissions.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -131,6 +135,15 @@ When uploading a module, a user can optionally provide a Test URL and Device Mod
 - **SC-005**: The Modules page renders the module list within 2 seconds on a local network connection.
 - **SC-006**: Every inactive module's failure reason is accessible from the module list without navigating away from the page.
 - **SC-007**: The Modules page is usable with zero modules installed, presenting an empty state that guides the user toward uploading their first module.
+
+### Trust Model *(non-functional)*
+
+Binocular is a single-user, self-hosted application intended for trusted local networks. In V1:
+
+- **No authentication**: The upload and delete endpoints are accessible without credentials. Authentication is deferred to a future feature (Epic 6.1).
+- **Trusted user model**: The user is responsible for vetting module files before uploading. AST-based structural validation (FR-004) confirms interface contract compliance but is NOT a security sandbox — it cannot detect or prevent malicious runtime behavior.
+- **Host-level execution**: Uploaded modules run with the same privileges as the host application process. Modules can import arbitrary standard library and third-party packages at runtime.
+- **Accepted risk**: This trust model is appropriate for the homelab use case where the single user controls both the application and the modules they install.
 
 ## Compliance Check
 
