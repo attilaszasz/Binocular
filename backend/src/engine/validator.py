@@ -22,7 +22,7 @@ import importlib.util
 import time
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from backend.src.models.check_result import CheckResult
 from backend.src.models.validation_result import (
@@ -370,7 +370,7 @@ async def validate(
         timeout_seconds=timeout_seconds,
     )
 
-    verdict = "pass" if runtime_result.status == "pass" else "fail"
+    verdict: Literal["pass", "fail"] = "pass" if runtime_result.status == "pass" else "fail"
     return ValidationResult(
         static_phase=static_result,
         runtime_phase=runtime_result,

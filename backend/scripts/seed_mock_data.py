@@ -94,11 +94,11 @@ async def seed(db_path: str, reset: bool) -> tuple[int, int]:
     device_repo = DeviceRepo(db_path)
 
     # Register the mock module
-    mock_module = await ext_module_repo.get_by_filename("mock_module.py")
+    mock_module = await ext_module_repo.get_by_filename("_mock_module.py")
     if mock_module is None:
         mock_module = await ext_module_repo.register(
             ExtensionModuleCreate(
-                filename="mock_module.py",
+                filename="_mock_module.py",
                 module_version="1.0.0",
                 supported_device_type="mock_devices",
                 is_active=True,

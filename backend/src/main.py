@@ -207,7 +207,7 @@ def create_app(frontend_dist: Path | None = None) -> FastAPI:
             return FileResponse(index_file)
     else:
         @app.get("/", include_in_schema=False)
-        async def root() -> RedirectResponse:
+        async def root_redirect() -> RedirectResponse:
             """Redirect root to interactive API docs when SPA build is unavailable."""
 
             return RedirectResponse(url="/docs")

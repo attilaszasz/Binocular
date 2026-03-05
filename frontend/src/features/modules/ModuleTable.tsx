@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 
 import type { ExtensionModule } from "../../api/types";
 
@@ -13,19 +13,34 @@ export function ModuleTable({ modules, onDelete }: ModuleTableProps) {
       <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
         <thead className="bg-slate-50 dark:bg-slate-900">
           <tr>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
               Filename
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
               Version
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
               Device Type
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
               Status
             </th>
-            <th scope="col" className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <th
+              scope="col"
+              className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
               Actions
             </th>
           </tr>
@@ -44,12 +59,14 @@ export function ModuleTable({ modules, onDelete }: ModuleTableProps) {
               </td>
               <td className="whitespace-nowrap px-4 py-3 text-sm">
                 {mod.is_active ? (
-                  <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                    <CheckCircle size={12} />
                     Active
                   </span>
                 ) : (
                   <div>
-                    <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                      <AlertCircle size={12} />
                       Error
                     </span>
                     {mod.last_error && (
@@ -61,15 +78,19 @@ export function ModuleTable({ modules, onDelete }: ModuleTableProps) {
                 )}
               </td>
               <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
-                <button
-                  type="button"
-                  onClick={() => onDelete(mod)}
-                  aria-label={`Delete ${mod.filename}`}
-                  className="inline-flex items-center gap-1 rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
+                {mod.filename.startsWith("_") ? (
+                  <span className="text-xs text-slate-400 dark:text-slate-500">System</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(mod)}
+                    aria-label={`Delete ${mod.filename}`}
+                    className="inline-flex items-center gap-1 rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                )}
               </td>
             </tr>
           ))}

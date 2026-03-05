@@ -1,13 +1,21 @@
-import { useCallback, useRef, useState } from "react";
 import { Upload } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+
+import type { ValidationResult } from "../../api/types";
 
 interface ModuleUploadAreaProps {
   onUpload: (file: File, options?: { testUrl?: string; testModel?: string }) => void;
   isUploading: boolean;
   error: string | null;
+  validationResult?: ValidationResult | null;
 }
 
-export function ModuleUploadArea({ onUpload, isUploading, error }: ModuleUploadAreaProps) {
+export function ModuleUploadArea({
+  onUpload,
+  isUploading,
+  error,
+  validationResult,
+}: ModuleUploadAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [testUrl, setTestUrl] = useState("");
@@ -60,7 +68,10 @@ export function ModuleUploadArea({ onUpload, isUploading, error }: ModuleUploadA
     <div className="space-y-2">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="test-url" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label
+            htmlFor="test-url"
+            className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Test URL <span className="text-slate-400">(optional)</span>
           </label>
           <input
@@ -74,7 +85,10 @@ export function ModuleUploadArea({ onUpload, isUploading, error }: ModuleUploadA
           />
         </div>
         <div>
-          <label htmlFor="test-model" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label
+            htmlFor="test-model"
+            className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Device Model <span className="text-slate-400">(optional)</span>
           </label>
           <input
@@ -88,7 +102,8 @@ export function ModuleUploadArea({ onUpload, isUploading, error }: ModuleUploadA
           />
         </div>
       </div>
-      <div
+      <label
+        htmlFor="module-file-input"
         data-testid="upload-dropzone"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -98,15 +113,6 @@ export function ModuleUploadArea({ onUpload, isUploading, error }: ModuleUploadA
             ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
             : "border-slate-300 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-600"
         }`}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            inputRef.current?.click();
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-label="Upload module file"
       >
         <Upload className="mb-2 h-8 w-8 text-slate-400" />
         <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -114,21 +120,38 @@ export function ModuleUploadArea({ onUpload, isUploading, error }: ModuleUploadA
         </p>
         <input
           ref={inputRef}
+          id="module-file-input"
           type="file"
           accept=".py"
           onChange={handleChange}
           disabled={isUploading}
           className="hidden"
-          aria-label="Select module file"
         />
-      </div>
+      </label>
 
       {error && (
         <div
           role="alert"
           className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
         >
-          {error}
+          <p>{error}</p>
+          {validationResult &&
+            (() => {
+              const errors = [
+                ...(validationResult.static_phase?.errors ?? []),
+                ...(validationResult.runtime_phase?.errors ?? []),
+              ];
+              if (errors.length === 0) return null;
+              return (
+                <ul className="mt-2 list-inside list-disc space-y-0.5">
+                  {errors.map((err, i) => (
+                    <li key={`${err.code}-${i}`}>
+                      <span className="font-mono text-xs">{err.code}</span>: {err.message}
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
         </div>
       )}
     </div>

@@ -78,3 +78,16 @@ Setup → Foundational → US1 Upload → US2 View → US3 Delete → Polish
 - **US4 is independent of US2/US3** — can run after US1, but scheduled last per P3 priority
 - **Execution order**: US1 (P1) → US2 (P1) → US3 (P2) → US4 (P3) follows priority ranking
 - Tasks marked `[P]` can run in parallel within their phase
+
+---
+
+## Phase: Bug Fixes
+
+- [X] T022 [BUG] {FR-018} Render per-error validation details in upload form — `ModulesPage.tsx` passes only `error.message`; extract `error.validationResult?.static_phase.errors` and `runtime_phase.errors` and render as a typed error list in `ModuleUploadArea` — `frontend/src/features/modules/ModulesPage.tsx`, `frontend/src/features/modules/ModuleUploadArea.tsx`
+- [X] T023 [BUG] {FR-014} Add icon to Active/Error status badges in `ModuleTable` — FR-014 requires color + text label + icon together; add `CheckCircle` (Active) and `AlertCircle` (Error) icons from lucide-react — `frontend/src/features/modules/ModuleTable.tsx`
+- [X] T024 [BUG] {FR-012} Rename `backend/_modules/mock_module.py` → `backend/_modules/_mock_module.py` so the seeded system module has an underscore prefix in the modules directory and is protected from deletion by the API — `backend/_modules/mock_module.py`
+- [X] T025 [BUG] {FR-016} Fix Biome a11y error: replace `div[role="button"]` with a semantic `<label>` element wrapping the file input in `ModuleUploadArea` — eliminates `lint/a11y/useSemanticElements` violation — `frontend/src/features/modules/ModuleUploadArea.tsx`
+- [X] T026 [BUG] Fix Biome format/import-order errors in new feature files — run `node_modules/.bin/biome check --write src/features/modules/` and remove unused `ExtensionModule` import from `hooks.ts` — `frontend/src/features/modules/`
+- [X] T027 [BUG] mypy (pre-existing): `validator.py:377` — `overall_verdict` assigned `str` but declared `Literal['pass', 'fail']`; narrow the type appropriately — `backend/src/engine/validator.py`
+- [X] T028 [BUG] mypy (pre-existing): `main.py:210` — root route handler redefinition causes incompatible return-type override; consolidate or annotate correctly — `backend/src/main.py`
+- [X] T029 [BUG] {FR-012} Hide Delete button for system modules (`_`-prefixed filenames) in `ModuleTable` — spec US3 Scenario 3 requires "no delete action is offered, or any delete attempt is blocked with a message"; currently the Delete button renders for all modules — `frontend/src/features/modules/ModuleTable.tsx`

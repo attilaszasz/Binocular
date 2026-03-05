@@ -1,13 +1,13 @@
-import { useState } from "react";
 import { RefreshCw } from "lucide-react";
+import { useState } from "react";
 
-import type { ExtensionModule } from "../../api/types";
+import type { ApiError, ExtensionModule, ValidationResult } from "../../api/types";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { CardSkeletonList } from "../../components/Skeleton";
+import { useDeleteModule, useModules, useReloadModules, useUploadModule } from "./hooks";
 import { ModuleTable } from "./ModuleTable";
 import { ModuleUploadArea } from "./ModuleUploadArea";
-import { useDeleteModule, useModules, useReloadModules, useUploadModule } from "./hooks";
 
 export function ModulesPage() {
   const modulesQuery = useModules();
@@ -52,6 +52,13 @@ export function ModulesPage() {
           onUpload={handleUpload}
           isUploading={uploadMutation.isPending}
           error={uploadMutation.error?.message ?? null}
+          validationResult={
+            (
+              uploadMutation.error as
+                | (ApiError & { validationResult?: ValidationResult | null })
+                | undefined
+            )?.validationResult ?? null
+          }
         />
       </div>
 

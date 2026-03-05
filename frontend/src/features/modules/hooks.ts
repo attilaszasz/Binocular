@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { deleteModule, listModules, reloadModules, uploadModule } from "../../api/client";
 import { queryKeys } from "../../api/queryKeys";
-import type { ExtensionModule } from "../../api/types";
 
 export function useModules() {
   return useQuery({
@@ -16,8 +15,13 @@ export function useUploadModule() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ file, options }: { file: File; options?: { testUrl?: string; testModel?: string } }) =>
-      uploadModule(file, options),
+    mutationFn: ({
+      file,
+      options,
+    }: {
+      file: File;
+      options?: { testUrl?: string; testModel?: string };
+    }) => uploadModule(file, options),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.modules.all() });
     },

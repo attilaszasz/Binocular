@@ -21,7 +21,7 @@ from backend.src.repositories.device_type_repo import DeviceTypeRepo
 from backend.src.repositories.extension_module_repo import ExtensionModuleRepo
 from backend.src.services.module_service import ModuleService
 
-MOCK_MODULE_PATH = Path(__file__).resolve().parents[2] / "_modules" / "mock_module.py"
+MOCK_MODULE_PATH = Path(__file__).resolve().parents[2] / "_modules" / "_mock_module.py"
 
 
 @pytest.fixture
@@ -87,12 +87,12 @@ async def _seed_mock_data(
     model: str = "MOCK-001",
 ) -> int:
     """Copy mock module, reload, create linked device, return device_id."""
-    shutil.copy2(MOCK_MODULE_PATH, modules_dir / "mock_module.py")
+    shutil.copy2(MOCK_MODULE_PATH, modules_dir / "_mock_module.py")
     await module_service.reload_modules()
 
     # Retrieve registered module
     modules = await extension_module_repo.get_all()
-    mock_mod = next(m for m in modules if m.filename == "mock_module.py")
+    mock_mod = next(m for m in modules if m.filename == "_mock_module.py")
 
     dt = await device_type_repo.create(
         DeviceTypeCreate(
@@ -122,11 +122,11 @@ class TestMockModuleSeeding:
         module_service: ModuleService,
         extension_module_repo: ExtensionModuleRepo,
     ) -> None:
-        shutil.copy2(MOCK_MODULE_PATH, modules_dir / "mock_module.py")
+        shutil.copy2(MOCK_MODULE_PATH, modules_dir / "_mock_module.py")
         result = await module_service.reload_modules()
 
         assert result.loaded_count >= 1
-        mock = next((m for m in result.modules if m.filename == "mock_module.py"), None)
+        mock = next((m for m in result.modules if m.filename == "_mock_module.py"), None)
         assert mock is not None
         assert mock.is_active is True
         assert mock.module_version == "1.0.0"
@@ -140,10 +140,10 @@ class TestMockModuleSeeding:
         module_service: ModuleService,
         extension_module_repo: ExtensionModuleRepo,
     ) -> None:
-        shutil.copy2(MOCK_MODULE_PATH, modules_dir / "mock_module.py")
+        shutil.copy2(MOCK_MODULE_PATH, modules_dir / "_mock_module.py")
         await module_service.reload_modules()
 
-        db_record = await extension_module_repo.get_by_filename("mock_module.py")
+        db_record = await extension_module_repo.get_by_filename("_mock_module.py")
         assert db_record is not None
         assert db_record.is_active is True
         assert db_record.file_hash  # non-empty hash
