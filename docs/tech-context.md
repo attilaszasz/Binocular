@@ -333,7 +333,7 @@ Even on private networks, basic security hygiene is required.
 ### API Design Standards
 
 - **Error Envelope**: All error responses use a consistent structure: human-readable `detail` + machine-readable `error_code` + optional `field` identifier
-- **Error Codes**: Fixed vocabulary — `DUPLICATE_NAME`, `NOT_FOUND`, `VALIDATION_ERROR`, `CASCADE_BLOCKED`, `NO_LATEST_VERSION`, `INTERNAL_ERROR`
+- **Error Codes**: Fixed vocabulary — `DUPLICATE_NAME`, `NOT_FOUND`, `VALIDATION_ERROR`, `CASCADE_BLOCKED`, `NO_LATEST_VERSION`, `INTERNAL_ERROR`, `VALIDATION_FAILED` (module upload rejections — includes structured per-phase ValidationResult in the response body)
 - **Mutation Responses**: All create/update endpoints return the complete updated resource in the response body (no follow-up GET needed)
 - **Resource Shape**: All resource representations include `id`, `created_at`, `updated_at` in ISO 8601 format
 - **Input Validation**: Validated at API boundary via Pydantic — non-empty trimmed names (max 200 chars), syntactically valid URLs, positive numeric values
@@ -367,7 +367,8 @@ Even on private networks, basic security hygiene is required.
 
 - **Interface Contract**: Modules implement a standard check function accepting a firmware source URL, device model identifier, and host-provided HTTP client. Return value is a dict validated by the host against a Pydantic schema (required: `latest_version` string).
 - **Module Discovery**: `.py` files in the modules directory are discovered and loaded via `importlib` at startup. Load-time validation checks for the required function, correct signature, and mandatory manifest constants (`MODULE_VERSION`, `SUPPORTED_DEVICE_TYPE`).
-- **Upload Validation**: Before a module is saved to the modules directory, it undergoes two-phase validation: (1) static structure check without execution (syntax, required function, correct signature, manifest constants) and (2) runtime execution proof against a user-provided URL and device model. Only modules passing both phases are accepted.
+- **Module Directory Convention**: All modules — system-shipped and user-uploaded — live in a single `/app/modules/` directory (Docker volume mount). System-shipped modules use underscore-prefixed filenames (e.g., `_mock_module.py`) and are protected from deletion and overwrite via the API. User uploads with underscore-prefixed filenames are rejected.
+- **Upload Validation**: Before a module is saved to the modules directory, it undergoes two-phase validation: (1) static structure check without execution (syntax, required function, correct signature, manifest constants) and (2) optional runtime execution proof against a user-provided URL and device model. Static phase is mandatory; runtime phase runs only when test inputs are supplied. Only modules passing all requested phases are accepted.
 - **Fault Isolation**: Each module invocation is wrapped in an error boundary. Exceptions, invalid return values, and timeouts are caught and recorded in check history without affecting other modules or the core application.
 - **Responsible Scraping Enforcement**: The host provides a pre-configured HTTP client to modules that enforces all scraping rules (robots.txt, User-Agent, 2-second per-domain delay, exponential backoff on 429/5xx). Modules MUST use this client — they do not bring their own HTTP logic. This is the centralized enforcement model for Principle III.
 
