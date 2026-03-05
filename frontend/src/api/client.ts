@@ -8,6 +8,9 @@ import {
   type DeviceTypeUpdateRequest,
   type DeviceUpdateRequest,
   type ErrorResponse,
+  type ExtensionModule,
+  type UploadErrorResponse,
+  type ValidationResult,
 } from "./types";
 
 const API_BASE = "/api/v1";
@@ -146,6 +149,70 @@ export async function confirmDevice(deviceId: number): Promise<Device> {
 export async function confirmAllDevices(deviceTypeId?: number): Promise<BulkConfirmResponse> {
   const query = toQueryString({ device_type_id: deviceTypeId });
   return apiFetch<BulkConfirmResponse>(`/devices/confirm-all${query}`, {
+    method: "POST",
+  });
+}
+
+// --- Module Management ---
+
+export async function listModules(): Promise<ExtensionModule[]> {
+  return apiFetch<ExtensionModule[]>("/modules");
+}
+
+export async function uploadModule(
+  file: File,
+  options?: { testUrl?: string; testModel?: string },
+): Promise<ExtensionModule> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (options?.testUrl) {
+    formData.append("test_url", options.testUrl);
+  }
+  if (options?.testModel) {
+    formData.append("test_model", options.testModel);
+  }
+
+  const response = await fetch(`${API_BASE}/modules`, {
+    method: "POST",
+    body: formData,
+    // Do NOT set Content-Type — browser adds multipart boundary automatically
+  });
+
+  const diagnostics = response.headers.get("x-ms-activity-id") ?? "";
+
+  if (!response.ok) {
+    const parsed = (await parseJsonSafely(response)) as UploadErrorResponse | null;
+    const err = new ApiError({
+      message: parsed?.detail ?? `Upload failed with status ${response.status}`,
+      status: response.status,
+      errorCode: parsed?.error_code,
+      field: parsed?.field,
+      diagnostics,
+    });
+    (err as ApiError & { validationResult: ValidationResult | null }).validationResult =
+      parsed?.validation_result ?? null;
+    throw err;
+  }
+
+  return (await response.json()) as ExtensionModule;
+}
+
+export async function deleteModule(filename: string): Promise<void> {
+  return apiFetch<void>(`/modules/${encodeURIComponent(filename)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function reloadModules(): Promise<{
+  modules: ExtensionModule[];
+  loaded_count: number;
+  error_count: number;
+}> {
+  return apiFetch<{
+    modules: ExtensionModule[];
+    loaded_count: number;
+    error_count: number;
+  }>("/modules/reload", {
     method: "POST",
   });
 }

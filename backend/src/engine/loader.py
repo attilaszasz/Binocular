@@ -120,6 +120,10 @@ class ModuleLoader:
         """Look up a loaded module by filename."""
         return self._registry.get(filename)
 
+    def unload(self, filename: str) -> bool:
+        """Remove a module from the in-memory registry. Returns True if it was present."""
+        return self._registry.pop(filename, None) is not None
+
     # ------------------------------------------------------------------
     # Discovery
     # ------------------------------------------------------------------

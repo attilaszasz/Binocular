@@ -6,4 +6,7 @@ export const queryKeys = {
     all: () => ["devices"] as const,
     byType: (deviceTypeId: number) => ["devices", { device_type_id: deviceTypeId }] as const,
   },
+  modules: {
+    all: () => ["modules"] as const,
+  },
 } as const;

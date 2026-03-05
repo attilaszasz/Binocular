@@ -1,16 +1,18 @@
-"""Module API routes — list, reload, and execute firmware checks."""
+"""Module API routes — list, reload, upload, delete, and execute firmware checks."""
 
 from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Form, Path, UploadFile
+from fastapi.responses import Response
 
 from backend.src.api.dependencies import get_module_service
 from backend.src.api.schemas.modules import (
     CheckExecutionResponse,
     ModuleReloadResponse,
     ModuleResponse,
+    ModuleUploadResponse,
 )
 from backend.src.services.module_service import ModuleService
 
@@ -46,6 +48,35 @@ async def reload_modules(
 ) -> ModuleReloadResponse:
     """Trigger a module directory re-scan and return updated module list."""
     return await service.reload_modules()
+
+
+@router.post("/modules", response_model=ModuleUploadResponse, status_code=201)
+async def upload_module(
+    file: UploadFile,
+    test_url: str | None = Form(None),
+    test_model: str | None = Form(None),
+    service: ModuleService = Depends(get_module_service),
+) -> ModuleUploadResponse:
+    """Upload a new extension module via multipart form data."""
+    filename = file.filename or ""
+    content = await file.read()
+    result = await service.upload_module(
+        filename=filename,
+        content=content,
+        test_url=test_url,
+        test_model=test_model,
+    )
+    return ModuleUploadResponse.model_validate(result.model_dump())
+
+
+@router.delete("/modules/{filename}", status_code=204, response_class=Response)
+async def delete_module(
+    filename: str = Path(..., description="Module filename including .py extension"),
+    service: ModuleService = Depends(get_module_service),
+) -> Response:
+    """Delete an extension module by filename."""
+    await service.delete_module(filename)
+    return Response(status_code=204)
 
 
 @router.post(

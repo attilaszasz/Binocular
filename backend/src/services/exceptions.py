@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from backend.src.models.validation_result import ValidationResult
+
 
 class BinocularError(Exception):
     """Base class for domain errors that map to API error envelopes."""
@@ -88,3 +93,19 @@ class NoModuleAssignedError(BinocularError):
             f"Device type '{device_type_name}' has no extension module assigned.",
             field="extension_module_id",
         )
+
+
+class UploadRejectedError(BinocularError):
+    """Raised when a module upload is rejected (pre-validation or validation failure)."""
+
+    error_code = "VALIDATION_FAILED"
+    status_code = 400
+
+    def __init__(
+        self,
+        detail: str,
+        *,
+        validation_result: ValidationResult | None = None,
+    ) -> None:
+        super().__init__(detail)
+        self.validation_result = validation_result

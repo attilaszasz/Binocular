@@ -10,6 +10,7 @@ ErrorCode = Literal[
     "DUPLICATE_NAME",
     "NOT_FOUND",
     "VALIDATION_ERROR",
+    "VALIDATION_FAILED",
     "CASCADE_BLOCKED",
     "NO_LATEST_VERSION",
     "MODULE_ERROR",

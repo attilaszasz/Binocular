@@ -166,3 +166,13 @@ class ExtensionModuleRepo:
             )
             await conn.commit()
         return await self.get_by_id(module_id)
+
+    async def delete_by_filename(self, filename: str) -> bool:
+        """Delete a module record by filename. Returns True if a row was deleted."""
+        async with get_connection(self._db_path) as conn:
+            cursor = await conn.execute(
+                "DELETE FROM extension_module WHERE filename = ?",
+                (filename,),
+            )
+            await conn.commit()
+            return (cursor.rowcount or 0) > 0

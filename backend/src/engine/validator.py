@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import importlib.machinery
 import importlib.util
 import time
 import types
@@ -385,7 +386,8 @@ async def validate(
 def _safe_import(path: Path) -> types.ModuleType:
     """Import a module file via importlib without polluting sys.modules."""
     module_name = f"binocular_val_{path.stem}"
-    spec = importlib.util.spec_from_file_location(module_name, path)
+    loader = importlib.machinery.SourceFileLoader(module_name, str(path))
+    spec = importlib.util.spec_from_file_location(module_name, path, loader=loader)
     if spec is None or spec.loader is None:
         raise ImportError(f"Cannot create module spec for {path}")
     mod = importlib.util.module_from_spec(spec)

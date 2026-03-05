@@ -1,12 +1,16 @@
 """Service layer for extension module operations.
 
 Orchestrates the Module Loader, Execution Engine, and repositories
-to provide list/reload/execute_check workflows.
+to provide list/reload/execute_check/upload/delete workflows.
 """
 
 from __future__ import annotations
 
+import os
+import re
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 
 import structlog
 
@@ -18,20 +22,26 @@ from backend.src.api.schemas.modules import (
 from backend.src.engine.executor import ExecutionEngine
 from backend.src.engine.http_client import create_http_client
 from backend.src.engine.loader import ModuleLoader
+from backend.src.engine.validator import validate_runtime, validate_static
 from backend.src.models.check_history import CheckHistoryEntry
 from backend.src.models.extension_module import ExtensionModule
+from backend.src.models.validation_result import PhaseResult, ValidationResult
 from backend.src.repositories.app_config_repo import AppConfigRepo
 from backend.src.repositories.check_history_repo import CheckHistoryRepo
 from backend.src.repositories.device_repo import DeviceRepo
 from backend.src.repositories.device_type_repo import DeviceTypeRepo
 from backend.src.repositories.extension_module_repo import ExtensionModuleRepo
 from backend.src.services.exceptions import (
+    BinocularError,
     NoModuleAssignedError,
     NotFoundError,
+    UploadRejectedError,
     ValidationError,
 )
 
 logger = structlog.get_logger(__name__)
+
+_FILENAME_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]*\.py$")
 
 
 def _module_to_response(mod: ExtensionModule) -> ModuleResponse:
@@ -101,6 +111,163 @@ class ModuleService:
             loaded_count=loaded_count,
             error_count=error_count,
         )
+
+    # ------------------------------------------------------------------
+    # Module upload
+    # ------------------------------------------------------------------
+
+    async def upload_module(
+        self,
+        *,
+        filename: str,
+        content: bytes,
+        test_url: str | None = None,
+        test_model: str | None = None,
+    ) -> ModuleResponse:
+        """Validate and persist a new extension module.
+
+        Pipeline (AD-1): pre-checks → temp file → static validation →
+        optional runtime validation → atomic move → registry rescan → return new record.
+        """
+        # --- Pre-validation checks ---
+        if not filename.endswith(".py"):
+            raise UploadRejectedError("Only .py files are accepted.")
+
+        if filename.startswith("_"):
+            raise UploadRejectedError(
+                "Filenames starting with underscore are reserved for system modules."
+            )
+
+        if not _FILENAME_PATTERN.match(filename):
+            raise UploadRejectedError(
+                f"Filename '{filename}' does not match allowed pattern."
+            )
+
+        existing = await self._ext_mod_repo.get_by_filename(filename)
+        if existing is not None:
+            raise UploadRejectedError(
+                f"Module '{filename}' already exists. Delete the existing module first or rename your file."
+            )
+
+        # Validate test field pairing
+        has_url = test_url is not None and test_url != ""
+        has_model = test_model is not None and test_model != ""
+        if has_url != has_model:
+            raise UploadRejectedError(
+                "Both test_url and test_model must be provided together, or both omitted."
+            )
+
+        # --- Write to temp file in the same directory (for atomic rename) ---
+        modules_dir = self._loader._modules_dir
+        fd, tmp_path_str = tempfile.mkstemp(
+            suffix=".tmp", dir=str(modules_dir)
+        )
+        tmp_path = Path(tmp_path_str)
+        try:
+            os.write(fd, content)
+            os.close(fd)
+
+            # --- Static validation ---
+            static_result = validate_static(tmp_path)
+
+            if static_result.status != "pass":
+                runtime_result = PhaseResult(status="skipped")
+                validation_result = ValidationResult(
+                    static_phase=static_result,
+                    runtime_phase=runtime_result,
+                    overall_verdict="fail",
+                )
+                raise UploadRejectedError(
+                    "Module validation failed.",
+                    validation_result=validation_result,
+                )
+
+            # --- Optional runtime validation ---
+            if has_url and has_model:
+                http_client = create_http_client()
+                try:
+                    config = await self._app_config_repo.get_config()
+                    timeout = config.module_execution_timeout_seconds
+
+                    runtime_result = await validate_runtime(
+                        tmp_path,
+                        test_url=test_url,  # type: ignore[arg-type]
+                        test_model=test_model,  # type: ignore[arg-type]
+                        http_client=http_client,
+                        timeout_seconds=timeout,
+                    )
+                finally:
+                    http_client.close()
+
+                if runtime_result.status != "pass":
+                    validation_result = ValidationResult(
+                        static_phase=static_result,
+                        runtime_phase=runtime_result,
+                        overall_verdict="fail",
+                    )
+                    raise UploadRejectedError(
+                        "Module validation failed.",
+                        validation_result=validation_result,
+                    )
+
+            # --- Atomic move to final location ---
+            final_path = modules_dir / filename
+            os.replace(str(tmp_path), str(final_path))
+            tmp_path = final_path  # Prevent cleanup of moved file
+
+        except UploadRejectedError:
+            # Clean up temp file if validation failed
+            if tmp_path.exists() and tmp_path.suffix == ".tmp":
+                tmp_path.unlink(missing_ok=True)
+            raise
+        except Exception:
+            if tmp_path.exists() and tmp_path.suffix == ".tmp":
+                tmp_path.unlink(missing_ok=True)
+            raise
+
+        # --- Re-scan to register the new module ---
+        await self._loader.scan()
+
+        # --- Return the new module record ---
+        module = await self._ext_mod_repo.get_by_filename(filename)
+        if module is None:
+            raise RuntimeError(f"Module '{filename}' was not registered after scan.")
+
+        return _module_to_response(module)
+
+    # ------------------------------------------------------------------
+    # Module deletion
+    # ------------------------------------------------------------------
+
+    async def delete_module(self, filename: str) -> None:
+        """Delete an extension module: file, registry entry, and in-memory state.
+
+        System modules (underscore-prefixed filenames) cannot be deleted (FR-012).
+        """
+        if filename.startswith("_"):
+            raise UploadRejectedError(
+                f"System module '{filename}' cannot be deleted."
+            )
+
+        existing = await self._ext_mod_repo.get_by_filename(filename)
+        if existing is None:
+            err = BinocularError(f"Module '{filename}' not found.")
+            err.error_code = "NOT_FOUND"
+            err.status_code = 404
+            raise err
+
+        # Remove file from disk
+        file_path = self._loader._modules_dir / filename
+        if file_path.exists():
+            file_path.unlink()
+
+        # Remove from DB
+        await self._ext_mod_repo.delete_by_filename(filename)
+
+        # Unload from in-memory registry
+        self._loader.unload(filename)
+
+        logger.info("module.deleted", filename=filename)
 
     # ------------------------------------------------------------------
     # Check execution

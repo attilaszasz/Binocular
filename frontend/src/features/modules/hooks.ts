@@ -1,72 +1,47 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import {
-  createDeviceType,
-  deleteDeviceType,
-  listDeviceTypes,
-  updateDeviceType,
-} from "../../api/client";
+import { deleteModule, listModules, reloadModules, uploadModule } from "../../api/client";
 import { queryKeys } from "../../api/queryKeys";
-import type { DeviceTypeCreateRequest, DeviceTypeUpdateRequest } from "../../api/types";
+import type { ExtensionModule } from "../../api/types";
 
-export function useModuleDeviceTypes() {
+export function useModules() {
   return useQuery({
-    queryKey: queryKeys.deviceTypes.all(),
-    queryFn: listDeviceTypes,
+    queryKey: queryKeys.modules.all(),
+    queryFn: listModules,
     staleTime: 30_000,
   });
 }
 
-export function useCreateDeviceType() {
+export function useUploadModule() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: DeviceTypeCreateRequest) => createDeviceType(payload),
+    mutationFn: ({ file, options }: { file: File; options?: { testUrl?: string; testModel?: string } }) =>
+      uploadModule(file, options),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.deviceTypes.all() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.devices.all() }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.modules.all() });
     },
   });
 }
 
-export function useUpdateDeviceType() {
+export function useDeleteModule() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      deviceTypeId,
-      payload,
-    }: {
-      deviceTypeId: number;
-      payload: DeviceTypeUpdateRequest;
-    }) => updateDeviceType(deviceTypeId, payload),
+    mutationFn: (filename: string) => deleteModule(filename),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.deviceTypes.all() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.devices.all() }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.modules.all() });
     },
   });
 }
 
-export function useDeleteDeviceType() {
+export function useReloadModules() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      deviceTypeId,
-      confirmCascade,
-    }: {
-      deviceTypeId: number;
-      confirmCascade: boolean;
-    }) => deleteDeviceType(deviceTypeId, confirmCascade),
+    mutationFn: () => reloadModules(),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.deviceTypes.all() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.devices.all() }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.modules.all() });
     },
   });
 }
