@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-MOCK_MODULE_PATH = Path(__file__).resolve().parents[2] / "_modules" / "mock_module.py"
+MOCK_MODULE_PATH = Path(__file__).resolve().parents[2] / "_modules" / "_mock_module.py"
 
 
 @pytest.fixture

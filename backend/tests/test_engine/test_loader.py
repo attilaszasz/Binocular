@@ -174,13 +174,25 @@ class TestModuleLoaderFileHashDetection:
 
 
 class TestModuleLoaderExclusions:
-    """Files with _ prefix and __init__.py are excluded."""
+    """Files with __ dunder prefix and __init__.py are excluded; single _ prefix (system modules) are loaded."""
 
     @pytest.mark.asyncio
-    async def test_underscore_prefix_excluded(
+    async def test_single_underscore_prefix_loaded(
         self, modules_dir: Path, extension_module_repo: ExtensionModuleRepo
     ) -> None:
-        _copy_fixture("valid_module.py", modules_dir, rename="_private_module.py")
+        _copy_fixture("valid_module.py", modules_dir, rename="_system_module.py")
+        loader = ModuleLoader(modules_dir=modules_dir, repo=extension_module_repo)
+        await loader.scan()
+
+        modules = await extension_module_repo.get_all()
+        assert len(modules) == 1
+        assert modules[0].filename == "_system_module.py"
+
+    @pytest.mark.asyncio
+    async def test_dunder_prefix_excluded(
+        self, modules_dir: Path, extension_module_repo: ExtensionModuleRepo
+    ) -> None:
+        _copy_fixture("valid_module.py", modules_dir, rename="__private_module.py")
         loader = ModuleLoader(modules_dir=modules_dir, repo=extension_module_repo)
         await loader.scan()
 

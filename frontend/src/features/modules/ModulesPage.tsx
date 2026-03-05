@@ -1,38 +1,34 @@
+import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 
-import type { DeviceType } from "../../api/types";
+import type { ApiError, ExtensionModule, ValidationResult } from "../../api/types";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { CardSkeletonList } from "../../components/Skeleton";
-import { SlideOverPanel } from "../../components/SlideOverPanel";
-import { DeviceTypeForm } from "../forms/DeviceTypeForm";
-import {
-  useCreateDeviceType,
-  useDeleteDeviceType,
-  useModuleDeviceTypes,
-  useUpdateDeviceType,
-} from "./hooks";
-import { ModuleCard } from "./ModuleCard";
+import { useDeleteModule, useModules, useReloadModules, useUploadModule } from "./hooks";
+import { ModuleTable } from "./ModuleTable";
+import { ModuleUploadArea } from "./ModuleUploadArea";
 
 export function ModulesPage() {
-  const modulesQuery = useModuleDeviceTypes();
-  const createMutation = useCreateDeviceType();
-  const updateMutation = useUpdateDeviceType();
-  const deleteMutation = useDeleteDeviceType();
+  const modulesQuery = useModules();
+  const uploadMutation = useUploadModule();
+  const deleteMutation = useDeleteModule();
+  const reloadMutation = useReloadModules();
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingModule, setEditingModule] = useState<DeviceType | null>(null);
-  const [deletingModule, setDeletingModule] = useState<DeviceType | null>(null);
+  const [deletingModule, setDeletingModule] = useState<ExtensionModule | null>(null);
 
-  if (modulesQuery.isLoading) {
-    return <CardSkeletonList count={3} />;
-  }
+  const handleUpload = (file: File, options?: { testUrl?: string; testModel?: string }) => {
+    uploadMutation.mutateAsync({ file, options }).catch(() => {
+      // Error is surfaced via uploadMutation.error
+    });
+  };
 
-  if (modulesQuery.isError) {
-    return (
-      <ErrorBanner message="Failed to load modules." onRetry={() => void modulesQuery.refetch()} />
-    );
-  }
+  const handleConfirmDelete = () => {
+    if (!deletingModule) return;
+    void deleteMutation.mutateAsync(deletingModule.filename).then(() => {
+      setDeletingModule(null);
+    });
+  };
 
   const modules = modulesQuery.data ?? [];
 
@@ -42,108 +38,56 @@ export function ModulesPage() {
         <h2 className="text-lg font-semibold">Extension Modules</h2>
         <button
           type="button"
-          className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          onClick={() => setIsCreateOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          onClick={() => void reloadMutation.mutateAsync()}
+          disabled={reloadMutation.isPending}
         >
-          Add Module
+          <RefreshCw size={14} className={reloadMutation.isPending ? "animate-spin" : ""} />
+          Reload Modules
         </button>
       </div>
 
-      {modules.length ? (
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {modules.map((module) => (
-            <ModuleCard
-              key={module.id}
-              module={module}
-              onEdit={setEditingModule}
-              onDelete={setDeletingModule}
-            />
-          ))}
+      <div className="mb-6">
+        <ModuleUploadArea
+          onUpload={handleUpload}
+          isUploading={uploadMutation.isPending}
+          error={uploadMutation.error?.message ?? null}
+          validationResult={
+            (
+              uploadMutation.error as
+                | (ApiError & { validationResult?: ValidationResult | null })
+                | undefined
+            )?.validationResult ?? null
+          }
+        />
+      </div>
+
+      {modulesQuery.isLoading ? (
+        <CardSkeletonList count={3} />
+      ) : modulesQuery.isError ? (
+        <ErrorBanner
+          message="Failed to load modules."
+          onRetry={() => void modulesQuery.refetch()}
+        />
+      ) : modules.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          No extension modules registered yet. Upload a .py module file above.
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-slate-300 p-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-          No modules yet. Create one to organize your devices.
-        </div>
+        <ModuleTable modules={modules} onDelete={setDeletingModule} />
       )}
-
-      <SlideOverPanel
-        title="Add Module"
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-      >
-        <DeviceTypeForm
-          mode="create"
-          onCancel={() => setIsCreateOpen(false)}
-          isSubmitting={createMutation.isPending}
-          onSubmit={async (values) => {
-            await createMutation.mutateAsync({
-              name: values.name,
-              firmware_source_url: values.firmwareSourceUrl,
-              check_frequency_minutes: values.checkFrequencyMinutes,
-              extension_module_id: null,
-            });
-            setIsCreateOpen(false);
-          }}
-        />
-      </SlideOverPanel>
-
-      <SlideOverPanel
-        title="Edit Module"
-        isOpen={editingModule !== null}
-        onClose={() => setEditingModule(null)}
-      >
-        {editingModule ? (
-          <DeviceTypeForm
-            key={editingModule.id}
-            mode="edit"
-            initialValues={{
-              name: editingModule.name,
-              firmwareSourceUrl: editingModule.firmware_source_url,
-              checkFrequencyMinutes: editingModule.check_frequency_minutes,
-            }}
-            onCancel={() => setEditingModule(null)}
-            isSubmitting={updateMutation.isPending}
-            onSubmit={async (values) => {
-              await updateMutation.mutateAsync({
-                deviceTypeId: editingModule.id,
-                payload: {
-                  name: values.name,
-                  firmware_source_url: values.firmwareSourceUrl,
-                  check_frequency_minutes: values.checkFrequencyMinutes,
-                  extension_module_id: null,
-                },
-              });
-              setEditingModule(null);
-            }}
-          />
-        ) : null}
-      </SlideOverPanel>
 
       <ConfirmDialog
         isOpen={deletingModule !== null}
         title="Delete Module"
         description={
           deletingModule
-            ? deletingModule.device_count > 0
-              ? `Delete ${deletingModule.name}? This will also delete ${deletingModule.device_count} devices.`
-              : `Delete ${deletingModule.name}?`
+            ? `Delete ${deletingModule.filename}? This action cannot be undone.`
             : "Delete selected module?"
         }
-        confirmLabel={deletingModule?.device_count ? "Delete All" : "Delete"}
+        confirmLabel="Delete"
         onCancel={() => setDeletingModule(null)}
-        onConfirm={() => {
-          if (!deletingModule) {
-            return;
-          }
-          void deleteMutation
-            .mutateAsync({
-              deviceTypeId: deletingModule.id,
-              confirmCascade: deletingModule.device_count > 0,
-            })
-            .then(() => {
-              setDeletingModule(null);
-            });
-        }}
+        onConfirm={handleConfirmDelete}
       />
     </section>
   );

@@ -6,6 +6,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from backend.src.models.validation_result import (
+    PhaseResult as PhaseResultModel,
+    ValidationResult as ValidationResultModel,
+)
+
 
 class ModuleResponse(BaseModel):
     """API response for a registered extension module."""
@@ -47,3 +52,21 @@ class CheckExecutionResponse(BaseModel):
     error_description: str | None = None
     checked_at: datetime
     check_history_id: int
+
+
+class ModuleUploadResponse(ModuleResponse):
+    """API response after a successful module upload.
+
+    Identical to ModuleResponse — exists as a named type for OpenAPI clarity.
+    """
+
+
+class UploadErrorDetail(BaseModel):
+    """Error response for upload rejections with optional validation details."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    detail: str
+    error_code: str
+    field: str | None = None
+    validation_result: ValidationResultModel | None = None

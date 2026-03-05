@@ -11,7 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from backend.src.api.schemas.errors import ErrorCode, ErrorResponse
-from backend.src.services.exceptions import BinocularError, ValidationError
+from backend.src.services.exceptions import BinocularError, UploadRejectedError, ValidationError
 
 logger = structlog.get_logger(__name__)
 
@@ -63,11 +63,27 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(BinocularError)
     async def handle_domain_error(request: Request, exc: BinocularError) -> JSONResponse:
+        error_code = cast(ErrorCode, exc.error_code)
+        request.state.error_code = error_code
+
+        if isinstance(exc, UploadRejectedError) and exc.validation_result is not None:
+            payload: dict[str, Any] = {
+                "detail": exc.detail,
+                "error_code": error_code,
+                "field": exc.field,
+                "validation_result": exc.validation_result.model_dump(),
+            }
+            return JSONResponse(
+                status_code=exc.status_code,
+                content=payload,
+                headers=_correlation_headers(request),
+            )
+
         return _error_response(
             request,
             status_code=exc.status_code,
             detail=exc.detail,
-            error_code=cast(ErrorCode, exc.error_code),
+            error_code=error_code,
             field=exc.field,
         )
 

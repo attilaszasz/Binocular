@@ -4,6 +4,7 @@ export type ApiErrorCode =
   | "DUPLICATE_NAME"
   | "NOT_FOUND"
   | "VALIDATION_ERROR"
+  | "VALIDATION_FAILED"
   | "CASCADE_BLOCKED"
   | "NO_LATEST_VERSION"
   | "INTERNAL_ERROR";
@@ -101,4 +102,55 @@ export class ApiError extends Error {
     this.field = params.field ?? null;
     this.diagnostics = params.diagnostics ?? "";
   }
+}
+
+// --- Extension Module types ---
+
+export interface ExtensionModule {
+  id: number;
+  filename: string;
+  module_version: string | null;
+  supported_device_type: string | null;
+  is_active: boolean;
+  file_hash: string | null;
+  last_error: string | null;
+  loaded_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ValidationErrorCode =
+  | "SYNTAX_ERROR"
+  | "MISSING_FUNCTION"
+  | "INVALID_SIGNATURE"
+  | "MISSING_CONSTANT"
+  | "ENCODING_ERROR"
+  | "FILE_TOO_LARGE"
+  | "RUNTIME_EXCEPTION"
+  | "RUNTIME_TIMEOUT"
+  | "INVALID_RETURN_VALUE";
+
+export interface ValidationErrorDetail {
+  code: ValidationErrorCode;
+  message: string;
+}
+
+export interface PhaseResult {
+  status: "pass" | "fail" | "skipped";
+  errors: ValidationErrorDetail[];
+  version_found: string | null;
+  elapsed_seconds: number | null;
+}
+
+export interface ValidationResult {
+  static_phase: PhaseResult;
+  runtime_phase: PhaseResult;
+  overall_verdict: "pass" | "fail";
+}
+
+export interface UploadErrorResponse {
+  detail: string;
+  error_code: ApiErrorCode;
+  field: string | null;
+  validation_result: ValidationResult | null;
 }

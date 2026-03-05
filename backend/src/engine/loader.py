@@ -120,12 +120,16 @@ class ModuleLoader:
         """Look up a loaded module by filename."""
         return self._registry.get(filename)
 
+    def unload(self, filename: str) -> bool:
+        """Remove a module from the in-memory registry. Returns True if it was present."""
+        return self._registry.pop(filename, None) is not None
+
     # ------------------------------------------------------------------
     # Discovery
     # ------------------------------------------------------------------
 
     def _discover_files(self) -> list[Path]:
-        """Find .py files in the modules directory, excluding _prefix and __init__.py."""
+        """Find .py files in the modules directory, excluding __dunder__ files."""
         if not self._modules_dir.exists():
             return []
 
@@ -133,7 +137,7 @@ class ModuleLoader:
         for f in sorted(self._modules_dir.iterdir()):
             if not f.is_file() or f.suffix != ".py":
                 continue
-            if f.name.startswith("_") or f.name == "__init__.py":
+            if f.name.startswith("__"):
                 logger.debug("module.load.skipped", filename=f.name, reason="excluded by naming convention")
                 continue
             files.append(f)

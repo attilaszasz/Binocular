@@ -17,11 +17,12 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import importlib.machinery
 import importlib.util
 import time
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from backend.src.models.check_result import CheckResult
 from backend.src.models.validation_result import (
@@ -369,7 +370,7 @@ async def validate(
         timeout_seconds=timeout_seconds,
     )
 
-    verdict = "pass" if runtime_result.status == "pass" else "fail"
+    verdict: Literal["pass", "fail"] = "pass" if runtime_result.status == "pass" else "fail"
     return ValidationResult(
         static_phase=static_result,
         runtime_phase=runtime_result,
@@ -385,7 +386,8 @@ async def validate(
 def _safe_import(path: Path) -> types.ModuleType:
     """Import a module file via importlib without polluting sys.modules."""
     module_name = f"binocular_val_{path.stem}"
-    spec = importlib.util.spec_from_file_location(module_name, path)
+    loader = importlib.machinery.SourceFileLoader(module_name, str(path))
+    spec = importlib.util.spec_from_file_location(module_name, path, loader=loader)
     if spec is None or spec.loader is None:
         raise ImportError(f"Cannot create module spec for {path}")
     mod = importlib.util.module_from_spec(spec)
