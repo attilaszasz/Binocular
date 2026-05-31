@@ -18,6 +18,9 @@ jobs:
     name: Backend quality gates
     runs-on: ubuntu-latest
     steps:
+      - name: Configure Git defaults
+        run: git config --global init.defaultBranch main
+
       - name: Check out repository
         uses: actions/checkout@v5
 
@@ -52,6 +55,9 @@ jobs:
     name: Frontend quality gates
     runs-on: ubuntu-latest
     steps:
+      - name: Configure Git defaults
+        run: git config --global init.defaultBranch main
+
       - name: Check out repository
         uses: actions/checkout@v5
 
@@ -101,6 +107,9 @@ jobs:
     name: Docker image build
     runs-on: ubuntu-latest
     steps:
+      - name: Configure Git defaults
+        run: git config --global init.defaultBranch main
+
       - name: Check out repository
         uses: actions/checkout@v5
 
