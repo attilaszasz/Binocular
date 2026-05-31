@@ -8,28 +8,26 @@ import {
   Moon,
   Package,
   Plus,
-  RefreshCw,
   Server,
   Settings,
   Sun,
   TerminalSquare,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
+import {
+  archiveDevice,
+  confirmDeviceUpdate,
+  createDevice,
+  DeviceGroup,
+  DeviceInput,
+  InventoryDevice,
+  listInventory,
+  updateDevice,
+} from './api';
 import { useTheme } from './theme/useTheme';
-
-type Device = {
-  id: number;
-  name: string;
-  model: string;
-  type: string;
-  localVersion: string;
-  webVersion: string;
-  lastChecked: string;
-  isChecking: boolean;
-};
 
 type LogEntry = {
   id: number;
@@ -45,59 +43,6 @@ type ModuleEntry = {
   devices: number;
   version: string;
 };
-
-const initialDevices: Device[] = [
-  {
-    id: 1,
-    name: 'Sony A7IV',
-    model: 'ILCE-7M4',
-    type: 'Sony Alpha Bodies',
-    localVersion: '2.00',
-    webVersion: '3.00',
-    lastChecked: '10 mins ago',
-    isChecking: false,
-  },
-  {
-    id: 2,
-    name: 'Sony 24-70mm f/2.8 GM II',
-    model: 'SEL2470GM2',
-    type: 'Sony E-Mount Lenses',
-    localVersion: '02',
-    webVersion: '02',
-    lastChecked: '1 hour ago',
-    isChecking: false,
-  },
-  {
-    id: 3,
-    name: 'Sony 70-200mm f/2.8 GM II',
-    model: 'SEL70200GM2',
-    type: 'Sony E-Mount Lenses',
-    localVersion: '03',
-    webVersion: '04',
-    lastChecked: '2 hours ago',
-    isChecking: false,
-  },
-  {
-    id: 4,
-    name: 'Lumix GH6',
-    model: 'DC-GH6',
-    type: 'Panasonic Lumix Bodies',
-    localVersion: '2.3',
-    webVersion: '2.3',
-    lastChecked: '1 day ago',
-    isChecking: false,
-  },
-  {
-    id: 5,
-    name: 'Ubiquiti Dream Machine Pro',
-    model: 'UDM-Pro',
-    type: 'Networking',
-    localVersion: '3.2.12',
-    webVersion: '3.2.12',
-    lastChecked: '5 mins ago',
-    isChecking: false,
-  },
-];
 
 const initialLogs: LogEntry[] = [
   { id: 1, time: '10:42 AM', level: 'INFO', message: 'Manual check started for Sony A7IV' },
@@ -126,71 +71,110 @@ const pageTitles: Record<string, string> = {
   '/settings': 'Settings',
 };
 
+const emptyDeviceInput: DeviceInput = {
+  name: '',
+  model: '',
+  deviceType: '',
+  currentVersion: '',
+};
+
 export function App() {
-  const [devices, setDevices] = useState<Device[]>(initialDevices);
+  const [groups, setGroups] = useState<DeviceGroup[]>([]);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
+  const [isInventoryLoading, setIsInventoryLoading] = useState(true);
+  const [formValues, setFormValues] = useState<DeviceInput>(emptyDeviceInput);
+  const [editingDevice, setEditingDevice] = useState<InventoryDevice | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>(initialLogs);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCheckingAll, setIsCheckingAll] = useState(false);
   const { mode, toggleMode } = useTheme();
   const location = useLocation();
 
-  const groupedDevices = useMemo(() => {
-    return devices.reduce<Record<string, Device[]>>((groups, device) => {
-      groups[device.type] = [...(groups[device.type] ?? []), device];
-      return groups;
-    }, {});
-  }, [devices]);
+  useEffect(() => {
+    void refreshInventory();
+  }, []);
+
+  const devices = useMemo(() => groups.flatMap((group) => group.devices), [groups]);
 
   const stats = useMemo(() => {
     const total = devices.length;
-    const updates = devices.filter((device) => device.localVersion !== device.webVersion).length;
-    return { total, updates, upToDate: total - updates };
+    const updates = devices.filter((device) => device.status === 'update_available').length;
+    const upToDate = devices.filter((device) => device.status === 'up_to_date').length;
+    return { total, updates, upToDate };
   }, [devices]);
+
+  async function refreshInventory() {
+    setIsInventoryLoading(true);
+    setInventoryError(null);
+    try {
+      const inventory = await listInventory();
+      setGroups(inventory.groups);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Inventory failed to load';
+      setInventoryError(message);
+    } finally {
+      setIsInventoryLoading(false);
+    }
+  }
 
   function addLog(level: LogEntry['level'], message: string) {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setLogs((current) => [{ id: Date.now(), time, level, message }, ...current].slice(0, 50));
   }
 
-  function handleCheckDevice(id: number) {
-    setDevices((current) =>
-      current.map((device) => (device.id === id ? { ...device, isChecking: true } : device)),
-    );
-
-    window.setTimeout(() => {
-      setDevices((current) =>
-        current.map((device) =>
-          device.id === id ? { ...device, isChecking: false, lastChecked: 'Just now' } : device,
-        ),
-      );
-      addLog('INFO', `Completed manual check for device ID ${id}`);
-    }, 600);
+  function handleInputChange(field: keyof DeviceInput, value: string) {
+    setFormValues((current) => ({ ...current, [field]: value }));
   }
 
-  function handleCheckAll() {
-    setIsCheckingAll(true);
-    setDevices((current) => current.map((device) => ({ ...device, isChecking: true })));
-    addLog('INFO', 'Initiated bulk check for all devices');
-
-    window.setTimeout(() => {
-      setDevices((current) =>
-        current.map((device) => ({ ...device, isChecking: false, lastChecked: 'Just now' })),
-      );
-      setIsCheckingAll(false);
-      addLog('INFO', 'Bulk check completed successfully');
-    }, 900);
+  function startEditing(device: InventoryDevice) {
+    setEditingDevice(device);
+    setFormValues({
+      name: device.name,
+      model: device.model,
+      deviceType: device.deviceType,
+      currentVersion: device.currentVersion,
+    });
   }
 
-  function handleMarkUpdated(id: number) {
-    setDevices((current) =>
-      current.map((device) => {
-        if (device.id !== id) {
-          return device;
-        }
-        addLog('INFO', `User confirmed update for ${device.name}. Version synced to ${device.webVersion}`);
-        return { ...device, localVersion: device.webVersion };
-      }),
-    );
+  function cancelEditing() {
+    setEditingDevice(null);
+    setFormValues(emptyDeviceInput);
+  }
+
+  async function handleSubmitDevice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      if (editingDevice === null) {
+        const device = await createDevice(formValues);
+        addLog('INFO', `Added ${device.name} to inventory`);
+      } else {
+        const device = await updateDevice(editingDevice.id, formValues);
+        addLog('INFO', `Updated ${device.name}`);
+      }
+      cancelEditing();
+      await refreshInventory();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Inventory save failed';
+      setInventoryError(message);
+      addLog('ERROR', message);
+    }
+  }
+
+  async function handleArchiveDevice(device: InventoryDevice) {
+    await archiveDevice(device.id);
+    addLog('INFO', `Archived ${device.name}`);
+    await refreshInventory();
+  }
+
+  async function handleMarkUpdated(device: InventoryDevice) {
+    try {
+      const updated = await confirmDeviceUpdate(device.id);
+      addLog('INFO', `User confirmed update for ${updated.name}. Version synced to ${updated.currentVersion}`);
+      await refreshInventory();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No latest version is available';
+      setInventoryError(message);
+      addLog('WARN', message);
+    }
   }
 
   return (
@@ -258,11 +242,17 @@ export function App() {
               path="/inventory"
               element={
                 <InventoryPage
-                  devicesByType={groupedDevices}
+                  groups={groups}
                   stats={stats}
-                  isCheckingAll={isCheckingAll}
-                  onCheckAll={handleCheckAll}
-                  onCheckDevice={handleCheckDevice}
+                  isLoading={isInventoryLoading}
+                  error={inventoryError}
+                  formValues={formValues}
+                  editingDevice={editingDevice}
+                  onFormChange={handleInputChange}
+                  onSubmit={handleSubmitDevice}
+                  onCancelEdit={cancelEditing}
+                  onEdit={startEditing}
+                  onArchive={handleArchiveDevice}
                   onMarkUpdated={handleMarkUpdated}
                 />
               }
@@ -310,19 +300,31 @@ function NavItem({ item, onNavigate }: { item: (typeof navItems)[number]; onNavi
 }
 
 function InventoryPage({
-  devicesByType,
+  groups,
   stats,
-  isCheckingAll,
-  onCheckAll,
-  onCheckDevice,
+  isLoading,
+  error,
+  formValues,
+  editingDevice,
+  onFormChange,
+  onSubmit,
+  onCancelEdit,
+  onEdit,
+  onArchive,
   onMarkUpdated,
 }: {
-  devicesByType: Record<string, Device[]>;
+  groups: DeviceGroup[];
   stats: { total: number; updates: number; upToDate: number };
-  isCheckingAll: boolean;
-  onCheckAll: () => void;
-  onCheckDevice: (id: number) => void;
-  onMarkUpdated: (id: number) => void;
+  isLoading: boolean;
+  error: string | null;
+  formValues: DeviceInput;
+  editingDevice: InventoryDevice | null;
+  onFormChange: (field: keyof DeviceInput, value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onCancelEdit: () => void;
+  onEdit: (device: InventoryDevice) => void;
+  onArchive: (device: InventoryDevice) => void;
+  onMarkUpdated: (device: InventoryDevice) => void;
 }) {
   return (
     <div className="space-y-8">
@@ -334,21 +336,57 @@ function InventoryPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+          <a
+            href="#inventory-form"
+            className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
             <Plus size={16} className="mr-2" />
             Add Device
-          </button>
-          <button
-            type="button"
-            onClick={onCheckAll}
-            disabled={isCheckingAll}
-            className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:bg-indigo-300 dark:hover:bg-indigo-500 dark:disabled:bg-indigo-800 dark:disabled:text-indigo-300"
-          >
-            <RefreshCw size={16} className={`mr-2 ${isCheckingAll ? 'animate-spin' : ''}`} />
-            {isCheckingAll ? 'Checking All...' : 'Check All Now'}
-          </button>
+          </a>
         </div>
       </div>
+
+      <form
+        id="inventory-form"
+        onSubmit={onSubmit}
+        className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:grid-cols-5"
+      >
+        <InventoryInput label="Name" value={formValues.name} onChange={(value) => onFormChange('name', value)} />
+        <InventoryInput label="Model" value={formValues.model} onChange={(value) => onFormChange('model', value)} />
+        <InventoryInput
+          label="Device type"
+          value={formValues.deviceType}
+          onChange={(value) => onFormChange('deviceType', value)}
+        />
+        <InventoryInput
+          label="Current version"
+          value={formValues.currentVersion}
+          onChange={(value) => onFormChange('currentVersion', value)}
+        />
+        <div className="flex items-end gap-2">
+          <button
+            type="submit"
+            className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 dark:hover:bg-indigo-500"
+          >
+            {editingDevice === null ? 'Add' : 'Save'}
+          </button>
+          {editingDevice !== null && (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="h-10 rounded-xl border border-slate-200 px-3 text-sm dark:border-slate-700"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+
+      {error !== null && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Total Devices" value={stats.total} icon={Server} tone="indigo" />
@@ -356,26 +394,48 @@ function InventoryPage({
         <StatCard label="Up to Date" value={stats.upToDate} icon={CheckCircle2} tone="emerald" />
       </div>
 
-      {Object.entries(devicesByType).map(([type, devices]) => (
-        <section key={type} className="space-y-4">
+      {isLoading && <p className="text-sm text-slate-500 dark:text-slate-400">Loading inventory...</p>}
+
+      {!isLoading && groups.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          No devices tracked yet.
+        </div>
+      )}
+
+      {groups.map((group) => (
+        <section key={group.id} className="space-y-4">
           <h3 className="flex items-center text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             <Package size={16} className="mr-2" />
-            {type}
+            {group.name} ({group.count})
           </h3>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {devices.map((device) => (
+            {group.devices.map((device) => (
               <DeviceCard
                 key={device.id}
                 device={device}
-                onCheckDevice={onCheckDevice}
+                onEdit={onEdit}
+                onArchive={onArchive}
                 onMarkUpdated={onMarkUpdated}
-                isCheckingAll={isCheckingAll}
               />
             ))}
           </div>
         </section>
       ))}
     </div>
+  );
+}
+
+function InventoryInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+      <span>{label}</span>
+      <input
+        required
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+      />
+    </label>
   );
 }
 
@@ -413,16 +473,17 @@ function StatCard({
 
 function DeviceCard({
   device,
-  isCheckingAll,
-  onCheckDevice,
+  onEdit,
+  onArchive,
   onMarkUpdated,
 }: {
-  device: Device;
-  isCheckingAll: boolean;
-  onCheckDevice: (id: number) => void;
-  onMarkUpdated: (id: number) => void;
+  device: InventoryDevice;
+  onEdit: (device: InventoryDevice) => void;
+  onArchive: (device: InventoryDevice) => void;
+  onMarkUpdated: (device: InventoryDevice) => void;
 }) {
-  const hasUpdate = device.localVersion !== device.webVersion;
+  const hasUpdate = device.status === 'update_available' && device.latestVersion !== null;
+  const latestVersion = device.latestVersion ?? 'Not checked';
   return (
     <article
       className={`rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 dark:bg-slate-900 ${
@@ -435,17 +496,24 @@ function DeviceCard({
         <div>
           <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100">{device.name}</h4>
           <p className="mt-1 font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{device.model}</p>
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Last checked: {device.lastChecked}</p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{statusLabel(device)}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => onCheckDevice(device.id)}
-          disabled={device.isChecking || isCheckingAll}
-          className="rounded-lg bg-slate-100 p-2 text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-          aria-label={`Check ${device.name} for updates`}
-        >
-          <RefreshCw size={16} className={device.isChecking ? 'animate-spin' : ''} />
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(device)}
+            className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => onArchive(device)}
+            className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          >
+            Archive
+          </button>
+        </div>
       </div>
 
       <div
@@ -454,16 +522,16 @@ function DeviceCard({
         }`}
       >
         <div className="flex flex-1 items-center gap-4">
-          <VersionBlock label="Local" value={device.localVersion} />
+          <VersionBlock label="Recorded" value={device.currentVersion} />
           {hasUpdate && <ArrowRight size={20} className="shrink-0 animate-pulse text-rose-500 dark:text-rose-400" />}
-          <VersionBlock label="Latest" value={device.webVersion} highlight={hasUpdate ? 'update' : 'ok'} />
+          <VersionBlock label="Latest" value={latestVersion} highlight={hasUpdate ? 'update' : device.status === 'up_to_date' ? 'ok' : undefined} />
         </div>
 
         {hasUpdate && (
           <div className="ml-4 shrink-0 border-l border-slate-200 pl-4 dark:border-slate-700">
             <button
               type="button"
-              onClick={() => onMarkUpdated(device.id)}
+              onClick={() => onMarkUpdated(device)}
               className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-100 px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30"
             >
               <Check size={16} className="mr-1.5" />
@@ -476,6 +544,19 @@ function DeviceCard({
   );
 }
 
+function statusLabel(device: InventoryDevice) {
+  if (device.status === 'never_checked') {
+    return 'Not checked yet';
+  }
+  if (device.status === 'check_failed') {
+    return 'Last check failed';
+  }
+  if (device.lastCheckedAt !== null) {
+    return `Last checked: ${new Date(device.lastCheckedAt).toLocaleString()}`;
+  }
+  return device.status === 'update_available' ? 'Update available' : 'Up to date';
+}
+
 function VersionBlock({ label, value, highlight }: { label: string; value: string; highlight?: 'update' | 'ok' }) {
   const colorClass =
     highlight === 'update'
@@ -486,7 +567,7 @@ function VersionBlock({ label, value, highlight }: { label: string; value: strin
   return (
     <div className="min-w-0 flex-1">
       <p className="mb-1 text-xs font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">{label}</p>
-      <p className={`font-mono text-lg font-semibold ${colorClass}`}>v{value}</p>
+      <p className={`font-mono text-lg font-semibold ${colorClass}`}>{value}</p>
     </div>
   );
 }

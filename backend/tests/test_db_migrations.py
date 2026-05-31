@@ -143,4 +143,4 @@ async def test_app_lifespan_applies_migrations_before_serving(tmp_path: Path) ->
 
     async with app.router.lifespan_context(app):
         assert (tmp_path / "binocular.db").exists()
-        assert versions(tmp_path / "binocular.db") == [1]
+        assert versions(tmp_path / "binocular.db") == [1, 2]

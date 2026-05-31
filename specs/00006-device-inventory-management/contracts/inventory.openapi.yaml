@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info:
+  title: Binocular Inventory API
+  version: 0.1.0
+paths:
+  /api/v1/inventory:
+    get:
+      summary: List active devices grouped by type
+      responses:
+        '200':
+          description: Grouped inventory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryResponse'
+    post:
+      summary: Create a device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCreate'
+      responses:
+        '201':
+          description: Created device
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '422':
+          description: Validation error
+  /api/v1/inventory/{deviceId}:
+    patch:
+      summary: Update a device
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceUpdate'
+      responses:
+        '200':
+          description: Updated device
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Device not found
+        '422':
+          description: Validation error
+    delete:
+      summary: Archive a device out of active inventory
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '204':
+          description: Archived
+        '404':
+          description: Device not found
+  /api/v1/inventory/{deviceId}/confirm-update:
+    post:
+      summary: Confirm physical update and sync current version
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: Confirmed device
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Device not found
+        '409':
+          description: No latest known version available
+components:
+  parameters:
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    InventoryResponse:
+      type: object
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceGroup'
+    DeviceGroup:
+      type: object
+      required: [id, name, count, devices]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        count: { type: integer }
+        devices:
+          type: array
+          items: { $ref: '#/components/schemas/Device' }
+    Device:
+      type: object
+      required: [id, deviceTypeId, deviceType, name, model, currentVersion, status, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        deviceTypeId: { type: integer }
+        deviceType: { type: string }
+        name: { type: string }
+        model: { type: string }
+        currentVersion: { type: string }
+        latestVersion: { type: string, nullable: true }
+        lastCheckedAt: { type: string, format: date-time, nullable: true }
+        lastSuccessAt: { type: string, format: date-time, nullable: true }
+        status:
+          type: string
+          enum: [never_checked, check_failed, update_available, up_to_date]
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DeviceCreate:
+      type: object
+      required: [name, model, deviceType, currentVersion]
+      properties:
+        name: { type: string, minLength: 1 }
+        model: { type: string, minLength: 1 }
+        deviceType: { type: string, minLength: 1 }
+        currentVersion: { type: string, minLength: 1 }
+    DeviceUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        model: { type: string, minLength: 1 }
+        deviceType: { type: string, minLength: 1 }
+        currentVersion: { type: string, minLength: 1 }
