@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Nunito+Sans:wght@400;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-surface: 244 241 234;
+  --color-panel: 255 255 255;
+  --color-ink: 31 41 55;
+  --color-muted: 91 104 117;
+  --color-accent: 10 132 120;
+}
+
+:root.dark {
+  --color-surface: 18 24 31;
+  --color-panel: 28 36 46;
+  --color-ink: 236 241 245;
+  --color-muted: 159 173 185;
+  --color-accent: 69 192 172;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-ink));
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}

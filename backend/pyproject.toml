@@ -27,6 +27,7 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/binocular"]
+artifacts = ["src/binocular/static_dist/**"]
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --strict-config"

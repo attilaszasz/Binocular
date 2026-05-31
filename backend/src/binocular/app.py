@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from binocular.config import Settings, get_settings
 from binocular.logging import configure_logging
 from binocular.routes import api_router
+from binocular.static import mount_spa
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -34,4 +35,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = resolved_settings
     app.include_router(api_router)
+    mount_spa(app)
     return app

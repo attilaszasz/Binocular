@@ -1,0 +1,48 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Backend: FastAPI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "binocular.main:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8000",
+                "--reload"
+            ],
+            "cwd": "${workspaceFolder}/backend",
+            "python": "${workspaceFolder}/backend/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Frontend: Vite",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev -- --host 127.0.0.1 --port 5173",
+            "cwd": "${workspaceFolder}/frontend",
+            "serverReadyAction": {
+                "pattern": "Local:\\s+(http://127\\.0\\.0\\.1:5173/)",
+                "uriFormat": "%s",
+                "action": "openExternally"
+            }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Binocular: Backend + Frontend",
+            "configurations": [
+                "Backend: FastAPI",
+                "Frontend: Vite"
+            ],
+            "stopAll": true
+        }
+    ]
+}

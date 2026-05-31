@@ -1,8 +1,17 @@
+FROM node:22-slim AS frontend-builder
+
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
 FROM python:3.13-slim AS builder
 
 WORKDIR /build
 COPY backend/pyproject.toml ./pyproject.toml
 COPY backend/src ./src
+COPY --from=frontend-builder /frontend/dist ./src/binocular/static_dist
 RUN python -m pip install --no-cache-dir --root-user-action=ignore --upgrade pip build \
     && python -m build --wheel --outdir /wheels
 

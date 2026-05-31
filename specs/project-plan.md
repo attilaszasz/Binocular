@@ -26,7 +26,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 > Each depends only on E001 and touches a distinct area, so all four run in parallel. E002 delivers the early-validation build pipeline first.
 
 - [X] E002 [P1] [OPERATIONAL] [P] {DOD:DDR-001}{DOD:DDR-002} Continuous Integration Pipeline — lint, type-check, test, image build on every change
-- [ ] E003 [P1] [TECHNICAL] [P] {SAD:ADR-0003} Frontend SPA Shell — Vite/React/Tailwind app served as static files
+- [X] E003 [P1] [TECHNICAL] [P] {SAD:ADR-0003} Frontend SPA Shell — Vite/React/Tailwind app served as static files
 - [ ] E004 [P1] [TECHNICAL] [P] {SAD:ADR-0004}{DOD:DDR-003} Data Layer & Migrations — aiosqlite, raw SQL, numbered migrations
 - [ ] E007 [P1] [TECHNICAL] [P] {PRD:CAP-008}{SAD:ADR-0006} Responsible Scraping Client — central polite httpx client
 
