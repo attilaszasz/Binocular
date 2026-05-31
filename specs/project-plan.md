@@ -46,7 +46,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 - [X] E008 [P1] [PRODUCT] [P] {PRD:CAP-003} Module Lifecycle Management — upload, update, delete modules via UI
 - [X] E009 [P1] [PRODUCT] [P] {PRD:CAP-006} Update Detection & Comparison — determine newer-than-recorded reliably
 - [X] E015 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Sony Alpha Module — Sony Alpha detection with fixtures
-- [ ] E020 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Panasonic Lumix Module — Panasonic Lumix detection with fixtures
+- [X] E020 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Panasonic Lumix Module — Panasonic Lumix detection with fixtures
 
 ### Wave 5 — Checking Workflows
 
