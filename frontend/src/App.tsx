@@ -19,6 +19,7 @@ import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import {
   archiveDevice,
+  CheckResult,
   confirmDeviceUpdate,
   createDevice,
   DeviceGroup,
@@ -30,6 +31,8 @@ import {
   listModules,
   ModuleUploadError,
   ModuleValidationSummary,
+  runAllChecks,
+  runDeviceCheck,
   uploadModule,
   updateDevice,
 } from './api';
@@ -78,6 +81,12 @@ export function App() {
   const [moduleError, setModuleError] = useState<string | null>(null);
   const [moduleValidation, setModuleValidation] = useState<ModuleValidationSummary | null>(null);
   const [selectedModuleFile, setSelectedModuleFile] = useState<File | null>(null);
+  const [preferredCheckModuleId, setPreferredCheckModuleId] = useState('');
+  const [manualResults, setManualResults] = useState<Record<number, CheckResult>>({});
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [checkingDeviceIds, setCheckingDeviceIds] = useState<Set<number>>(new Set());
+  const [isBulkChecking, setIsBulkChecking] = useState(false);
+  const [bulkSummary, setBulkSummary] = useState<{ total: number; succeeded: number; failed: number } | null>(null);
   const [isModulesLoading, setIsModulesLoading] = useState(false);
   const [formValues, setFormValues] = useState<DeviceInput>(emptyDeviceInput);
   const [editingDevice, setEditingDevice] = useState<InventoryDevice | null>(null);
@@ -89,6 +98,7 @@ export function App() {
   useEffect(() => {
     if (location.pathname === '/' || location.pathname === '/inventory') {
       void refreshInventory();
+      void refreshModules();
     }
     if (location.pathname === '/modules') {
       void refreshModules();
@@ -96,6 +106,13 @@ export function App() {
   }, [location.pathname]);
 
   const devices = useMemo(() => groups.flatMap((group) => group.devices), [groups]);
+  const validModules = useMemo(
+    () => modules.filter((module) => module.status === 'installed' && module.validationStatus === 'valid'),
+    [modules],
+  );
+  const selectedCheckModuleId = validModules.some((module) => module.moduleId === preferredCheckModuleId)
+    ? preferredCheckModuleId
+    : (validModules[0]?.moduleId ?? '');
 
   const stats = useMemo(() => {
     const total = devices.length;
@@ -190,6 +207,58 @@ export function App() {
       const message = error instanceof Error ? error.message : 'No latest version is available';
       setInventoryError(message);
       addLog('WARN', message);
+    }
+  }
+
+  async function handleRunDeviceCheck(device: InventoryDevice) {
+    if (selectedCheckModuleId === '') {
+      setManualError('Install and validate a module before running manual checks');
+      return;
+    }
+    setManualError(null);
+    setCheckingDeviceIds((current) => new Set(current).add(device.id));
+    try {
+      const result = await runDeviceCheck(device.id, { moduleId: selectedCheckModuleId });
+      setManualResults((current) => ({ ...current, [device.id]: result }));
+      setBulkSummary(null);
+      addLog(result.status === 'failed' ? 'WARN' : 'INFO', `Manual check completed for ${device.name}`);
+      await refreshInventory();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Manual check failed';
+      setManualError(message);
+      addLog('ERROR', message);
+    } finally {
+      setCheckingDeviceIds((current) => {
+        const next = new Set(current);
+        next.delete(device.id);
+        return next;
+      });
+    }
+  }
+
+  async function handleRunAllChecks() {
+    if (selectedCheckModuleId === '') {
+      setManualError('Install and validate a module before running manual checks');
+      return;
+    }
+    setManualError(null);
+    setBulkSummary(null);
+    setIsBulkChecking(true);
+    try {
+      const response = await runAllChecks({ moduleId: selectedCheckModuleId });
+      setManualResults((current) => ({
+        ...current,
+        ...Object.fromEntries(response.results.map((result) => [result.deviceId, result])),
+      }));
+      setBulkSummary({ total: response.total, succeeded: response.succeeded, failed: response.failed });
+      addLog('INFO', `Manual bulk check completed. ${response.succeeded}/${response.total} succeeded.`);
+      await refreshInventory();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Manual bulk check failed';
+      setManualError(message);
+      addLog('ERROR', message);
+    } finally {
+      setIsBulkChecking(false);
     }
   }
 
@@ -307,6 +376,16 @@ export function App() {
                   onEdit={startEditing}
                   onArchive={handleArchiveDevice}
                   onMarkUpdated={handleMarkUpdated}
+                  modules={validModules}
+                  selectedModuleId={selectedCheckModuleId}
+                  manualResults={manualResults}
+                  manualError={manualError}
+                  bulkSummary={bulkSummary}
+                  checkingDeviceIds={checkingDeviceIds}
+                  isBulkChecking={isBulkChecking}
+                  onModuleChange={setPreferredCheckModuleId}
+                  onRunDeviceCheck={handleRunDeviceCheck}
+                  onRunAllChecks={handleRunAllChecks}
                 />
               }
             />
@@ -379,6 +458,16 @@ function InventoryPage({
   onEdit,
   onArchive,
   onMarkUpdated,
+  modules,
+  selectedModuleId,
+  manualResults,
+  manualError,
+  bulkSummary,
+  checkingDeviceIds,
+  isBulkChecking,
+  onModuleChange,
+  onRunDeviceCheck,
+  onRunAllChecks,
 }: {
   groups: DeviceGroup[];
   stats: { total: number; updates: number; upToDate: number };
@@ -392,7 +481,18 @@ function InventoryPage({
   onEdit: (device: InventoryDevice) => void;
   onArchive: (device: InventoryDevice) => void;
   onMarkUpdated: (device: InventoryDevice) => void;
+  modules: InstalledModule[];
+  selectedModuleId: string;
+  manualResults: Record<number, CheckResult>;
+  manualError: string | null;
+  bulkSummary: { total: number; succeeded: number; failed: number } | null;
+  checkingDeviceIds: Set<number>;
+  isBulkChecking: boolean;
+  onModuleChange: (moduleId: string) => void;
+  onRunDeviceCheck: (device: InventoryDevice) => void;
+  onRunAllChecks: () => void;
 }) {
+  const canCheck = selectedModuleId !== '';
   return (
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -403,6 +503,34 @@ function InventoryPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <label className="sr-only" htmlFor="manualCheckModule">
+            Manual check module
+          </label>
+          <select
+            id="manualCheckModule"
+            value={selectedModuleId}
+            onChange={(event) => onModuleChange(event.target.value)}
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            {modules.length === 0 ? (
+              <option value="">No valid modules</option>
+            ) : (
+              modules.map((module) => (
+                <option key={module.moduleId} value={module.moduleId}>
+                  {module.displayName}
+                </option>
+              ))
+            )}
+          </select>
+          <button
+            type="button"
+            onClick={onRunAllChecks}
+            disabled={!canCheck || isBulkChecking}
+            className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            <Binoculars size={16} className="mr-2" />
+            {isBulkChecking ? 'Checking...' : 'Check All'}
+          </button>
           <a
             href="#inventory-form"
             className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
@@ -455,6 +583,18 @@ function InventoryPage({
         </div>
       )}
 
+      {manualError !== null && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300">
+          {manualError}
+        </div>
+      )}
+
+      {bulkSummary !== null && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+          Manual bulk check complete: {bulkSummary.succeeded}/{bulkSummary.total} succeeded, {bulkSummary.failed} failed.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Total Devices" value={stats.total} icon={Server} tone="indigo" />
         <StatCard label="Updates Available" value={stats.updates} icon={AlertCircle} tone="rose" />
@@ -483,6 +623,10 @@ function InventoryPage({
                 onEdit={onEdit}
                 onArchive={onArchive}
                 onMarkUpdated={onMarkUpdated}
+                manualResult={manualResults[device.id]}
+                isChecking={checkingDeviceIds.has(device.id)}
+                canCheck={canCheck}
+                onRunCheck={onRunDeviceCheck}
               />
             ))}
           </div>
@@ -543,14 +687,23 @@ function DeviceCard({
   onEdit,
   onArchive,
   onMarkUpdated,
+  manualResult,
+  isChecking,
+  canCheck,
+  onRunCheck,
 }: {
   device: InventoryDevice;
   onEdit: (device: InventoryDevice) => void;
   onArchive: (device: InventoryDevice) => void;
   onMarkUpdated: (device: InventoryDevice) => void;
+  manualResult: CheckResult | undefined;
+  isChecking: boolean;
+  canCheck: boolean;
+  onRunCheck: (device: InventoryDevice) => void;
 }) {
   const hasUpdate = device.status === 'update_available' && device.latestVersion !== null;
   const latestVersion = device.latestVersion ?? 'Not checked';
+  const resultStatus = manualResult?.status.replaceAll('_', ' ');
   return (
     <article
       className={`rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 dark:bg-slate-900 ${
@@ -566,6 +719,14 @@ function DeviceCard({
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{statusLabel(device)}</p>
         </div>
         <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onRunCheck(device)}
+            disabled={!canCheck || isChecking}
+            className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
+          >
+            {isChecking ? 'Checking...' : 'Check Now'}
+          </button>
           <button
             type="button"
             onClick={() => onEdit(device)}
@@ -607,6 +768,22 @@ function DeviceCard({
           </div>
         )}
       </div>
+
+      {manualResult !== undefined && (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-950/40">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-medium capitalize text-slate-700 dark:text-slate-200">Manual result: {resultStatus}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {manualResult.lastCheckedAt === null ? 'No timestamp' : new Date(manualResult.lastCheckedAt).toLocaleString()}
+            </span>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-3 font-mono text-xs text-slate-600 dark:text-slate-300">
+            <span>Stored: {manualResult.currentVersion}</span>
+            <span>Latest: {manualResult.latestVersion ?? 'Unavailable'}</span>
+          </div>
+          {manualResult.detail !== null && <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">{manualResult.detail}</p>}
+        </div>
+      )}
     </article>
   );
 }

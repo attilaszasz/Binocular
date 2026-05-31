@@ -13,7 +13,7 @@ from binocular.extensions.runner import ModuleRunner
 from binocular.repositories.inventory import InventoryRepository
 from binocular.repositories.modules import ModuleRepository
 from binocular.scraping.client import ScrapeClient
-from binocular.services.checks import CheckResult, CheckService
+from binocular.services.checks import CheckConfigurationError, CheckResult, CheckService
 
 router = APIRouter(prefix="/checks", tags=["checks"])
 
@@ -26,6 +26,12 @@ class RunDeviceCheckRequest(BaseModel):
     extra: dict[str, str] = Field(default_factory=dict)
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class RunBulkCheckRequest(RunDeviceCheckRequest):
+    """Run all-devices check request payload."""
+
+    max_concurrency: int | None = Field(default=None, alias="maxConcurrency", ge=1, le=8)
 
 
 class CheckResultResponse(BaseModel):
@@ -48,6 +54,13 @@ class CheckResultResponse(BaseModel):
 class CheckErrorResponse(BaseModel):
     code: str
     detail: str
+
+
+class BulkCheckResponse(BaseModel):
+    results: list[CheckResultResponse]
+    total: int
+    succeeded: int
+    failed: int
 
 
 async def get_check_service(request: Request) -> AsyncIterator[CheckService]:
@@ -106,6 +119,34 @@ async def run_device_check(
             status.HTTP_409_CONFLICT,
         )
     return _response(result)
+
+
+@router.post("/all", response_model=BulkCheckResponse)
+async def run_all_device_checks(
+    payload: RunBulkCheckRequest,
+    service: CheckServiceDependency,
+) -> BulkCheckResponse:
+    try:
+        results = await service.run_all_device_checks(
+            module_id=payload.module_id,
+            source_url=payload.source_url,
+            extra=payload.extra,
+            max_concurrency=payload.max_concurrency,
+        )
+    except CheckConfigurationError as error:
+        if error.code == "module_not_found":
+            raise _http_error(error.code, error.detail, status.HTTP_404_NOT_FOUND) from error
+        if error.code == "module_not_runnable":
+            raise _http_error(error.code, error.detail, status.HTTP_409_CONFLICT) from error
+        raise
+    responses = [_response(result) for result in results]
+    failed = sum(1 for result in results if result.status == "failed")
+    return BulkCheckResponse(
+        results=responses,
+        total=len(responses),
+        succeeded=len(responses) - failed,
+        failed=failed,
+    )
 
 
 def _response(result: CheckResult) -> CheckResultResponse:

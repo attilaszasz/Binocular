@@ -1,5 +1,6 @@
 """Firmware update detection service."""
 
+import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -13,6 +14,15 @@ from binocular.scraping.client import ScrapeClient
 from binocular.services.version_compare import VersionComparisonError, compare_versions
 
 CheckStatus = Literal["up_to_date", "update_available", "failed"]
+
+
+class CheckConfigurationError(Exception):
+    """Raised when a manual check request cannot be started."""
+
+    def __init__(self, code: str, detail: str) -> None:
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
 
 
 @dataclass(frozen=True)
@@ -215,6 +225,37 @@ class CheckService:
             detail=detail,
             diagnostics={"error_type": error_type},
         )
+
+    async def run_all_device_checks(
+        self,
+        *,
+        module_id: str,
+        source_url: str | None = None,
+        extra: dict[str, str] | None = None,
+        max_concurrency: int | None = None,
+    ) -> list[CheckResult]:
+        """Run manual checks for every active device with bounded concurrency."""
+
+        module = await self.module_repository.get_module(module_id)
+        if module is None:
+            raise CheckConfigurationError("module_not_found", "Module not found")
+        if module.status != "installed" or module.validation_status != "valid":
+            raise CheckConfigurationError("module_not_runnable", "Module is not runnable")
+
+        devices = await self.inventory_repository.list_active_devices()
+        concurrency = min(max(max_concurrency or 4, 1), 8)
+        semaphore = asyncio.Semaphore(concurrency)
+
+        async def run_one(device: DeviceRecord) -> CheckResult:
+            async with semaphore:
+                return await self.run_device_check(
+                    device.id,
+                    module_id=module_id,
+                    source_url=source_url,
+                    extra=extra,
+                )
+
+        return list(await asyncio.gather(*(run_one(device) for device in devices)))
 
     @staticmethod
     def _unpersisted_failure(

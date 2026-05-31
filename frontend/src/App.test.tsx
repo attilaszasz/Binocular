@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -67,6 +67,19 @@ const modulesResponse = {
   ],
 };
 
+const checkResult = {
+  deviceId: 1,
+  moduleId: 'sony-alpha',
+  status: 'update_available',
+  currentVersion: '2.00',
+  latestVersion: '3.00',
+  lastCheckedAt: '2026-05-31T10:00:00Z',
+  lastSuccessAt: '2026-05-31T10:00:00Z',
+  sourceUrl: 'https://vendor.example/a7iv',
+  detail: null,
+  diagnostics: { comparison: { is_newer: true } },
+};
+
 function mockInventoryFetch() {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input);
@@ -82,6 +95,12 @@ function mockInventoryFetch() {
     }
     if (url === '/api/v1/modules/sony-alpha' && method === 'DELETE') {
       return new Response(null, { status: 204 });
+    }
+    if (url === '/api/v1/checks/devices/1' && method === 'POST') {
+      return new Response(JSON.stringify(checkResult), { status: 200 });
+    }
+    if (url === '/api/v1/checks/all' && method === 'POST') {
+      return new Response(JSON.stringify({ results: [checkResult], total: 1, succeeded: 1, failed: 0 }), { status: 200 });
     }
     return new Response(JSON.stringify(inventoryResponse.groups[0].devices[0]), {
       status: method === 'POST' && url === '/api/v1/inventory' ? 201 : 200,
@@ -170,6 +189,73 @@ describe('App shell', () => {
     await user.click(screen.getAllByRole('button', { name: 'Sync Local' })[0]);
 
     expect(fetch).toHaveBeenCalledWith('/api/v1/inventory/1/confirm-update', expect.objectContaining({ method: 'POST' }));
+  });
+
+  it('runs a manual check for one inventory device', async () => {
+    const user = userEvent.setup();
+    renderApp('/inventory');
+
+    expect(await screen.findByText('Sony A7IV')).toBeInTheDocument();
+    expect(await screen.findByRole('combobox', { name: 'Manual check module' })).toHaveValue('sony-alpha');
+
+    await user.click(screen.getAllByRole('button', { name: 'Check Now' })[0]);
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/v1/checks/devices/1',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ moduleId: 'sony-alpha' }) }),
+    );
+    expect(await screen.findByText('Manual result: update available')).toBeInTheDocument();
+    expect(screen.getByText('Stored: 2.00')).toBeInTheDocument();
+    expect(screen.getAllByText('Latest: 3.00')[0]).toBeInTheDocument();
+  });
+
+  it('runs a manual check for all inventory devices', async () => {
+    const user = userEvent.setup();
+    renderApp('/inventory');
+
+    expect(await screen.findByText('Sony A7IV')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Check All' }));
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/v1/checks/all',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ moduleId: 'sony-alpha' }) }),
+    );
+    expect(await screen.findByText('Manual bulk check complete: 1/1 succeeded, 0 failed.')).toBeInTheDocument();
+  });
+
+  it('keeps inventory controls usable while a bulk check is running', async () => {
+    const user = userEvent.setup();
+    let resolveBulk: (response: Response) => void = () => undefined;
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url === '/api/v1/inventory' && method === 'GET') {
+        return new Response(JSON.stringify(inventoryResponse), { status: 200 });
+      }
+      if (url === '/api/v1/modules' && method === 'GET') {
+        return new Response(JSON.stringify(modulesResponse), { status: 200 });
+      }
+      if (url === '/api/v1/checks/all' && method === 'POST') {
+        return new Promise<Response>((resolve) => {
+          resolveBulk = resolve;
+        });
+      }
+      return new Response(JSON.stringify(inventoryResponse.groups[0].devices[0]), { status: 200 });
+    });
+    renderApp('/inventory');
+
+    expect(await screen.findByText('Sony A7IV')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Check All' }));
+
+    expect(screen.getByRole('button', { name: 'Checking...' })).toBeDisabled();
+    expect(screen.getAllByRole('button', { name: 'Check Now' })[0]).not.toBeDisabled();
+
+    await act(async () => {
+      resolveBulk(new Response(JSON.stringify({ results: [checkResult], total: 1, succeeded: 1, failed: 0 }), { status: 200 }));
+    });
+
+    expect(await screen.findByText('Manual bulk check complete: 1/1 succeeded, 0 failed.')).toBeInTheDocument();
   });
 
   it('creates and archives inventory devices through the API', async () => {
