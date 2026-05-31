@@ -238,4 +238,5 @@ Project-level architectural decisions are maintained as standalone MADR files un
 
 *Managed section — rewritten by SDD planning agents. Do not edit manually.*
 
-- Reserved for reusable project-level technical context promoted from downstream planning runs.
+- SQLite persistence uses an application-owned startup migration runner with append-only numbered SQL files, `schema_version` tracking, required connection pragmas, and a fatal pre-migration backup gate before pending migrations apply.
+- Domain repositories use a shared raw-SQL repository base with parameter binding and allowlisted dynamic identifiers; no ORM abstraction is introduced.

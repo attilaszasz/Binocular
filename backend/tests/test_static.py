@@ -31,8 +31,8 @@ async def test_mount_spa_serves_index_and_deep_links(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_app_preserves_health_endpoints_without_static_build() -> None:
-    app = create_app(Settings(environment="test", version="0.1.0"))
+async def test_app_preserves_health_endpoints_without_static_build(tmp_path: Path) -> None:
+    app = create_app(Settings(environment="test", version="0.1.0", data_dir=tmp_path))
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:

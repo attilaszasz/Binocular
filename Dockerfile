@@ -18,12 +18,15 @@ RUN python -m pip install --no-cache-dir --root-user-action=ignore --upgrade pip
 FROM python:3.13-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    BINOCULAR_DATA_DIR=/app/data
 
 RUN groupadd --system binocular \
     && useradd --system --gid binocular --home-dir /app --create-home binocular
 
 WORKDIR /app
+RUN mkdir -p /app/data /app/modules \
+    && chown -R binocular:binocular /app/data /app/modules
 COPY --from=builder /wheels/*.whl /tmp/
 RUN python -m pip install --no-cache-dir --root-user-action=ignore /tmp/*.whl \
     && rm /tmp/*.whl

@@ -7,6 +7,7 @@ import structlog
 from fastapi import FastAPI
 
 from binocular.config import Settings, get_settings
+from binocular.db.migrations import MigrationRunner
 from binocular.logging import configure_logging
 from binocular.routes import api_router
 from binocular.static import mount_spa
@@ -26,6 +27,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             service=resolved_settings.app_name,
             version=resolved_settings.version,
         )
+        runner = MigrationRunner.from_settings(resolved_settings)
+        await runner.apply_pending()
         yield
 
     app = FastAPI(

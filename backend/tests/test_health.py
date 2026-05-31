@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -6,8 +8,8 @@ from binocular.config import Settings
 
 
 @pytest.mark.asyncio
-async def test_healthz_returns_liveness_payload() -> None:
-    app = create_app(Settings(environment="test", version="0.1.0"))
+async def test_healthz_returns_liveness_payload(tmp_path: Path) -> None:
+    app = create_app(Settings(environment="test", version="0.1.0", data_dir=tmp_path))
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
@@ -18,8 +20,8 @@ async def test_healthz_returns_liveness_payload() -> None:
 
 
 @pytest.mark.asyncio
-async def test_healthz_is_available_without_dependency_setup() -> None:
-    app = create_app(Settings(environment="test"))
+async def test_healthz_is_available_without_dependency_setup(tmp_path: Path) -> None:
+    app = create_app(Settings(environment="test", data_dir=tmp_path))
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
