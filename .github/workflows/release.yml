@@ -55,7 +55,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trivy vulnerability gate
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.CANDIDATE_IMAGE }}
           vuln-type: os,library
@@ -99,7 +99,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate SBOM
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: cyclonedx
