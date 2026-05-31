@@ -45,12 +45,43 @@ const inventoryResponse = {
   ],
 };
 
+const modulesResponse = {
+  modules: [
+    {
+      moduleId: 'sony-alpha',
+      displayName: 'Sony Alpha',
+      author: 'Binocular',
+      version: '1.0.0',
+      status: 'installed',
+      validationStatus: 'valid',
+      validationSummary: {
+        overall_status: 'valid',
+        static_phase: { phase: 'static', status: 'passed', findings: [] },
+        runtime_phase: { phase: 'runtime', status: 'skipped', findings: [] },
+      },
+      sourceHash: 'abc123',
+      lastValidatedAt: '2026-05-31T10:00:00Z',
+      createdAt: '2026-05-31T10:00:00Z',
+      updatedAt: '2026-05-31T10:00:00Z',
+    },
+  ],
+};
+
 function mockInventoryFetch() {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
     if (url === '/api/v1/inventory' && method === 'GET') {
       return new Response(JSON.stringify(inventoryResponse), { status: 200 });
+    }
+    if (url === '/api/v1/modules' && method === 'GET') {
+      return new Response(JSON.stringify(modulesResponse), { status: 200 });
+    }
+    if (url === '/api/v1/modules' && method === 'POST') {
+      return new Response(JSON.stringify(modulesResponse.modules[0]), { status: 201 });
+    }
+    if (url === '/api/v1/modules/sony-alpha' && method === 'DELETE') {
+      return new Response(null, { status: 204 });
     }
     return new Response(JSON.stringify(inventoryResponse.groups[0].devices[0]), {
       status: method === 'POST' && url === '/api/v1/inventory' ? 201 : 200,
@@ -83,7 +114,32 @@ describe('App shell', () => {
     renderApp('/modules');
 
     expect(screen.getByRole('heading', { name: 'Extension Modules' })).toBeInTheDocument();
-    expect(screen.getByText('sony_alpha.py')).toBeInTheDocument();
+    expect(screen.getByText(/trusted Python code/i)).toBeInTheDocument();
+  });
+
+  it('loads and deletes installed modules', async () => {
+    const user = userEvent.setup();
+    renderApp('/modules');
+
+    expect(await screen.findByText('Sony Alpha')).toBeInTheDocument();
+    expect(screen.getByText('sony-alpha')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(fetch).toHaveBeenCalledWith('/api/v1/modules/sony-alpha', expect.objectContaining({ method: 'DELETE' }));
+  });
+
+  it('uploads modules and renders validation feedback', async () => {
+    const user = userEvent.setup();
+    renderApp('/modules');
+
+    await user.upload(screen.getByLabelText('Module file'), new File(['module'], 'module.py'));
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/v1/modules',
+      expect.objectContaining({ method: 'POST', body: expect.any(FormData) }),
+    );
   });
 
   it('navigates without a page reload', async () => {

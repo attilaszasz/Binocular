@@ -23,8 +23,14 @@ import {
   createDevice,
   DeviceGroup,
   DeviceInput,
+  deleteModule,
+  InstalledModule,
   InventoryDevice,
   listInventory,
+  listModules,
+  ModuleUploadError,
+  ModuleValidationSummary,
+  uploadModule,
   updateDevice,
 } from './api';
 import { useTheme } from './theme/useTheme';
@@ -36,25 +42,11 @@ type LogEntry = {
   message: string;
 };
 
-type ModuleEntry = {
-  id: number;
-  name: string;
-  status: 'Active' | 'Inactive';
-  devices: number;
-  version: string;
-};
-
 const initialLogs: LogEntry[] = [
   { id: 1, time: '10:42 AM', level: 'INFO', message: 'Manual check started for Sony A7IV' },
   { id: 2, time: '10:42 AM', level: 'WARN', message: 'New firmware v3.00 found for Sony A7IV (Local: v2.00)' },
   { id: 3, time: '09:00 AM', level: 'INFO', message: 'Scheduled check completed. 15 devices scanned.' },
   { id: 4, time: '08:59 AM', level: 'ERROR', message: 'Failed to scrape Panasonic URL: HTTP 429 Too Many Requests' },
-];
-
-const modules: ModuleEntry[] = [
-  { id: 1, name: 'sony_alpha.py', status: 'Active', devices: 3, version: '1.2.0' },
-  { id: 2, name: 'panasonic_lumix.py', status: 'Active', devices: 1, version: '1.0.5' },
-  { id: 3, name: 'unifi_network.py', status: 'Inactive', devices: 1, version: '0.9.1' },
 ];
 
 const navItems = [
@@ -82,6 +74,11 @@ export function App() {
   const [groups, setGroups] = useState<DeviceGroup[]>([]);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
   const [isInventoryLoading, setIsInventoryLoading] = useState(true);
+  const [modules, setModules] = useState<InstalledModule[]>([]);
+  const [moduleError, setModuleError] = useState<string | null>(null);
+  const [moduleValidation, setModuleValidation] = useState<ModuleValidationSummary | null>(null);
+  const [selectedModuleFile, setSelectedModuleFile] = useState<File | null>(null);
+  const [isModulesLoading, setIsModulesLoading] = useState(false);
   const [formValues, setFormValues] = useState<DeviceInput>(emptyDeviceInput);
   const [editingDevice, setEditingDevice] = useState<InventoryDevice | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>(initialLogs);
@@ -92,6 +89,9 @@ export function App() {
   useEffect(() => {
     if (location.pathname === '/' || location.pathname === '/inventory') {
       void refreshInventory();
+    }
+    if (location.pathname === '/modules') {
+      void refreshModules();
     }
   }, [location.pathname]);
 
@@ -115,6 +115,20 @@ export function App() {
       setInventoryError(message);
     } finally {
       setIsInventoryLoading(false);
+    }
+  }
+
+  async function refreshModules() {
+    setIsModulesLoading(true);
+    setModuleError(null);
+    try {
+      const response = await listModules();
+      setModules(response.modules);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Modules failed to load';
+      setModuleError(message);
+    } finally {
+      setIsModulesLoading(false);
     }
   }
 
@@ -176,6 +190,43 @@ export function App() {
       const message = error instanceof Error ? error.message : 'No latest version is available';
       setInventoryError(message);
       addLog('WARN', message);
+    }
+  }
+
+  async function handleUploadModule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (selectedModuleFile === null || selectedModuleFile.size === 0) {
+      setModuleError('Choose a Python module file before uploading');
+      return;
+    }
+    setModuleError(null);
+    setModuleValidation(null);
+    try {
+      const installed = await uploadModule(selectedModuleFile);
+      addLog('INFO', `Installed module ${installed.displayName}`);
+      setSelectedModuleFile(null);
+      form.reset();
+      await refreshModules();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Module upload failed';
+      setModuleError(message);
+      if (error instanceof ModuleUploadError) {
+        setModuleValidation(error.validationSummary);
+      }
+      addLog('ERROR', message);
+    }
+  }
+
+  async function handleDeleteModule(module: InstalledModule) {
+    try {
+      await deleteModule(module.moduleId);
+      addLog('INFO', `Deleted module ${module.displayName}`);
+      await refreshModules();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Module delete failed';
+      setModuleError(message);
+      addLog('ERROR', message);
     }
   }
 
@@ -260,7 +311,21 @@ export function App() {
               }
             />
             <Route path="/logs" element={<LogsPage logs={logs} />} />
-            <Route path="/modules" element={<ModulesPage />} />
+            <Route
+              path="/modules"
+              element={
+                <ModulesPage
+                  modules={modules}
+                  isLoading={isModulesLoading}
+                  error={moduleError}
+                  validation={moduleValidation}
+                  selectedFile={selectedModuleFile}
+                  onFileSelect={setSelectedModuleFile}
+                  onUpload={handleUploadModule}
+                  onDelete={handleDeleteModule}
+                />
+              }
+            />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/inventory" replace />} />
           </Routes>
@@ -606,40 +671,127 @@ function LogsPage({ logs }: { logs: LogEntry[] }) {
   );
 }
 
-function ModulesPage() {
+function ModulesPage({
+  modules,
+  isLoading,
+  error,
+  validation,
+  selectedFile,
+  onFileSelect,
+  onUpload,
+  onDelete,
+}: {
+  modules: InstalledModule[];
+  isLoading: boolean;
+  error: string | null;
+  validation: ModuleValidationSummary | null;
+  selectedFile: File | null;
+  onFileSelect: (file: File | null) => void;
+  onUpload: (event: FormEvent<HTMLFormElement>) => void;
+  onDelete: (module: InstalledModule) => void;
+}) {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
         <PageHeader title="Extension Modules" description="Manage Python scripts that scrape firmware data." />
-        <button className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-          <Plus size={16} className="mr-2" />
-          Upload Module
-        </button>
+        <form onSubmit={onUpload} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="sr-only" htmlFor="moduleFile">
+            Module file
+          </label>
+          <input
+            id="moduleFile"
+            name="moduleFile"
+            type="file"
+            accept=".py,text/x-python"
+            onChange={(event) => onFileSelect(event.currentTarget.files?.[0] ?? null)}
+            className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:file:bg-slate-700 dark:file:text-slate-200 sm:w-72"
+          />
+          {selectedFile !== null && <span className="text-xs text-slate-500 dark:text-slate-400">{selectedFile.name}</span>}
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            <Plus size={16} className="mr-2" />
+            Upload
+          </button>
+        </form>
       </div>
+
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+        Modules are trusted Python code and run unsandboxed with application privileges.
+      </div>
+
+      {error !== null && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300">
+          {error}
+        </div>
+      )}
+
+      {validation !== null && <ValidationSummary summary={validation} />}
+
+      {isLoading && <p className="text-sm text-slate-500 dark:text-slate-400">Loading modules...</p>}
+
+      {!isLoading && modules.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          No modules installed yet.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {modules.map((module) => (
           <article
-            key={module.id}
+            key={module.moduleId}
             className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="mb-4 flex items-start justify-between">
               <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600 dark:bg-slate-800 dark:text-indigo-400">
                 <TerminalSquare size={24} />
               </div>
-              <ModuleStatus status={module.status} />
+              <ModuleStatus status={module.validationStatus} />
             </div>
-            <h3 className="truncate font-mono text-lg font-bold">{module.name}</h3>
-            <p className="mb-4 mt-1 text-sm text-slate-500 dark:text-slate-400">Version {module.version}</p>
+            <h3 className="truncate font-mono text-lg font-bold">{module.displayName}</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{module.moduleId}</p>
+            <p className="mb-4 mt-1 text-sm text-slate-500 dark:text-slate-400">Version {module.version ?? 'unknown'}</p>
             <div className="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
               <span className="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400">
                 <Server size={14} className="mr-1.5" />
-                {module.devices} mapped devices
+                {module.lastValidatedAt === null ? 'Not validated' : `Validated ${new Date(module.lastValidatedAt).toLocaleString()}`}
               </span>
-              <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
-                Configure
+              <button
+                type="button"
+                onClick={() => onDelete(module)}
+                className="text-sm font-medium text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+              >
+                Delete
               </button>
             </div>
           </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ValidationSummary({ summary }: { summary: ModuleValidationSummary }) {
+  return (
+    <div className="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-500/30 dark:bg-slate-900">
+      <h3 className="text-sm font-semibold text-rose-700 dark:text-rose-300">Validation feedback</h3>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        {[summary.static_phase, summary.runtime_phase].map((phase) => (
+          <div key={phase.phase} className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/70">
+            <p className="font-semibold capitalize text-slate-900 dark:text-slate-100">
+              {phase.phase} {phase.status}
+            </p>
+            {phase.findings.length === 0 ? (
+              <p className="mt-1 text-slate-500 dark:text-slate-400">No findings.</p>
+            ) : (
+              <ul className="mt-2 space-y-1 text-slate-600 dark:text-slate-300">
+                {phase.findings.map((finding) => (
+                  <li key={`${phase.phase}-${finding.code}`}>{finding.message}</li>
+                ))}
+              </ul>
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -686,10 +838,12 @@ function LogBadge({ level }: { level: LogEntry['level'] }) {
   return <span className={`inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium ${className}`}>{level}</span>;
 }
 
-function ModuleStatus({ status }: { status: ModuleEntry['status'] }) {
+function ModuleStatus({ status }: { status: InstalledModule['validationStatus'] }) {
   const className =
-    status === 'Active'
+    status === 'valid'
       ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400'
-      : 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400';
+      : status === 'invalid'
+        ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400'
+        : 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400';
   return <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${className}`}>{status}</span>;
 }

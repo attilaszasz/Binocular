@@ -21,14 +21,15 @@ export class ApiClient {
 
   async request<TResponse>(path: string, options: RequestOptions = {}): Promise<TResponse> {
     const { body, headers, ...init } = options;
+    const isFormData = body instanceof FormData;
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
         Accept: 'application/json',
-        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...(body === undefined || isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...headers,
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
     });
 
     if (!response.ok) {

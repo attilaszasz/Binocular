@@ -43,7 +43,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 > Module lifecycle UI, the version-comparison core, and the shipped starter modules. Distinct areas → parallel.
 
-- [ ] E008 [P1] [PRODUCT] [P] {PRD:CAP-003} Module Lifecycle Management — upload, update, delete modules via UI
+- [X] E008 [P1] [PRODUCT] [P] {PRD:CAP-003} Module Lifecycle Management — upload, update, delete modules via UI
 - [ ] E009 [P1] [PRODUCT] [P] {PRD:CAP-006} Update Detection & Comparison — determine newer-than-recorded reliably
 - [ ] E015 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Starter Modules — Sony Alpha + Panasonic Lumix with fixtures
 

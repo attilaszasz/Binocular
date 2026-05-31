@@ -102,6 +102,13 @@ class ModuleRepository(Repository):
             raise RuntimeError(msg)
         return record
 
+    async def delete_module(self, module_id: str) -> ModuleRecord | None:
+        record = await self.get_module(module_id)
+        if record is None:
+            return None
+        await self.execute("DELETE FROM modules WHERE module_id = ?", (module_id,))
+        return record
+
     async def list_modules(self) -> list[ModuleRecord]:
         rows = await self.fetch_all(
             """

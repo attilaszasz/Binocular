@@ -1,0 +1,161 @@
+openapi: 3.1.0
+info:
+  title: Binocular Module Lifecycle API
+  version: 0.1.0
+paths:
+  /api/v1/modules:
+    get:
+      summary: List installed modules
+      operationId: listModules
+      tags: [modules]
+      responses:
+        '200':
+          description: Installed modules and latest validation state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleListResponse'
+    post:
+      summary: Upload or update a module
+      operationId: uploadModule
+      tags: [modules]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Python module source file; .py only; 1..262144 bytes.
+      responses:
+        '200':
+          description: Existing module updated after validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleResponse'
+        '201':
+          description: New module installed after validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleResponse'
+        '400':
+          description: Upload or validation rejected before installation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleLifecycleError'
+  /api/v1/modules/{moduleId}:
+    delete:
+      summary: Delete an installed module
+      operationId: deleteModule
+      tags: [modules]
+      parameters:
+        - name: moduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Module metadata and active source removed
+        '404':
+          description: Module not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleLifecycleError'
+components:
+  schemas:
+    ModuleListResponse:
+      type: object
+      required: [modules]
+      properties:
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModuleResponse'
+    ModuleResponse:
+      type: object
+      required: [moduleId, displayName, status, validationStatus, validationSummary, sourceHash, createdAt, updatedAt]
+      properties:
+        moduleId:
+          type: string
+        displayName:
+          type: string
+        author:
+          type: [string, 'null']
+        version:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [installed, disabled]
+        validationStatus:
+          type: string
+          enum: [unvalidated, valid, invalid]
+        validationSummary:
+          $ref: '#/components/schemas/ModuleValidationSummary'
+        sourceHash:
+          type: string
+        lastValidatedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ModuleValidationSummary:
+      type: object
+      required: [overallStatus, staticPhase, runtimePhase]
+      properties:
+        overallStatus:
+          type: string
+          enum: [valid, invalid]
+        staticPhase:
+          $ref: '#/components/schemas/ValidationPhase'
+        runtimePhase:
+          $ref: '#/components/schemas/ValidationPhase'
+    ValidationPhase:
+      type: object
+      required: [phase, status, findings]
+      properties:
+        phase:
+          type: string
+          enum: [static, runtime]
+        status:
+          type: string
+          enum: [passed, failed, skipped]
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationFinding'
+        message:
+          type: [string, 'null']
+    ValidationFinding:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    ModuleLifecycleError:
+      type: object
+      required: [detail, code]
+      properties:
+        code:
+          type: string
+          enum: [invalid_upload, validation_failed, module_not_found, install_failed]
+        detail:
+          type: string
+        validationSummary:
+          anyOf:
+            - $ref: '#/components/schemas/ModuleValidationSummary'
+            - type: 'null'
