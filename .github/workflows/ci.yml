@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -113,6 +116,7 @@ jobs:
           context: .
           file: Dockerfile
           push: false
+          load: true
           tags: binocular:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max

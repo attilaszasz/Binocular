@@ -3,7 +3,7 @@ FROM python:3.13-slim AS builder
 WORKDIR /build
 COPY backend/pyproject.toml ./pyproject.toml
 COPY backend/src ./src
-RUN python -m pip install --no-cache-dir --upgrade pip build \
+RUN python -m pip install --no-cache-dir --root-user-action=ignore --upgrade pip build \
     && python -m build --wheel --outdir /wheels
 
 FROM python:3.13-slim AS runtime
@@ -16,7 +16,7 @@ RUN groupadd --system binocular \
 
 WORKDIR /app
 COPY --from=builder /wheels/*.whl /tmp/
-RUN python -m pip install --no-cache-dir /tmp/*.whl \
+RUN python -m pip install --no-cache-dir --root-user-action=ignore /tmp/*.whl \
     && rm /tmp/*.whl
 
 USER binocular
