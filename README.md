@@ -27,6 +27,14 @@ docker run --rm -p 8000:8000 binocular:local
 
 The container runs as the non-root `binocular` user and uses `/healthz` as its `HEALTHCHECK`.
 
+## Self-Hosted Deployment
+
+Binocular is designed for a trusted LAN and starts with authentication disabled. Optional HTTP basic auth can be enabled with `BINOCULAR_AUTH_ENABLED=true`, `BINOCULAR_AUTH_USERNAME`, and either `BINOCULAR_AUTH_PASSWORD` or `BINOCULAR_AUTH_PASSWORD_FILE`.
+
+Basic auth is light protection for trusted-network or TLS reverse-proxy deployments. It is not a substitute for network isolation, TLS, or a public-internet security model.
+
+All durable state should live in declared volumes: `/app/data` for SQLite data and backups, and `/app/modules` for trusted extension modules.
+
 ## Extension Trust Boundary
 
 Future extension modules are user-vetted code. They are not sandboxed and will run in-process with application privileges. Non-root container execution reduces host-level blast radius but is not a sandbox.

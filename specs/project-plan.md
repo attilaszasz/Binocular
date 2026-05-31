@@ -36,7 +36,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E005 [P1] [PRODUCT] [P] {PRD:CAP-001} Device Inventory Management — grouped inventory, stored versions, update confirmation
 - [X] E006 [P1] [TECHNICAL] [P] {PRD:CAP-002}{SAD:ADR-0005} Module Engine & Contract — loader, error boundary, two-phase validation
-- [ ] E013 [P1] [PRODUCT] [P] {PRD:CAP-009}{SAD:ADR-0008}{DOD:DDR-002} Self-Hosted Operability — zero-config, secrets, optional basic auth
+- [X] E013 [P1] [PRODUCT] [P] {PRD:CAP-009}{SAD:ADR-0008}{DOD:DDR-002} Self-Hosted Operability — zero-config, secrets, optional basic auth
 - [ ] E018 [P2] [OPERATIONAL] [P] {DOD:DDR-001} Release & Publish Pipeline — multi-arch buildx, GHCR, SemVer, scan, SBOM
 
 ### Wave 4 — Module Management & Detection

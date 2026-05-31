@@ -1,0 +1,23 @@
+services:
+  binocular:
+    build: .
+    image: binocular:local
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - binocular-data:/app/data
+      - binocular-modules:/app/modules
+    secrets:
+      - binocular_auth_password
+    environment:
+      BINOCULAR_AUTH_PASSWORD_FILE: /run/secrets/binocular_auth_password
+
+secrets:
+  binocular_auth_password:
+    file: ./secrets/auth_password
+
+volumes:
+  binocular-data:
+  binocular-modules:

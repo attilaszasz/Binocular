@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 
+from binocular.auth import BasicAuthMiddleware
 from binocular.config import Settings, get_settings
 from binocular.db.migrations import MigrationRunner
 from binocular.logging import configure_logging
@@ -37,6 +38,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = resolved_settings
+    app.add_middleware(BasicAuthMiddleware, settings=resolved_settings)
     app.include_router(api_router)
     mount_spa(app)
     return app
