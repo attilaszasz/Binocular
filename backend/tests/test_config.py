@@ -13,17 +13,23 @@ def test_settings_defaults_require_no_environment(monkeypatch: MonkeyPatch) -> N
     assert settings.app_name == "binocular"
     assert settings.port == 8000
     assert settings.resolved_database_path == settings.data_dir / "binocular.db"
+    assert settings.scrape_user_agent.startswith("Binocular/")
+    assert settings.scrape_timeout_seconds == 10.0
+    assert settings.scrape_rate_limit_interval_seconds == 1.0
+    assert settings.scrape_max_retries == 2
 
 
 def test_settings_accept_environment_override(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("BINOCULAR_PORT", "9000")
     monkeypatch.setenv("BINOCULAR_DATA_DIR", "/tmp/binocular-env-data")
+    monkeypatch.setenv("BINOCULAR_SCRAPE_USER_AGENT", "BinocularTest/1.0")
     get_settings.cache_clear()
 
     settings = get_settings()
 
     assert settings.port == 9000
     assert str(settings.resolved_database_path) == "/tmp/binocular-env-data/binocular.db"
+    assert settings.scrape_user_agent == "BinocularTest/1.0"
 
 
 def test_settings_can_be_supplied_directly() -> None:

@@ -28,7 +28,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 - [X] E002 [P1] [OPERATIONAL] [P] {DOD:DDR-001}{DOD:DDR-002} Continuous Integration Pipeline — lint, type-check, test, image build on every change
 - [X] E003 [P1] [TECHNICAL] [P] {SAD:ADR-0003} Frontend SPA Shell — Vite/React/Tailwind app served as static files
 - [X] E004 [P1] [TECHNICAL] [P] {SAD:ADR-0004}{DOD:DDR-003} Data Layer & Migrations — aiosqlite, raw SQL, numbered migrations
-- [ ] E007 [P1] [TECHNICAL] [P] {PRD:CAP-008}{SAD:ADR-0006} Responsible Scraping Client — central polite httpx client
+- [X] E007 [P1] [TECHNICAL] [P] {PRD:CAP-008}{SAD:ADR-0006} Responsible Scraping Client — central polite httpx client
 
 ### Wave 3 — Domain & Extensibility Foundations
 

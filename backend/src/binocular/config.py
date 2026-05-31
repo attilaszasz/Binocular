@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     database_path: Path | None = None
     backup_dir: Path | None = None
     sqlite_busy_timeout_ms: int = Field(default=5000, ge=0)
+    scrape_user_agent: str = Field(default="Binocular/0.1.0 (+https://github.com/attila/binocular)")
+    scrape_timeout_seconds: float = Field(default=10.0, gt=0)
+    scrape_rate_limit_interval_seconds: float = Field(default=1.0, ge=0)
+    scrape_max_retries: int = Field(default=2, ge=0)
+    scrape_backoff_base_seconds: float = Field(default=0.5, ge=0)
 
     @property
     def resolved_database_path(self) -> Path:
