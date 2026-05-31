@@ -1,0 +1,58 @@
+{
+    // ── Copilot Chat: Core ──────────────────────────────────────────
+    "github.copilot.chat.askQuestions.enabled": true,
+    "chat.useAgentsMdFile": true,
+
+    // Enable experimental browser tools for Copilot agent runtime
+    // validation in the integrated browser. Requires the Built-in >
+    // Browser tools to also be enabled in the chat tools picker.
+    "workbench.browser.enableChatTools": true,
+
+    "chat.promptFilesRecommendations": {
+        "sddp-prd": true,
+        "sddp-systemdesign": true,
+        "sddp-devops": true,
+        "sddp-projectplan": true,
+        "sddp-init": true,
+        "sddp-amend": true,
+        "sddp-autopilot": true,
+        "sddp-specify": true,
+        "sddp-clarify": true,
+        "sddp-plan": true,
+        "sddp-checklist": true,
+        "sddp-tasks": true,
+        "sddp-analyze": true,
+        "sddp-implement": true,
+        "sddp-implement-qc-loop": true,
+        "sddp-qc": true,
+        "sddp-devsetup": true
+    },
+
+    // ── Copilot Chat: Uninterrupted Execution ───────────────────────
+    // Raise per-turn tool-call limit (default ~30) so long phases
+    // like /sddp-implement and /sddp-qc don't hit the ceiling.
+    "chat.agent.maxRequests": 200,
+
+    // Auto-approve tool calls (file reads, edits, creates, agent
+    // delegations) without confirmation dialogs.
+    "chat.tools.autoApprove": true,
+
+    // Auto-approve terminal command execution (build, test, lint, git).
+    "github.copilot.chat.agent.runCommand.autoApprove": true,
+
+    // When Copilot detects errors after an edit, fix automatically.
+    "chat.agent.autoFix": true,
+
+    // ── Editor: Auto-Save ───────────────────────────────────────────
+    // Ensure terminal commands always see the latest file state.
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 500,
+
+    // Claude skill wrappers use frontmatter fields such as `allowed-tools`
+    // that are valid for runtime loading but trigger false-positive editor
+    // schema errors when treated as GitHub skill files.
+    "files.associations": {
+        "**/.claude/skills/**/SKILL.md": "markdown"
+    }
+}
+
