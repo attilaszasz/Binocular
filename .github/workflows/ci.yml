@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: python -m pip install -e ".[dev]"
+
+      - name: Ruff lint
+        working-directory: backend
+        run: ruff check .
+
+      - name: mypy strict type check
+        working-directory: backend
+        run: mypy .
+
+      - name: Pytest with coverage
+        working-directory: backend
+        run: pytest --cov=binocular --cov-report=term-missing
+
+      - name: Dependency security audit
+        working-directory: backend
+        run: pip-audit
+
+  frontend:
+    name: Frontend quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Detect frontend package
+        id: frontend
+        shell: bash
+        run: |
+          if [[ -f frontend/package.json ]]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report absent frontend
+        if: steps.frontend.outputs.exists == 'false'
+        run: echo "No frontend/package.json found; frontend CI gates will activate when E003 adds the SPA."
+
+      - name: Set up Node
+        if: steps.frontend.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        if: steps.frontend.outputs.exists == 'true'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend lint
+        if: steps.frontend.outputs.exists == 'true'
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend type check
+        if: steps.frontend.outputs.exists == 'true'
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Frontend tests
+        if: steps.frontend.outputs.exists == 'true'
+        working-directory: frontend
+        run: npm test -- --run
+
+  docker-build:
+    name: Docker image build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image without publishing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          tags: binocular:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
