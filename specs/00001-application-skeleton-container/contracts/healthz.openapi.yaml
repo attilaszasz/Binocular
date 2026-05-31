@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Binocular Skeleton API
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      summary: Liveness check
+      operationId: getHealthz
+      security: []
+      responses:
+        "200":
+          description: Application process is responsive.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - service
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  service:
+                    type: string
+                    enum: [binocular]
+                  version:
+                    type: string
+                    description: Application version when available.

@@ -19,7 +19,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 > No dependencies. Establishes the runnable application shell and container so all later work — including the build pipeline — has something concrete to validate.
 
-- [ ] E001 [P1] [TECHNICAL] {SAD:ADR-0001}{SAD:ADR-0002} Application Skeleton & Container — layered FastAPI app, config, /healthz, non-root image
+- [X] E001 [P1] [TECHNICAL] {SAD:ADR-0001}{SAD:ADR-0002} Application Skeleton & Container — layered FastAPI app, config, /healthz, non-root image
 
 ### Wave 2 — Validation & Core Infrastructure
 
