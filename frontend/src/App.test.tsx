@@ -90,6 +90,8 @@ describe('App shell', () => {
     const user = userEvent.setup();
     renderApp('/inventory');
 
+    await screen.findByText('Sony A7IV');
+
     await user.click(screen.getAllByRole('link', { name: 'Activity Logs' })[0]);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Activity Logs' })).toBeInTheDocument();

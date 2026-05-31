@@ -90,8 +90,10 @@ export function App() {
   const location = useLocation();
 
   useEffect(() => {
-    void refreshInventory();
-  }, []);
+    if (location.pathname === '/' || location.pathname === '/inventory') {
+      void refreshInventory();
+    }
+  }, [location.pathname]);
 
   const devices = useMemo(() => groups.flatMap((group) => group.devices), [groups]);
 

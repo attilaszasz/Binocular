@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     data_dir: Path = Path("data")
     database_path: Path | None = None
     backup_dir: Path | None = None
+    modules_dir: Path = Path("modules")
+    module_timeout_seconds: float = Field(default=10.0, gt=0)
     sqlite_busy_timeout_ms: int = Field(default=5000, ge=0)
     scrape_user_agent: str = Field(default="Binocular/0.1.0 (+https://github.com/attila/binocular)")
     scrape_timeout_seconds: float = Field(default=10.0, gt=0)
