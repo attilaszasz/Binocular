@@ -4,7 +4,7 @@
 
 ## Product Document
 
-**Path**: 
+**Path**: specs/prd.md
 
 ## Technical Context Document
 
@@ -24,7 +24,7 @@
 
 ## Autopilot
 
-**Enabled**: false
+**Enabled**: true
 
 ## Loop Settings
 
