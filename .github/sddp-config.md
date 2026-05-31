@@ -8,7 +8,7 @@
 
 ## Technical Context Document
 
-**Path**: 
+**Path**: specs/sad.md
 
 ## Deployment & Operations Document
 
