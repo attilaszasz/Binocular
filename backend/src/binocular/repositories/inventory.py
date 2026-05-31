@@ -122,6 +122,44 @@ class InventoryRepository(Repository):
             return None
         return await self.require_device(device_id)
 
+    async def record_check_success(
+        self,
+        device_id: int,
+        *,
+        latest_version: str,
+        status: str,
+    ) -> DeviceRecord | None:
+        row_count = await self.execute(
+            """
+            UPDATE devices
+            SET latest_version = ?,
+                last_checked_at = CURRENT_TIMESTAMP,
+                last_success_at = CURRENT_TIMESTAMP,
+                last_check_status = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND is_archived = 0
+            """,
+            (latest_version, status, device_id),
+        )
+        if row_count == 0:
+            return None
+        return await self.require_device(device_id)
+
+    async def record_check_failure(self, device_id: int) -> DeviceRecord | None:
+        row_count = await self.execute(
+            """
+            UPDATE devices
+            SET last_checked_at = CURRENT_TIMESTAMP,
+                last_check_status = 'check_failed',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND is_archived = 0
+            """,
+            (device_id,),
+        )
+        if row_count == 0:
+            return None
+        return await self.require_device(device_id)
+
     async def get_device(self, device_id: int) -> DeviceRecord | None:
         row = await self.fetch_one(
             """

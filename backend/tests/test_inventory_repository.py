@@ -64,3 +64,61 @@ async def test_inventory_repository_archives_devices_out_of_active_list(tmp_path
 
     assert archived is True
     assert devices == []
+
+
+@pytest.mark.asyncio
+async def test_inventory_repository_records_successful_check(tmp_path: Path) -> None:
+    repository = await open_migrated_repository(tmp_path)
+    try:
+        device_type_id = await repository.get_or_create_device_type("Camera", "camera")
+        device = await repository.create_device(
+            device_type_id=device_type_id,
+            name="Camera A",
+            model="A1",
+            current_version="1.0",
+        )
+        updated = await repository.record_check_success(
+            device.id,
+            latest_version="1.1",
+            status="update_available",
+        )
+        await repository.connection.commit()
+    finally:
+        await repository.connection.close()
+
+    assert updated is not None
+    assert updated.latest_version == "1.1"
+    assert updated.status == "update_available"
+    assert updated.last_checked_at is not None
+    assert updated.last_success_at == updated.last_checked_at
+
+
+@pytest.mark.asyncio
+async def test_inventory_repository_records_failed_check_without_success_timestamp(
+    tmp_path: Path,
+) -> None:
+    repository = await open_migrated_repository(tmp_path)
+    try:
+        device_type_id = await repository.get_or_create_device_type("Camera", "camera")
+        device = await repository.create_device(
+            device_type_id=device_type_id,
+            name="Camera A",
+            model="A1",
+            current_version="1.0",
+        )
+        successful = await repository.record_check_success(
+            device.id,
+            latest_version="1.0",
+            status="up_to_date",
+        )
+        failed = await repository.record_check_failure(device.id)
+        await repository.connection.commit()
+    finally:
+        await repository.connection.close()
+
+    assert successful is not None
+    assert failed is not None
+    assert failed.status == "check_failed"
+    assert failed.latest_version == "1.0"
+    assert failed.last_checked_at is not None
+    assert failed.last_success_at == successful.last_success_at
