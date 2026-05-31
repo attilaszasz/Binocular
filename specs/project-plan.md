@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 19 (P1: 13 · P2: 5 · P3: 1) | **Waves**: 7
+**Total Epics**: 20 (P1: 13 · P2: 6 · P3: 1) | **Waves**: 7
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -45,7 +45,8 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E008 [P1] [PRODUCT] [P] {PRD:CAP-003} Module Lifecycle Management — upload, update, delete modules via UI
 - [X] E009 [P1] [PRODUCT] [P] {PRD:CAP-006} Update Detection & Comparison — determine newer-than-recorded reliably
-- [ ] E015 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Starter Modules — Sony Alpha + Panasonic Lumix with fixtures
+- [ ] E015 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Sony Alpha Module — Sony Alpha detection with fixtures
+- [ ] E020 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Panasonic Lumix Module — Panasonic Lumix detection with fixtures
 
 ### Wave 5 — Checking Workflows
 
@@ -85,7 +86,7 @@ graph LR
     M3 -->|"E005 · E006<br>E013 · E018"| M3
 
     M3 --> M4["Modules +<br>detection"]
-    M4 -->|"E008 · E009<br>E015"| M4
+    M4 -->|"E008 · E009<br>E015 · E020"| M4
 
     M4 --> M5["Check<br>workflows"]
     M5 -->|"E010 · E011<br>E017"| M5
@@ -104,7 +105,7 @@ graph LR
 | 1 | E001 | N/A (single) | Foundation skeleton + container; unblocks everything. |
 | 2 | E002, E003, E004, E007 | Yes | Early CI lands here; infra epics touch distinct areas. |
 | 3 | E005, E006, E013, E018 | Yes | Inventory, module engine, operability, staged release pipeline. |
-| 4 | E008, E009, E015 | Yes | Module lifecycle UI, detection core, starter modules. |
+| 4 | E008, E009, E015, E020 | Yes | Module lifecycle UI, detection core, Sony + Panasonic starter modules. |
 | 5 | E010, E011, E017 | Yes | Manual + scheduled checks, authoring dev kit. |
 | 6 | E012, E014, E019 | Yes | Notifications complete the loop; logging + backups added. |
 | 7 | E016 | N/A (single) | Responsive/dark-mode polish across existing surfaces. |
@@ -115,7 +116,7 @@ graph LR
 
 - **Wave 2**: E002 (CI workflows under `.github/`), E003 (`frontend/`), E004 (`backend/src/db/`), E007 (`backend/src/scraping/`) have no shared mutable files.
 - **Wave 3**: E005 (devices domain), E006 (module engine), E013 (operability/auth/config), E018 (release workflows) are isolated.
-- **Wave 4**: E008 (module UI/API), E009 (detection service), E015 (module files + fixtures) are isolated.
+- **Wave 4**: E008 (module UI/API), E009 (detection service), E015 (Sony module files + fixtures), E020 (Panasonic module files + fixtures) are isolated.
 - **Wave 5**: E010 (manual-check path), E011 (scheduler), E017 (docs/dev-kit) are isolated.
 - **Wave 6**: E012 (notifier), E014 (activity log), E019 (backup job/runbook) are isolated.
 
@@ -241,7 +242,7 @@ graph LR
 - **Key entities**: Scrape client, rate limiter, robots cache
 - **Depends on**: E001
 - **Dependency contracts**: Constructed via app config/lifecycle from E001.
-- **Depended on by**: E006, E015, E017
+- **Depended on by**: E006, E015, E020, E017
 - **Produces (shared)**: `ScrapeClient` interface provided to modules
 - **Constraints**: Modules must use only this client for outbound requests; conservative defaults; polite by default
 - **Acceptance criteria**:
@@ -288,7 +289,7 @@ graph LR
 - **Key entities**: Module, ModuleValidationResult, authoring contract
 - **Depends on**: E001, E004, E007
 - **Dependency contracts**: Persists module metadata via E004; injects the `ScrapeClient` from E007; loads within the app from E001.
-- **Depended on by**: E008, E009, E015, E017
+- **Depended on by**: E008, E009, E015, E020, E017
 - **Produces (shared)**: Authoring contract interface; module loader/runner; validation pipeline
 - **Constraints**: Unsandboxed in-process execution (accepted ACE trust boundary); a broken/timed-out module must not crash the core
 - **Acceptance criteria**:
@@ -397,24 +398,47 @@ graph LR
   - **Depends on artifacts**: E006 engine, E005 device versions
   - **Constraints**: Honest failure; zero false results for shipped modules
 
-### E015 — Official Starter Modules
+### E015 — Official Sony Alpha Module
 
 - **Category**: PRODUCT | **Priority**: P2
 - **Source**: {PRD:CAP-011}
-- **Scope**: Ship the official Sony Alpha and Panasonic Lumix modules as immediate value and as authoring templates, with captured page fixtures and golden tests verifying detected-latest correctness.
+- **Scope**: Ship the official Sony Alpha module as immediate value and as an authoring template, with captured page fixtures and golden tests verifying detected-latest correctness.
 - **Actors**: Operator, module author
 - **Key entities**: Module, page fixtures
 - **Depends on**: E006, E007
-- **Dependency contracts**: Implement the authoring contract from E006; fetch via the scraping client from E007.
+- **Dependency contracts**: Implements the authoring contract from E006; fetches via the scraping client from E007.
 - **Depended on by**: —
-- **Produces (shared)**: Sony + Panasonic modules; fixture corpus; golden tests
-- **Constraints**: Fixture-based correctness validation at release; serve as reference templates
+- **Produces (shared)**: Sony Alpha module; Sony fixture corpus; golden tests
+- **Constraints**: Fixture-based correctness validation at release; serves as a reference template
 - **Acceptance criteria**:
-  - [ ] Sony Alpha and Panasonic Lumix modules detect the latest version against captured fixtures.
-  - [ ] Golden/fixture regression tests cover both modules.
-  - [ ] Both modules are documented as authoring templates.
+  - [ ] The Sony Alpha module detects the latest version against captured fixtures.
+  - [ ] Golden/fixture regression tests cover the Sony Alpha module.
+  - [ ] The module is documented as an authoring template.
 - **Specify input**:
-  - **Description**: Official Sony Alpha + Panasonic Lumix modules with fixtures and golden correctness tests.
+  - **Description**: Official Sony Alpha module with fixtures and golden correctness tests.
+  - **Actors**: Operator, module author
+  - **Key entities**: Module, page fixtures
+  - **Depends on artifacts**: E006 contract, E007 client
+  - **Constraints**: Fixture-validated; reference-quality
+
+### E020 — Official Panasonic Lumix Module
+
+- **Category**: PRODUCT | **Priority**: P2
+- **Source**: {PRD:CAP-011}
+- **Scope**: Ship the official Panasonic Lumix module as immediate value and as an authoring template, with captured page fixtures and golden tests verifying detected-latest correctness.
+- **Actors**: Operator, module author
+- **Key entities**: Module, page fixtures
+- **Depends on**: E006, E007
+- **Dependency contracts**: Implements the authoring contract from E006; fetches via the scraping client from E007.
+- **Depended on by**: —
+- **Produces (shared)**: Panasonic Lumix module; Panasonic fixture corpus; golden tests
+- **Constraints**: Fixture-based correctness validation at release; serves as a reference template
+- **Acceptance criteria**:
+  - [ ] The Panasonic Lumix module detects the latest version against captured fixtures.
+  - [ ] Golden/fixture regression tests cover the Panasonic Lumix module.
+  - [ ] The module is documented as an authoring template.
+- **Specify input**:
+  - **Description**: Official Panasonic Lumix module with fixtures and golden correctness tests.
   - **Actors**: Operator, module author
   - **Key entities**: Module, page fixtures
   - **Depends on artifacts**: E006 contract, E007 client
@@ -599,7 +623,7 @@ graph LR
 | CAP-008 Responsible Scraping Enforcement | P1 | E007 |
 | CAP-009 Self-Hosted Operability | P1 | E013 |
 | CAP-010 Activity Logging & Visibility | P2 | E014 |
-| CAP-011 Official Starter Modules | P2 | E015 |
+| CAP-011 Official Starter Modules | P2 | E015, E020 |
 | CAP-012 Responsive UI & Dark Mode | P2 | E016 |
 | CAP-013 Module Authoring Guidance & Dev Kit | P3 | E017 |
 
@@ -635,7 +659,7 @@ graph LR
 | Entity | Introduced by | Consumed by |
 |--------|---------------|-------------|
 | Device, DeviceType | E005 | E009, E010, E016 |
-| Module, ModuleValidationResult | E006 | E008, E009, E015, E017 |
+| Module, ModuleValidationResult | E006 | E008, E009, E015, E020, E017 |
 | CheckResult / detection event | E009 | E010, E011, E012, E014 |
 | NotificationChannel | E012 | E012 |
 | ActivityLogEntry | E014 | E016 |
@@ -657,8 +681,8 @@ graph LR
 |--------|---------------|-------------|
 | App factory + router aggregator, structlog config | E001 | All |
 | DB connection, migration runner, repository base | E004 | E005, E006, E008, E009, E011, E012, E013, E014, E019 |
-| ScrapeClient | E007 | E006, E015, E017 |
-| Module engine + authoring contract | E006 | E008, E009, E015, E017 |
+| ScrapeClient | E007 | E006, E015, E020, E017 |
+| Module engine + authoring contract | E006 | E008, E009, E015, E020, E017 |
 | Scheduler service | E011 | E012, E014, E019 |
 | Notifier service | E012 | — |
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |
