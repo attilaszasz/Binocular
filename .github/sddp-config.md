@@ -12,7 +12,7 @@
 
 ## Deployment & Operations Document
 
-**Path**: 
+**Path**: specs/dod.md
 
 ## Project Plan
 
