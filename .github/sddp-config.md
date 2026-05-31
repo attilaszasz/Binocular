@@ -44,5 +44,5 @@
 
 <!-- Managed by /sddp-init. QC reads this section — do not edit manually. -->
 
-**Coverage Target**: 
-**Required Categories**: 
+**Coverage Target**: 80
+**Required Categories**: linting, security, coverage
