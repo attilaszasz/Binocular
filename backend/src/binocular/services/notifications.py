@@ -48,6 +48,28 @@ class NotifierService:
         try:
             # Dispatch synchronously inside a separate worker thread to avoid blocking event loop
             success = await asyncio.to_thread(apobj.send, body, title=title)  # type: ignore[attr-defined]
+
+            # Log to activity log
+            try:
+                from binocular.repositories.activity import ActivityLogRepository
+
+                activity_repo = ActivityLogRepository(self.repository.connection)
+                for channel in enabled_channels:
+                    if success:
+                        await activity_repo.log_activity(
+                            event_type="notification",
+                            status="success",
+                            message=f"Notification successfully dispatched via {channel.type}",
+                        )
+                    else:
+                        await activity_repo.log_activity(
+                            event_type="notification",
+                            status="failed",
+                            message=f"Notification failed to dispatch via {channel.type}",
+                        )
+            except Exception:
+                self._logger.exception("failed_to_log_notification_activity")
+
             if success:
                 self._logger.info("notifications_dispatched_successfully", count=len(apobj))
             else:
@@ -55,6 +77,21 @@ class NotifierService:
             return bool(success)
         except Exception as error:
             self._logger.exception("notifications_dispatch_raised_exception", error=str(error))
+            try:
+                from binocular.repositories.activity import ActivityLogRepository
+
+                activity_repo = ActivityLogRepository(self.repository.connection)
+                for channel in enabled_channels:
+                    await activity_repo.log_activity(
+                        event_type="notification",
+                        status="failed",
+                        message=(
+                            f"Notification dispatch raised exception via {channel.type}: {error}"
+                        ),
+                        traceback=str(error),
+                    )
+            except Exception:
+                self._logger.exception("failed_to_log_notification_activity_exception")
             return False
 
     async def send_test_notification(

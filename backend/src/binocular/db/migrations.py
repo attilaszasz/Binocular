@@ -164,4 +164,27 @@ class MigrationRunner:
 
     @staticmethod
     def _split_sql(sql: str) -> tuple[str, ...]:
-        return tuple(statement.strip() for statement in sql.split(";") if statement.strip())
+        statements: list[str] = []
+        current: list[str] = []
+        in_begin_end = False
+
+        for part in sql.split(";"):
+            part_strip = part.strip()
+            if not part_strip:
+                continue
+            current.append(part)
+
+            upper_part = part_strip.upper()
+            if "BEGIN" in upper_part:
+                in_begin_end = True
+            if in_begin_end and "END" in upper_part:
+                in_begin_end = False
+
+            if not in_begin_end:
+                statements.append(";".join(current).strip())
+                current = []
+
+        if current:
+            statements.append(";".join(current).strip())
+
+        return tuple(s for s in statements if s)

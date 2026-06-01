@@ -10,6 +10,7 @@ import structlog
 from binocular.extensions.contract import ModuleCheckInput
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.runner import ModuleRunner
+from binocular.repositories.activity import ActivityLogRepository
 from binocular.repositories.inventory import DeviceRecord, InventoryRepository
 from binocular.repositories.modules import ModuleRepository
 from binocular.scraping.client import ScrapeClient
@@ -87,6 +88,17 @@ class CheckService:
 
         module = await self.module_repository.get_module(module_id)
         if module is None:
+            try:
+                activity_repo = ActivityLogRepository(self.inventory_repository.connection)
+                await activity_repo.log_activity(
+                    event_type="check",
+                    status="failed",
+                    message="Firmware check failed: Module not found",
+                    device_name=device.model,
+                    module_name=module_id,
+                )
+            except Exception:
+                _LOGGER.exception("failed_to_persist_activity_log")
             return self._failure_for_device(
                 device,
                 module_id,
@@ -94,6 +106,17 @@ class CheckService:
                 "module_not_found",
             )
         if module.status != "installed" or module.validation_status != "valid":
+            try:
+                activity_repo = ActivityLogRepository(self.inventory_repository.connection)
+                await activity_repo.log_activity(
+                    event_type="check",
+                    status="failed",
+                    message="Firmware check failed: Module is not runnable",
+                    device_name=device.model,
+                    module_name=module_id,
+                )
+            except Exception:
+                _LOGGER.exception("failed_to_persist_activity_log")
             return self._failure_for_device(
                 device,
                 module_id,
@@ -164,6 +187,20 @@ class CheckService:
         )
         await self.inventory_repository.connection.commit()
 
+        try:
+            activity_repo = ActivityLogRepository(self.inventory_repository.connection)
+            await activity_repo.log_activity(
+                event_type="check",
+                status="success",
+                message=(
+                    f"Firmware check succeeded. Latest available: {module_result.latest_version}"
+                ),
+                device_name=device.model,
+                module_name=module_id,
+            )
+        except Exception:
+            _LOGGER.exception("failed_to_persist_activity_log")
+
         if status == "update_available" and self.notifier_service is not None:
             try:
                 title = f"New Firmware Update Available: {device.model}"
@@ -216,6 +253,23 @@ class CheckService:
     ) -> CheckResult:
         record = await self.inventory_repository.record_check_failure(device.id)
         await self.inventory_repository.connection.commit()
+
+        try:
+            activity_repo = ActivityLogRepository(self.inventory_repository.connection)
+            tb = None
+            if diagnostics and "traceback" in diagnostics:
+                tb = str(diagnostics["traceback"])
+            await activity_repo.log_activity(
+                event_type="check",
+                status="failed",
+                message=f"Firmware check failed: {detail}",
+                device_name=device.model,
+                module_name=module_id,
+                traceback=tb,
+            )
+        except Exception:
+            _LOGGER.exception("failed_to_persist_activity_log")
+
         persisted = record or await self.inventory_repository.require_device(device.id)
         result_diagnostics: dict[str, object] = {"error_type": error_type}
         if diagnostics:

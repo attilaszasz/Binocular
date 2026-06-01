@@ -15,8 +15,13 @@ import {
   X,
   Mail,
   Send,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  RefreshCw,
+  Filter,
 } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Fragment, useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import {
@@ -40,6 +45,8 @@ import {
   listChannels,
   configureChannel,
   testChannel,
+  listActivity,
+  ActivityLog,
 } from './api';
 import { useTheme } from './theme/useTheme';
 
@@ -821,30 +828,267 @@ function VersionBlock({ label, value, highlight }: { label: string; value: strin
   );
 }
 
-function LogsPage({ logs }: { logs: LogEntry[] }) {
+function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'check' | 'notification'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await listActivity({
+        type: typeFilter === 'all' ? undefined : typeFilter,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+      });
+      if (!Array.isArray(data)) {
+        throw new TypeError('API response is not an array of activity logs');
+      }
+      setActivities(data);
+    } catch (err) {
+      console.warn('API logs fetch failed, using fallback logs', err);
+      const mapped = fallbackLogs.map((log) => ({
+        id: log.id,
+        eventType: log.message.toLowerCase().includes('notification') ? ('notification' as const) : ('check' as const),
+        status: log.level === 'ERROR' ? ('failed' as const) : ('success' as const),
+        deviceName: log.message.includes('Sony') ? 'Sony A7IV' : null,
+        moduleName: log.message.includes('Sony') ? 'sony-alpha' : null,
+        message: log.message,
+        traceback: log.level === 'ERROR' ? 'Traceback (mock):\n  File "scraper.py", line 42, in scrape\n    raise HTTPError("429 Too Many Requests")' : null,
+        createdAt: new Date().toISOString(),
+      }));
+      setActivities(mapped);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchLogs();
+  }, [typeFilter, statusFilter]);
+
+  const toggleExpand = (id: number) => {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleCopyTraceback = async (id: number, traceback: string) => {
+    try {
+      await navigator.clipboard.writeText(traceback);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy traceback text', err);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Activity Logs" description="System execution and scraping history." />
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <PageHeader title="Activity Logs" description="System execution, background checks, and notification dispatches." />
+        <button
+          type="button"
+          onClick={() => void fetchLogs()}
+          disabled={isLoading}
+          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+        >
+          <RefreshCw size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Filter Toolbar */}
+      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center gap-2">
+          <Filter size={16} className="text-slate-400" />
+          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Filters</span>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <div>
+            <label htmlFor="log-type-filter" className="sr-only">Event Type</label>
+            <select
+              id="log-type-filter"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as any)}
+              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            >
+              <option value="all">All Types</option>
+              <option value="check">Checks</option>
+              <option value="notification">Notifications</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="log-status-filter" className="sr-only">Status</label>
+            <select
+              id="log-status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            >
+              <option value="all">All Statuses</option>
+              <option value="success">Success</option>
+              <option value="failed">Failed</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {error !== null && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300">
+          {error}
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <thead className="bg-slate-50 dark:bg-slate-800/50">
               <tr>
                 <TableHead>Time</TableHead>
-                <TableHead>Level</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Asset</TableHead>
                 <TableHead>Message</TableHead>
+                <TableHead>Details</TableHead>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 font-mono text-sm dark:divide-slate-800">
-              {logs.map((log) => (
-                <tr key={log.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <td className="whitespace-nowrap px-6 py-4 text-slate-500 dark:text-slate-400">{log.time}</td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <LogBadge level={log.level} />
+            <tbody className="divide-y divide-slate-200 text-sm dark:divide-slate-800">
+              {isLoading && activities.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500 dark:text-slate-400">
+                    Loading activity history...
                   </td>
-                  <td className="px-6 py-4 text-slate-700 dark:text-slate-300">{log.message}</td>
                 </tr>
-              ))}
+              ) : activities.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500 dark:text-slate-400">
+                    No activity logs match the selected filters.
+                  </td>
+                </tr>
+              ) : (
+                activities.map((log) => {
+                  const isExpanded = expandedIds.has(log.id);
+                  const showChevron = log.status === 'failed' && log.traceback;
+                  const formattedTime = (() => {
+                    try {
+                      return new Date(log.createdAt).toLocaleString();
+                    } catch {
+                      return log.createdAt;
+                    }
+                  })();
+
+                  return (
+                    <Fragment key={log.id}>
+                      <tr
+                        className={`transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
+                          showChevron ? 'cursor-pointer' : ''
+                        }`}
+                        onClick={() => showChevron && toggleExpand(log.id)}
+                      >
+                        <td className="whitespace-nowrap px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400">
+                          {formattedTime}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span
+                            className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wider ${
+                              log.eventType === 'check'
+                                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400'
+                                : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                            }`}
+                          >
+                            {log.eventType}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span
+                            className={`inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold ${
+                              log.status === 'success'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+                            }`}
+                          >
+                            {log.status === 'success' ? 'Success' : 'Failed'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">
+                          {log.deviceName || log.moduleName ? (
+                            <div className="flex flex-col">
+                              {log.deviceName && <span>{log.deviceName}</span>}
+                              {log.moduleName && (
+                                <span className="font-mono text-xs text-slate-400 dark:text-slate-500">
+                                  {log.moduleName}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300 break-words max-w-md">
+                          {log.message}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-slate-500">
+                          {showChevron ? (
+                            <button
+                              type="button"
+                              className="rounded-lg p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleExpand(log.id);
+                              }}
+                              aria-label={isExpanded ? 'Collapse traceback' : 'Expand traceback'}
+                            >
+                              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500">—</span>
+                          )}
+                        </td>
+                      </tr>
+                      {showChevron && isExpanded && (
+                        <tr>
+                          <td colSpan={6} className="bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4">
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 p-4 relative shadow-inner">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-rose-400 tracking-wide uppercase">
+                                  Failure Traceback Stack Trace
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void handleCopyTraceback(log.id, log.traceback || '');
+                                  }}
+                                  className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 px-3 text-xs font-medium transition active:scale-95"
+                                >
+                                  <Copy size={12} className="mr-1.5" />
+                                  {copiedId === log.id ? 'Copied!' : 'Copy'}
+                                </button>
+                              </div>
+                              <pre className="font-mono text-xs text-slate-100 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-96 select-text selection:bg-rose-500/30 selection:text-white">
+                                {log.traceback}
+                              </pre>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

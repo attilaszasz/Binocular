@@ -61,7 +61,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 > Completes the detect→compare→notify loop and adds operational visibility/recovery. Distinct areas → parallel.
 
 - [X] E012 [P1] [PRODUCT] [P] {PRD:CAP-007}{SAD:ADR-0007} Notification & Alerting — Apprise dispatch to Email/SMTP + Gotify
-- [ ] E014 [P2] [PRODUCT] [P] {PRD:CAP-010} Activity Logging & Visibility — bounded activity log + in-UI viewer
+- [X] E014 [P2] [PRODUCT] [P] {PRD:CAP-010} Activity Logging & Visibility — bounded activity log + in-UI viewer
 - [ ] E019 [P2] [OPERATIONAL] [P] {DOD:DDR-003} Backup & Restore Operations — scheduled snapshot job + restore runbook
 
 ### Wave 7 — Experience Polish

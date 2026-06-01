@@ -9,3 +9,6 @@ export type { DeviceTypeSchedule, ScheduleListResponse, ScheduleUpdateRequest } 
 export { listSchedules, updateSchedule } from './schedules';
 export type { NotificationChannel, UpdateChannelRequest, TestChannelRequest, TestChannelResponse } from './notifications';
 export { listChannels, configureChannel, testChannel } from './notifications';
+export type { ActivityLog, GetActivityParams } from './activity';
+export { listActivity } from './activity';
+
