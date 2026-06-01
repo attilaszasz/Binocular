@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from binocular.app import create_app
@@ -10,7 +11,10 @@ from binocular.config import Settings
 from binocular.services.backup import BackupService
 
 
-def _make_app_with_backup(tmp_path: Path, **settings_overrides: object) -> tuple:
+def _make_app_with_backup(
+    tmp_path: Path,
+    **settings_overrides: object,
+) -> tuple[FastAPI, BackupService]:
     """Create app with backup_service pre-wired on state (bypasses lifespan for tests)."""
     settings = Settings(
         environment="test",
