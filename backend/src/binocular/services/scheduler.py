@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 
 import structlog
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
+from apscheduler.triggers.interval import IntervalTrigger  # type: ignore[import-untyped]
 
-from binocular.repositories.inventory import InventoryRepository
+from binocular.repositories.inventory import DeviceRecord, InventoryRepository
 from binocular.repositories.schedules import ScheduleRepository
+from binocular.services.checks import CheckService
 
 _LOGGER = structlog.get_logger("binocular.services.scheduler")
 
@@ -21,7 +23,7 @@ class SchedulerService:
         self,
         schedule_repository: ScheduleRepository,
         inventory_repository: InventoryRepository,
-        check_service_factory,  # type: ignore[type-arg]
+        check_service_factory: Callable[..., CheckService],
     ) -> None:
         self._schedule_repo = schedule_repository
         self._inventory_repo = inventory_repository
@@ -102,7 +104,7 @@ class SchedulerService:
             failed = 0
             semaphore = asyncio.Semaphore(4)
 
-            async def _check_one(device: object) -> bool:
+            async def _check_one(device: DeviceRecord) -> bool:
                 async with semaphore:
                     result = await checks.run_device_check(
                         device.id, module_id=self._resolve_module(device)
@@ -139,6 +141,6 @@ class SchedulerService:
         finally:
             self._active_runs[device_type_id] = False
 
-    def _resolve_module(self, device: object) -> str:
+    def _resolve_module(self, device: DeviceRecord) -> str:
         """Resolve a check-capable module for a device (placeholder)."""
         return "default"

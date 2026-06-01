@@ -60,7 +60,9 @@ async def test_list_schedules_returns_all_rows(tmp_path: Path) -> None:
                 last_skip_reason TEXT,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
-            INSERT INTO device_type_schedules (device_type_id, enabled, interval_minutes) VALUES (1, 1, 30);
+            INSERT INTO device_type_schedules
+                (device_type_id, enabled, interval_minutes)
+                VALUES (1, 1, 30);
             """
         )
         repo = ScheduleRepository(conn)
@@ -96,7 +98,9 @@ async def test_record_run_health(tmp_path: Path) -> None:
                 last_skip_reason TEXT,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
-            INSERT INTO device_type_schedules (device_type_id, enabled, interval_minutes) VALUES (1, 1, 30);
+            INSERT INTO device_type_schedules
+                (device_type_id, enabled, interval_minutes)
+                VALUES (1, 1, 30);
             """
         )
         repo = ScheduleRepository(conn)

@@ -143,11 +143,13 @@ class ScheduleRepository(Repository):
 
     @staticmethod
     def _record_from_row(row: dict[str, object]) -> ScheduleRecord:
+        did = row["device_type_id"]
+        imin = row["interval_minutes"]
         return ScheduleRecord(
-            device_type_id=int(row["device_type_id"]),
+            device_type_id=int(did) if isinstance(did, (int, str)) else 0,
             device_type=str(row["device_type"]),
             enabled=bool(row["enabled"]),
-            interval_minutes=int(row["interval_minutes"]),
+            interval_minutes=int(imin) if isinstance(imin, (int, str)) else 0,
             next_run_at=ScheduleRepository._opt(row["next_run_at"]),
             last_started_at=ScheduleRepository._opt(row["last_started_at"]),
             last_completed_at=ScheduleRepository._opt(row["last_completed_at"]),
