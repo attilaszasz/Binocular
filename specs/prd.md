@@ -85,7 +85,7 @@ The v1 product scope equals the full product brief: a complete detect → compar
 - Update detection, version comparison, and notification dispatch via Email/SMTP and Gotify.
 - Responsible-scraping enforcement (robots.txt, identifiable User-Agent, rate limiting, backoff) provided centrally by the host.
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
-- Officially shipped starter modules for Sony Alpha and Panasonic Lumix as working examples and templates.
+- Officially shipped starter modules for Sony Alpha and Panasonic Lumix that are automatically seeded and registered in the database on startup as working examples and templates.
 - Self-hosted operability: Docker distribution, single data volume, zero-config startup, non-root execution, responsive UI with dark mode.
 - Local module sharing enablement: an authoring contract and import/export, plus authoring guidance for module creators.
 
@@ -115,7 +115,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-008 | Responsible Scraping Enforcement | P1 | All outbound checks honor robots.txt, identifiable User-Agent, rate limits, and backoff by default. |
 | CAP-009 | Self-Hosted Operability | P1 | Single-container, single-volume, zero-config, non-root deployment that survives restarts and upgrades with no data loss. |
 | CAP-010 | Activity Logging & Visibility | P2 | All check activity and errors are recorded in a size-bounded, in-UI viewable log. |
-| CAP-011 | Official Starter Modules | P2 | Sony Alpha and Panasonic Lumix modules ship as working value and authoring templates. |
+| CAP-011 | Official Starter Modules | P2 | Sony Alpha and Panasonic Lumix modules are automatically registered and seeded in the database on startup, serving as immediate value and templates. |
 | CAP-012 | Responsive UI & Dark Mode | P2 | The interface is fully usable on mobile and desktop with first-class dark mode. |
 | CAP-013 | Module Authoring Guidance & Dev Kit | P3 | Authoring docs and a standalone test path help users create and verify valid modules locally. |
 

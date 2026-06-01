@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 20 (P1: 13 · P2: 6 · P3: 1) | **Waves**: 7
+**Total Epics**: 21 (P1: 13 · P2: 7 · P3: 1) | **Waves**: 7
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -62,7 +62,8 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E012 [P1] [PRODUCT] [P] {PRD:CAP-007}{SAD:ADR-0007} Notification & Alerting — Apprise dispatch to Email/SMTP + Gotify
 - [X] E014 [P2] [PRODUCT] [P] {PRD:CAP-010} Activity Logging & Visibility — bounded activity log + in-UI viewer
-- [ ] E019 [P2] [OPERATIONAL] [P] {DOD:DDR-003} Backup & Restore Operations — scheduled snapshot job + restore runbook
+- [X] E019 [P2] [OPERATIONAL] [P] {DOD:DDR-003} Backup & Restore Operations — scheduled snapshot job + restore runbook
+- [X] E021 [P2] [TECHNICAL] [P] {PRD:CAP-011}{SAD:ADR-0005} Automatic Module Seeding — discover and auto-register bundled official modules on startup
 
 ### Wave 7 — Experience Polish
 
@@ -92,7 +93,7 @@ graph LR
     M5 -->|"E010 · E011<br>E017"| M5
 
     M5 --> M6["Full loop +<br>operations"]
-    M6 -->|"E012 · E014<br>E019"| M6
+    M6 -->|"E012 · E014<br>E019 · E021"| M6
 
     M6 --> M7["Polished<br>release"]
     M7 -->|E016| M7
@@ -107,7 +108,7 @@ graph LR
 | 3 | E005, E006, E013, E018 | Yes | Inventory, module engine, operability, staged release pipeline. |
 | 4 | E008, E009, E015, E020 | Yes | Module lifecycle UI, detection core, Sony + Panasonic starter modules. |
 | 5 | E010, E011, E017 | Yes | Manual + scheduled checks, authoring dev kit. |
-| 6 | E012, E014, E019 | Yes | Notifications complete the loop; logging + backups added. |
+| 6 | E012, E014, E019, E021 | Yes | Notifications complete the loop; logging, backups, and auto module seeding added. |
 | 7 | E016 | N/A (single) | Responsive/dark-mode polish across existing surfaces. |
 
 ## Parallel Execution Guidance
@@ -118,7 +119,7 @@ graph LR
 - **Wave 3**: E005 (devices domain), E006 (module engine), E013 (operability/auth/config), E018 (release workflows) are isolated.
 - **Wave 4**: E008 (module UI/API), E009 (detection service), E015 (Sony module files + fixtures), E020 (Panasonic module files + fixtures) are isolated.
 - **Wave 5**: E010 (manual-check path), E011 (scheduler), E017 (docs/dev-kit) are isolated.
-- **Wave 6**: E012 (notifier), E014 (activity log), E019 (backup job/runbook) are isolated.
+- **Wave 6**: E012 (notifier), E014 (activity log), E019 (backup job/runbook), E021 (module seeding) are isolated.
 
 ### Integration Risks
 
@@ -584,6 +585,31 @@ graph LR
   - **Constraints**: Live-safe backup; configurable; homelab RPO/RTO
 - **Pipeline hints**: skip_clarify, skip_checklist
 
+### E021 — Automatic Module Seeding
+
+- **Category**: TECHNICAL | **Priority**: P2
+- **Source**: {PRD:CAP-011}{SAD:ADR-0005}
+- **Scope**: Automatically register and seed bundled official starter modules (Sony Alpha and Panasonic Lumix) in the database and user modules directory on application startup. Ensure idempotency based on version and source file hash to avoid redundant writes.
+- **Actors**: System
+- **Key entities**: ModuleRecord, ModuleLifecycleService, app lifespan
+- **Depends on**: E004, E006
+- **Dependency contracts**: Uses the module validator and loader from E006; persists to the SQLite database using repository and connection manager from E004.
+- **Depended on by**: —
+- **Produces (shared)**: Automatic seeding procedure during startup lifespan
+- **Constraints**: Idempotence, zero network calls during startup (static validation only), no database migrations needed
+- **Acceptance criteria**:
+  - [ ] Bundled official starter modules are discovered on startup from `binocular/official_modules/`.
+  - [ ] Modules are verified via static AST validation before seeding.
+  - [ ] Valid modules are automatically copied to `/app/modules/` and seeded into the SQLite DB if missing or version/hash has changed.
+  - [ ] Seeding is fully idempotent and does not overwrite modified user modules or cause startup loops.
+- **Specify input**:
+  - **Description**: Implement automatic discovery, validation, and seeding/registration of official starter modules (Sony and Panasonic) into the database on startup.
+  - **Actors**: System
+  - **Key entities**: ModuleRecord, ModuleLifecycleService
+  - **Depends on artifacts**: E006 module engine, E004 SQLite database
+  - **Constraints**: Static validation only, idempotent execution
+- **Pipeline hints**: skip_clarify, skip_checklist
+
 ### E016 — Responsive UI & Dark Mode
 
 - **Category**: PRODUCT | **Priority**: P2
@@ -623,9 +649,9 @@ graph LR
 | CAP-008 Responsible Scraping Enforcement | P1 | E007 |
 | CAP-009 Self-Hosted Operability | P1 | E013 |
 | CAP-010 Activity Logging & Visibility | P2 | E014 |
-| CAP-011 Official Starter Modules | P2 | E015, E020 |
-| CAP-012 Responsive UI & Dark Mode | P2 | E016 |
-| CAP-013 Module Authoring Guidance & Dev Kit | P3 | E017 |
+| CAP-011 | Official Starter Modules | P2 | E015, E020, E021 |
+| CAP-012 | Responsive UI & Dark Mode | P2 | E016 |
+| CAP-013 | Module Authoring Guidance & Dev Kit | P3 | E017 |
 
 ### SAD ADR Coverage
 
@@ -635,7 +661,7 @@ graph LR
 | ADR-0002 Python 3.13 + FastAPI backend | accepted | E001 |
 | ADR-0003 React/Vite/Tailwind SPA as static files | accepted | E003 |
 | ADR-0004 SQLite + aiosqlite + raw SQL | accepted | E004 |
-| ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E006 |
+| ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E006, E021 |
 | ADR-0006 Centralized responsible-scraping client | accepted | E007 |
 | ADR-0007 APScheduler + Apprise | accepted | E011 (scheduling), E012 (notifications) |
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E013 |
@@ -680,9 +706,9 @@ graph LR
 | Module | Introduced by | Consumed by |
 |--------|---------------|-------------|
 | App factory + router aggregator, structlog config | E001 | All |
-| DB connection, migration runner, repository base | E004 | E005, E006, E008, E009, E011, E012, E013, E014, E019 |
+| DB connection, migration runner, repository base | E004 | E005, E006, E008, E009, E011, E012, E013, E014, E019, E021 |
 | ScrapeClient | E007 | E006, E015, E020, E017 |
-| Module engine + authoring contract | E006 | E008, E009, E015, E020, E017 |
+| Module engine + authoring contract | E006 | E008, E009, E015, E020, E017, E021 |
 | Scheduler service | E011 | E012, E014, E019 |
 | Notifier service | E012 | — |
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |

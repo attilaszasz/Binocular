@@ -34,6 +34,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         runner = MigrationRunner.from_settings(resolved_settings)
         await runner.apply_pending()
 
+        # Seed official starter modules
+        from binocular.db.connection import ConnectionManager
+        from binocular.services.seeder import OfficialModuleSeeder
+
+        db_manager = ConnectionManager(
+            resolved_settings.resolved_database_path,
+            busy_timeout_ms=resolved_settings.sqlite_busy_timeout_ms,
+        )
+        try:
+            async with await db_manager.open() as db_conn:
+                seeder = OfficialModuleSeeder(resolved_settings, db_conn)
+                await seeder.discover_and_seed()
+        except Exception as exc:
+            logger.error("seeding_lifespan_failed", error=str(exc), exc_info=exc)
+
         backup_svc = BackupService(resolved_settings)
         app.state.backup_service = backup_svc
 

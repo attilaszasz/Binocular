@@ -242,3 +242,5 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Domain repositories use a shared raw-SQL repository base with parameter binding and allowlisted dynamic identifiers; no ORM abstraction is introduced.
 - Responsible scraping uses a host-owned async `httpx` client wrapper with robots.txt checks, identifiable User-Agent defaults, per-origin pacing, bounded retry/backoff, and typed diagnostics for visible failures.
 - Extension modules use a trusted in-process Python contract with importlib path loading, host ScrapeClient injection, per-invocation timeout/error boundaries, and two-phase static/runtime validation; validation is not a sandbox.
+- Bundled official starter modules are automatically discovered, validated, and seeded/upserted into the SQLite database on application startup, enabling out-of-the-box tracking of devices without manual upload.
+
