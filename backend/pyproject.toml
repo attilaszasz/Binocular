@@ -9,6 +9,7 @@ description = "Self-hosted firmware update watcher"
 requires-python = ">=3.13"
 dependencies = [
     "aiosqlite>=0.20,<1.0",
+    "apscheduler>=3.10,<4.0",
     "fastapi>=0.115,<1.0",
     "httpx>=0.28,<1.0",
     "pydantic-settings>=2.7,<3.0",

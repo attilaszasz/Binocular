@@ -53,7 +53,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 > The manual and scheduled check paths plus the authoring dev kit. Distinct entry points → parallel.
 
 - [X] E010 [P1] [PRODUCT] [P] {PRD:CAP-005} Manual On-Demand Checks — single/bulk checks, side-by-side comparison
-- [ ] E011 [P1] [PRODUCT] [P] {PRD:CAP-004}{SAD:ADR-0007} Automated Scheduled Checking — per-type interval jobs, restart-safe
+- [X] E011 [P1] [PRODUCT] [P] {PRD:CAP-004}{SAD:ADR-0007} Automated Scheduled Checking — per-type interval jobs, restart-safe
 - [ ] E017 [P3] [PRODUCT] [P] {PRD:CAP-013} Module Dev Kit & Docs — authoring guide + standalone test harness
 
 ### Wave 6 — Alerting, Visibility & Backups
