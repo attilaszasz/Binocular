@@ -1,8 +1,9 @@
-from pathlib import Path
 import json
+from pathlib import Path
+
 import pytest
 
-from binocular.extensions.devkit import DevKitCLI, mock_handler
+from binocular.extensions.devkit import DevKitCLI
 
 
 def write_module(path: Path, source: str) -> Path:
@@ -75,7 +76,9 @@ def test_devkit_check_invalid_syntax(tmp_path: Path, capsys: pytest.CaptureFixtu
     assert "syntax_error" in captured.err
 
 
-def test_devkit_check_invalid_syntax_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_devkit_check_invalid_syntax_json(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     module_path = write_module(
         tmp_path / "bad_syntax.py",
         "def broken(:\n",
@@ -107,13 +110,18 @@ async def check_firmware(input, scrape_client):
     )
 
     cli = DevKitCLI()
-    exit_code = cli.run_cli([
-        "run",
-        str(module_path),
-        "--device-type", "camera",
-        "--model", "Alpha 7",
-        "--current-version", "1.0.0",
-    ])
+    exit_code = cli.run_cli(
+        [
+            "run",
+            str(module_path),
+            "--device-type",
+            "camera",
+            "--model",
+            "Alpha 7",
+            "--current-version",
+            "1.0.0",
+        ]
+    )
     assert exit_code == 0
 
     captured = capsys.readouterr()
@@ -121,7 +129,9 @@ async def check_firmware(input, scrape_client):
     assert "Latest Version: 2.5.0" in captured.out
 
 
-def test_devkit_run_valid_module_mock_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_devkit_run_valid_module_mock_json(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     module_path = write_module(
         tmp_path / "valid_module.py",
         """
@@ -133,14 +143,19 @@ async def check_firmware(input, scrape_client):
     )
 
     cli = DevKitCLI()
-    exit_code = cli.run_cli([
-        "run",
-        str(module_path),
-        "--device-type", "camera",
-        "--model", "Alpha 7",
-        "--current-version", "1.0.0",
-        "--json",
-    ])
+    exit_code = cli.run_cli(
+        [
+            "run",
+            str(module_path),
+            "--device-type",
+            "camera",
+            "--model",
+            "Alpha 7",
+            "--current-version",
+            "1.0.0",
+            "--json",
+        ]
+    )
     assert exit_code == 0
 
     captured = capsys.readouterr()
@@ -162,17 +177,21 @@ async def check_firmware(input, scrape_client):
     )
 
     cli = DevKitCLI()
-    exit_code = cli.run_cli([
-        "run",
-        str(module_path),
-        "--device-type", "camera",
-        "--model", "Alpha 7",
-        "--current-version", "1.0.0",
-    ])
+    exit_code = cli.run_cli(
+        [
+            "run",
+            str(module_path),
+            "--device-type",
+            "camera",
+            "--model",
+            "Alpha 7",
+            "--current-version",
+            "1.0.0",
+        ]
+    )
     assert exit_code == 1
 
     captured = capsys.readouterr()
     assert "✗ Module Execution: FAILED" in captured.err
     assert "ValueError" in captured.err
     assert "Something went terribly wrong in scraper" in captured.err
-
