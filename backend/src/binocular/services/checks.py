@@ -5,15 +5,20 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
+import structlog
+
 from binocular.extensions.contract import ModuleCheckInput
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.runner import ModuleRunner
 from binocular.repositories.inventory import DeviceRecord, InventoryRepository
 from binocular.repositories.modules import ModuleRepository
 from binocular.scraping.client import ScrapeClient
+from binocular.services.notifications import NotifierService
 from binocular.services.version_compare import VersionComparisonError, compare_versions
 
 CheckStatus = Literal["up_to_date", "update_available", "failed"]
+
+_LOGGER = structlog.get_logger("binocular.services.checks")
 
 
 class CheckConfigurationError(Exception):
@@ -52,12 +57,14 @@ class CheckService:
         module_loader: ModuleLoader,
         module_runner: ModuleRunner,
         scrape_client: ScrapeClient,
+        notifier_service: NotifierService | None = None,
     ) -> None:
         self.inventory_repository = inventory_repository
         self.module_repository = module_repository
         self.module_loader = module_loader
         self.module_runner = module_runner
         self.scrape_client = scrape_client
+        self.notifier_service = notifier_service
 
     async def run_device_check(
         self,
@@ -156,6 +163,25 @@ class CheckService:
             status=status,
         )
         await self.inventory_repository.connection.commit()
+
+        if status == "update_available" and self.notifier_service is not None:
+            try:
+                title = f"New Firmware Update Available: {device.model}"
+                body = (
+                    f"A newer firmware version is available for your device '{device.model}' "
+                    f"({device.device_type}).\n\n"
+                    f"- Current Version: {device.current_version}\n"
+                    f"- Latest Version: {module_result.latest_version}\n"
+                    f"- Source URL: {result_source_url or 'N/A'}"
+                )
+                await self.notifier_service.send_notification(title, body)
+            except Exception as error:
+                _LOGGER.exception(
+                    "failed_to_dispatch_check_notification",
+                    device_id=device.id,
+                    error=str(error),
+                )
+
         record = updated or await self.inventory_repository.require_device(device.id)
         diagnostics: dict[str, object] = dict(module_result.diagnostics)
         diagnostics["comparison"] = {

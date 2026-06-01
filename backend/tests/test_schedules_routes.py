@@ -18,7 +18,8 @@ def app(tmp_path: Path) -> FastAPI:
 
 @pytest.mark.asyncio
 async def test_list_schedules_empty(
-    app: FastAPI, tmp_path: Path,
+    app: FastAPI,
+    tmp_path: Path,
 ) -> None:
     """GET /api/v1/schedules returns empty list when no schedules configured."""
     transport = ASGITransport(app=app)
@@ -33,7 +34,8 @@ async def test_list_schedules_empty(
 
 @pytest.mark.asyncio
 async def test_upsert_and_read_schedule(
-    app: FastAPI, tmp_path: Path,
+    app: FastAPI,
+    tmp_path: Path,
 ) -> None:
     """PUT a schedule and verify it appears in GET list."""
     transport = ASGITransport(app=app)

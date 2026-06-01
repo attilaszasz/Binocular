@@ -79,6 +79,10 @@ async def get_check_service(request: Request) -> AsyncIterator[CheckService]:
         max_retries=settings.scrape_max_retries,
         backoff_base_seconds=settings.scrape_backoff_base_seconds,
     )
+    from binocular.repositories.notifications import NotificationChannelRepository
+    from binocular.services.notifications import NotifierService
+
+    notifier_service = NotifierService(NotificationChannelRepository(connection))
     try:
         yield CheckService(
             inventory_repository=InventoryRepository(connection),
@@ -86,6 +90,7 @@ async def get_check_service(request: Request) -> AsyncIterator[CheckService]:
             module_loader=ModuleLoader(settings.modules_dir),
             module_runner=ModuleRunner(timeout_seconds=settings.module_timeout_seconds),
             scrape_client=scrape_client,
+            notifier_service=notifier_service,
         )
     finally:
         await scrape_client.aclose()

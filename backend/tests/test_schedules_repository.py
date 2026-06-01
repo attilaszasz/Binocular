@@ -16,11 +16,15 @@ async def test_migration_004_creates_device_type_schedules_table(tmp_path: Path)
     conn = await manager.open()
     try:
         await conn.execute("CREATE TABLE device_types (id INTEGER PRIMARY KEY, name TEXT)")
-        await conn.execute(
-            "INSERT INTO device_types (id, name) VALUES (1, 'Sony Alpha')"
-        )
-        migration_sql = (Path(__file__).parent.parent / "src" / "binocular" / "db" /
-                         "migrations" / "004_schedules.sql").read_text()
+        await conn.execute("INSERT INTO device_types (id, name) VALUES (1, 'Sony Alpha')")
+        migration_sql = (
+            Path(__file__).parent.parent
+            / "src"
+            / "binocular"
+            / "db"
+            / "migrations"
+            / "004_schedules.sql"
+        ).read_text()
         await conn.executescript(migration_sql)
         await conn.commit()
 

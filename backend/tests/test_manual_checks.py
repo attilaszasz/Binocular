@@ -12,14 +12,14 @@ from binocular.repositories.modules import ModuleRepository
 
 
 def module_source() -> str:
-    return '''
+    return """
 MODULE_METADATA = {"module_id": "test-module", "display_name": "Test Module"}
 
 async def check_firmware(input, scrape_client):
     if input.model == "BAD":
         return {"status": "failed", "detail": "changed page"}
     return {"status": "success", "latest_version": "2.0", "source_url": "https://vendor.example/a1"}
-'''
+"""
 
 
 async def prepared_client(

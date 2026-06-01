@@ -129,24 +129,24 @@ async def check_firmware(input, scrape_client):
     "body,detail_part",
     [
         (
-            '''
+            """
 async def check_firmware(input, scrape_client):
     return {"status": "failed", "detail": "changed page"}
-''',
+""",
             "changed page",
         ),
         (
-            '''
+            """
 async def check_firmware(input, scrape_client):
     return {"status": "success"}
-''',
+""",
             "latest_version",
         ),
         (
-            '''
+            """
 async def check_firmware(input, scrape_client):
     return {"status": "success", "latest_version": "alpha"}
-''',
+""",
             "Cannot compare",
         ),
     ],
@@ -201,3 +201,72 @@ async def test_check_service_reports_missing_device_and_module(tmp_path: Path) -
     assert result.diagnostics["error_type"] == "device_not_found"
     assert missing_module.status == "failed"
     assert missing_module.diagnostics["error_type"] == "module_not_found"
+
+
+@pytest.mark.asyncio
+async def test_check_service_triggers_notifications(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock
+
+    inventory, modules = await open_repositories(tmp_path)
+    module_path = write_module(
+        tmp_path,
+        """
+async def check_firmware(input, scrape_client):
+    return {"status": "success", "latest_version": "2.0", "source_url": "https://v.com"}
+""",
+    )
+    mock_notifier = AsyncMock()
+    try:
+        device_id = await create_device(inventory, current_version="1.0")
+        await install_module(modules, module_path)
+
+        # Inject mock_notifier
+        check_svc = service(tmp_path, inventory, modules)
+        check_svc.notifier_service = mock_notifier
+
+        result = await check_svc.run_device_check(
+            device_id,
+            module_id="test-module",
+        )
+    finally:
+        await inventory.connection.close()
+
+    assert result.status == "update_available"
+    mock_notifier.send_notification.assert_called_once()
+    title = mock_notifier.send_notification.call_args[0][0]
+    assert "New Firmware Update Available" in title
+
+
+@pytest.mark.asyncio
+async def test_check_service_notification_exception_is_isolated(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock
+
+    inventory, modules = await open_repositories(tmp_path)
+    module_path = write_module(
+        tmp_path,
+        """
+async def check_firmware(input, scrape_client):
+    return {"status": "success", "latest_version": "2.0", "source_url": "https://v.com"}
+""",
+    )
+    mock_notifier = AsyncMock()
+    mock_notifier.send_notification.side_effect = Exception("Outbound SMTP timeout")
+    try:
+        device_id = await create_device(inventory, current_version="1.0")
+        await install_module(modules, module_path)
+
+        check_svc = service(tmp_path, inventory, modules)
+        check_svc.notifier_service = mock_notifier
+
+        result = await check_svc.run_device_check(
+            device_id,
+            module_id="test-module",
+        )
+        record = await inventory.require_device(device_id)
+    finally:
+        await inventory.connection.close()
+
+    # Verify check succeeded and persisted version 2.0 in DB despite SMTP exception
+    assert result.status == "update_available"
+    assert record.latest_version == "2.0"
+    mock_notifier.send_notification.assert_called_once()

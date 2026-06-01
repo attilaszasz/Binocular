@@ -13,6 +13,8 @@ import {
   Sun,
   TerminalSquare,
   X,
+  Mail,
+  Send,
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
@@ -35,6 +37,9 @@ import {
   runDeviceCheck,
   uploadModule,
   updateDevice,
+  listChannels,
+  configureChannel,
+  testChannel,
 } from './api';
 import { useTheme } from './theme/useTheme';
 
@@ -976,15 +981,388 @@ function ValidationSummary({ summary }: { summary: ModuleValidationSummary }) {
 }
 
 function SettingsPage() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="mb-4 rounded-full bg-slate-100 p-4 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-        <Settings size={32} />
+  const [smtpEnabled, setSmtpEnabled] = useState(false);
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState('587');
+  const [smtpUsername, setSmtpUsername] = useState('');
+  const [smtpPassword, setSmtpPassword] = useState('');
+  const [smtpUseTls, setSmtpUseTls] = useState(true);
+  const [mailFrom, setMailFrom] = useState('');
+  const [mailTo, setMailTo] = useState('');
+
+  const [gotifyEnabled, setGotifyEnabled] = useState(false);
+  const [gotifyUrl, setGotifyUrl] = useState('');
+  const [gotifyToken, setGotifyToken] = useState('');
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isSmtpSaving, setIsSmtpSaving] = useState(false);
+  const [isSmtpTesting, setIsSmtpTesting] = useState(false);
+  const [isGotifySaving, setIsGotifySaving] = useState(false);
+  const [isGotifyTesting, setIsGotifyTesting] = useState(false);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const channels = await listChannels();
+        const smtp = channels.find((c) => c.type === 'smtp');
+        if (smtp) {
+          setSmtpEnabled(smtp.enabled);
+          setSmtpHost(smtp.config.smtpHost || smtp.config.smtp_host || '');
+          setSmtpPort(String(smtp.config.smtpPort || smtp.config.smtp_port || '587'));
+          setSmtpUsername(smtp.config.smtpUsername || smtp.config.smtp_username || '');
+          setSmtpPassword(smtp.config.smtpPassword || smtp.config.smtp_password || '');
+          setSmtpUseTls(
+            smtp.config.smtpUseTls !== undefined
+              ? smtp.config.smtpUseTls
+              : smtp.config.smtp_use_tls !== undefined
+              ? smtp.config.smtp_use_tls
+              : true
+          );
+          setMailFrom(smtp.config.mailFrom || smtp.config.mail_from || '');
+          setMailTo(smtp.config.mailTo || smtp.config.mail_to || '');
+        }
+        const gotify = channels.find((c) => c.type === 'gotify');
+        if (gotify) {
+          setGotifyEnabled(gotify.enabled);
+          setGotifyUrl(gotify.config.gotifyUrl || gotify.config.gotify_url || '');
+          setGotifyToken(gotify.config.gotifyToken || gotify.config.gotify_token || '');
+        }
+      } catch (err) {
+        console.error('Failed to load settings', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  async function handleSaveSmtp() {
+    setIsSmtpSaving(true);
+    setStatusMsg(null);
+    try {
+      await configureChannel('smtp', {
+        enabled: smtpEnabled,
+        config: {
+          smtpHost,
+          smtpPort: parseInt(smtpPort, 10),
+          smtpUsername,
+          smtpPassword,
+          smtpUseTls,
+          mailFrom,
+          mailTo,
+        },
+      });
+      setStatusMsg({ type: 'success', message: 'SMTP configurations saved successfully!' });
+    } catch (err) {
+      setStatusMsg({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to save SMTP configurations',
+      });
+    } finally {
+      setIsSmtpSaving(false);
+    }
+  }
+
+  async function handleTestSmtp() {
+    setIsSmtpTesting(true);
+    setStatusMsg(null);
+    try {
+      const resp = await testChannel('smtp', {
+        config: {
+          smtpHost,
+          smtpPort: parseInt(smtpPort, 10),
+          smtpUsername,
+          smtpPassword,
+          smtpUseTls,
+          mailFrom,
+          mailTo,
+        },
+      });
+      setStatusMsg({ type: 'success', message: resp.detail || 'Test email dispatched successfully!' });
+    } catch (err) {
+      setStatusMsg({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Test email failed to send',
+      });
+    } finally {
+      setIsSmtpTesting(false);
+    }
+  }
+
+  async function handleSaveGotify() {
+    setIsGotifySaving(true);
+    setStatusMsg(null);
+    try {
+      await configureChannel('gotify', {
+        enabled: gotifyEnabled,
+        config: {
+          gotifyUrl,
+          gotifyToken,
+        },
+      });
+      setStatusMsg({ type: 'success', message: 'Gotify configurations saved successfully!' });
+    } catch (err) {
+      setStatusMsg({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to save Gotify configurations',
+      });
+    } finally {
+      setIsGotifySaving(false);
+    }
+  }
+
+  async function handleTestGotify() {
+    setIsGotifyTesting(true);
+    setStatusMsg(null);
+    try {
+      const resp = await testChannel('gotify', {
+        config: {
+          gotifyUrl,
+          gotifyToken,
+        },
+      });
+      setStatusMsg({ type: 'success', message: resp.detail || 'Test push alert dispatched successfully!' });
+    } catch (err) {
+      setStatusMsg({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Test push alert failed to send',
+      });
+    } finally {
+      setIsGotifyTesting(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading settings...</p>
       </div>
-      <h2 className="text-xl font-semibold">Settings configuration</h2>
-      <p className="mt-2 max-w-sm text-slate-500 dark:text-slate-400">
-        Notification channels, backup configurations, and global interval settings go here.
-      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Settings Configuration"
+        description="Configure notification dispatchers, SMTP parameters, and Gotify push alerts."
+      />
+
+      {statusMsg !== null && (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm flex items-center justify-between transition-all ${
+            statusMsg.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
+              : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300'
+          }`}
+        >
+          <span>{statusMsg.message}</span>
+          <button type="button" onClick={() => setStatusMsg(null)} className="ml-3 font-bold hover:opacity-85">
+            ✕
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Email/SMTP Config */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <h3 className="flex items-center text-md font-bold text-slate-800 dark:text-slate-100">
+                <Mail className="mr-2 text-indigo-500" size={18} />
+                Email / SMTP Channel
+              </h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={smtpEnabled}
+                  onChange={(e) => setSmtpEnabled(e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+                />
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Enabled</span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  SMTP Host
+                  <input
+                    type="text"
+                    value={smtpHost}
+                    onChange={(e) => setSmtpHost(e.target.value)}
+                    placeholder="smtp.gmail.com"
+                    className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  />
+                </label>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Port
+                  <input
+                    type="text"
+                    value={smtpPort}
+                    onChange={(e) => setSmtpPort(e.target.value)}
+                    placeholder="587"
+                    className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Username
+                  <input
+                    type="text"
+                    value={smtpUsername}
+                    onChange={(e) => setSmtpUsername(e.target.value)}
+                    placeholder="user@gmail.com"
+                    className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  />
+                </label>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Password
+                  <input
+                    type="password"
+                    value={smtpPassword}
+                    onChange={(e) => setSmtpPassword(e.target.value)}
+                    placeholder={smtpPassword === '•' ? '••••••••' : 'Enter Password'}
+                    className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Mail From
+                  <input
+                    type="text"
+                    value={mailFrom}
+                    onChange={(e) => setMailFrom(e.target.value)}
+                    placeholder="binocular@homelab.lan"
+                    className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  />
+                </label>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Mail To
+                  <input
+                    type="text"
+                    value={mailTo}
+                    onChange={(e) => setMailTo(e.target.value)}
+                    placeholder="owner@homelab.lan"
+                    className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={smtpUseTls}
+                  onChange={(e) => setSmtpUseTls(e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+                />
+                <span className="text-xs text-slate-600 dark:text-slate-300">Use Secure TLS / STARTTLS</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={handleTestSmtp}
+              disabled={isSmtpTesting || isSmtpSaving}
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              {isSmtpTesting ? 'Sending Test...' : 'Send Test'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveSmtp}
+              disabled={isSmtpTesting || isSmtpSaving}
+              className="inline-flex h-9 items-center justify-center rounded-xl bg-indigo-600 px-4 text-xs font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60 dark:hover:bg-indigo-500"
+            >
+              {isSmtpSaving ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
+        </section>
+
+        {/* Gotify Config */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <h3 className="flex items-center text-md font-bold text-slate-800 dark:text-slate-100">
+                <Send className="mr-2 text-indigo-500" size={18} />
+                Gotify Push Channel
+              </h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={gotifyEnabled}
+                  onChange={(e) => setGotifyEnabled(e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+                />
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Enabled</span>
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                Gotify Server URL
+                <input
+                  type="text"
+                  value={gotifyUrl}
+                  onChange={(e) => setGotifyUrl(e.target.value)}
+                  placeholder="https://gotify.homelab.lan"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                Application Token
+                <input
+                  type="password"
+                  value={gotifyToken}
+                  onChange={(e) => setGotifyToken(e.target.value)}
+                  placeholder={gotifyToken === '•' ? '••••••••' : 'Enter Application Token'}
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={handleTestGotify}
+              disabled={isGotifyTesting || isGotifySaving}
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              {isGotifyTesting ? 'Sending Test...' : 'Send Test'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveGotify}
+              disabled={isGotifyTesting || isGotifySaving}
+              className="inline-flex h-9 items-center justify-center rounded-xl bg-indigo-600 px-4 text-xs font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60 dark:hover:bg-indigo-500"
+            >
+              {isGotifySaving ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

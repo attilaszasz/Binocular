@@ -66,13 +66,9 @@ def test_parses_camera_and_lens_entries_from_alpha_universe_fixture() -> None:
 
     assert len(entries) == 4
     assert (
-        extract_latest_version(read_fixture("alpha_universe_firmware.html"), "ILCE-7CM2")
-        == "2.01"
+        extract_latest_version(read_fixture("alpha_universe_firmware.html"), "ILCE-7CM2") == "2.01"
     )
-    assert (
-        extract_latest_version(read_fixture("alpha_universe_firmware.html"), "SEL2470GM")
-        == "2"
-    )
+    assert extract_latest_version(read_fixture("alpha_universe_firmware.html"), "SEL2470GM") == "2"
 
 
 def test_sony_module_loads_through_extension_contract() -> None:
@@ -106,7 +102,10 @@ async def test_sony_a7cii_detects_latest_201_as_newer_than_200() -> None:
 
     assert result.status == "success"
     assert result.latest_version == "2.01"
-    assert result.source_url == "https://www.sony.com/electronics/support/e-mount-body-ilce-7-series/ilce-7cm2/downloads"
+    assert (
+        result.source_url
+        == "https://www.sony.com/electronics/support/e-mount-body-ilce-7-series/ilce-7cm2/downloads"
+    )
     assert comparison.is_newer is True
     assert fetched_urls == ["https://alphauniverse.com/firmware/"]
 

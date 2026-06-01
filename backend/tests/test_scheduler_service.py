@@ -34,15 +34,9 @@ async def schedule_repo(tmp_path: Path) -> ScheduleRepository:
     db_path = tmp_path / "test.db"
     manager = ConnectionManager(db_path)
     conn = await manager.open()
-    await conn.execute(
-        "CREATE TABLE device_types (id INTEGER PRIMARY KEY, name TEXT)"
-    )
-    await conn.execute(
-        "INSERT INTO device_types (id, name) VALUES (1, 'Type A')"
-    )
-    await conn.execute(
-        "INSERT INTO device_types (id, name) VALUES (2, 'Type B')"
-    )
+    await conn.execute("CREATE TABLE device_types (id INTEGER PRIMARY KEY, name TEXT)")
+    await conn.execute("INSERT INTO device_types (id, name) VALUES (1, 'Type A')")
+    await conn.execute("INSERT INTO device_types (id, name) VALUES (2, 'Type B')")
     await conn.executescript(
         """
         CREATE TABLE device_type_schedules (
@@ -72,7 +66,8 @@ def _null_check_factory() -> None:
 
 @pytest.mark.asyncio
 async def test_creates_jobs_for_enabled_types(
-    schedule_repo: ScheduleRepository, tmp_path: Path,
+    schedule_repo: ScheduleRepository,
+    tmp_path: Path,
 ) -> None:
     """Startup should create interval jobs for enabled types only."""
     inv_repo = await _build_inv_repo(tmp_path / "inv.db")
@@ -88,7 +83,8 @@ async def test_creates_jobs_for_enabled_types(
 
 @pytest.mark.asyncio
 async def test_respects_disabled_types(
-    schedule_repo: ScheduleRepository, tmp_path: Path,
+    schedule_repo: ScheduleRepository,
+    tmp_path: Path,
 ) -> None:
     """Disabled device types should produce no scheduled jobs."""
     inv_repo = await _build_inv_repo(tmp_path / "inv.db")
@@ -103,7 +99,8 @@ async def test_respects_disabled_types(
 
 @pytest.mark.asyncio
 async def test_reschedule_type_updates_job(
-    schedule_repo: ScheduleRepository, tmp_path: Path,
+    schedule_repo: ScheduleRepository,
+    tmp_path: Path,
 ) -> None:
     """reschedule_type should add, update, or remove a job dynamically."""
     inv_repo = await _build_inv_repo(tmp_path / "inv.db")

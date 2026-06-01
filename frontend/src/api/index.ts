@@ -7,3 +7,5 @@ export type { InstalledModule, ModuleListResponse, ModuleValidationSummary } fro
 export { deleteModule, listModules, ModuleUploadError, uploadModule } from './modules';
 export type { DeviceTypeSchedule, ScheduleListResponse, ScheduleUpdateRequest } from './schedules';
 export { listSchedules, updateSchedule } from './schedules';
+export type { NotificationChannel, UpdateChannelRequest, TestChannelRequest, TestChannelResponse } from './notifications';
+export { listChannels, configureChannel, testChannel } from './notifications';

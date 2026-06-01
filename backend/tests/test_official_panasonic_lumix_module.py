@@ -101,7 +101,10 @@ async def test_panasonic_gh7_detects_latest_17_as_newer_than_16() -> None:
 
     assert result.status == "success"
     assert result.latest_version == "1.7"
-    assert result.source_url == "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/fts/dl/gh7.html"
+    assert (
+        result.source_url
+        == "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/fts/dl/gh7.html"
+    )
     assert result.diagnostics["firmware_date"] == "Apr. 22, 2026"
     assert comparison.is_newer is True
     assert fetched_urls == [
