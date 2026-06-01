@@ -105,3 +105,26 @@ def test_settings_resolve_database_paths_from_data_dir() -> None:
 
     assert str(settings.resolved_database_path) == "/tmp/binocular-data/binocular.db"
     assert str(settings.resolved_backup_dir) == "/tmp/binocular-data/backups"
+
+
+def test_backup_schedule_defaults() -> None:
+    settings = Settings()
+
+    assert settings.backup_schedule_hours == 24
+    assert settings.backup_retention_count == 7
+
+
+def test_backup_schedule_env_override(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("BINOCULAR_BACKUP_SCHEDULE_HOURS", "0")
+    monkeypatch.setenv("BINOCULAR_BACKUP_RETENTION_COUNT", "14")
+
+    settings = Settings()
+
+    assert settings.backup_schedule_hours == 0
+    assert settings.backup_retention_count == 14
+
+
+def test_resolved_scheduled_backup_dir() -> None:
+    settings = Settings(data_dir="/tmp/binocular-data")
+
+    assert str(settings.resolved_scheduled_backup_dir) == "/tmp/binocular-data/backups/scheduled"

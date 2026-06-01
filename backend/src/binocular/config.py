@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     scrape_rate_limit_interval_seconds: float = Field(default=1.0, ge=0)
     scrape_max_retries: int = Field(default=2, ge=0)
     scrape_backoff_base_seconds: float = Field(default=0.5, ge=0)
+    backup_schedule_hours: int = Field(default=24, ge=0)
+    backup_retention_count: int = Field(default=7, ge=0)
 
     @property
     def resolved_database_path(self) -> Path:
@@ -44,6 +46,12 @@ class Settings(BaseSettings):
         """Return the effective pre-migration backup directory."""
 
         return self.backup_dir or self.data_dir / "backups"
+
+    @property
+    def resolved_scheduled_backup_dir(self) -> Path:
+        """Return the directory for scheduled backup snapshots (inside resolved_backup_dir)."""
+
+        return self.resolved_backup_dir / "scheduled"
 
     @model_validator(mode="before")
     @classmethod

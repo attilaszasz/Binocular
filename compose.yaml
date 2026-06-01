@@ -13,6 +13,9 @@ services:
       - binocular_auth_password
     environment:
       BINOCULAR_AUTH_PASSWORD_FILE: /run/secrets/binocular_auth_password
+      # Backup configuration (optional — defaults shown)
+      # BINOCULAR_BACKUP_SCHEDULE_HOURS: "24"    # 0 = disabled
+      # BINOCULAR_BACKUP_RETENTION_COUNT: "7"    # 0 = unlimited
 
 secrets:
   binocular_auth_password:

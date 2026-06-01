@@ -4,6 +4,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import structlog
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
+from apscheduler.triggers.interval import IntervalTrigger  # type: ignore[import-untyped]
 from fastapi import FastAPI
 
 from binocular.auth import BasicAuthMiddleware
@@ -11,6 +13,7 @@ from binocular.config import Settings, get_settings
 from binocular.db.migrations import MigrationRunner
 from binocular.logging import configure_logging
 from binocular.routes import api_router
+from binocular.services.backup import BackupService
 from binocular.static import mount_spa
 
 
@@ -30,7 +33,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         runner = MigrationRunner.from_settings(resolved_settings)
         await runner.apply_pending()
+
+        backup_svc = BackupService(resolved_settings)
+        app.state.backup_service = backup_svc
+
+        scheduler: AsyncIOScheduler | None = None
+        if resolved_settings.backup_schedule_hours > 0:
+            scheduler = AsyncIOScheduler()
+            scheduler.add_job(
+                backup_svc.run_backup,
+                trigger=IntervalTrigger(hours=resolved_settings.backup_schedule_hours),
+                id="binocular_backup",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+            scheduler.start()
+            logger.info(
+                "backup_scheduler_started",
+                interval_hours=resolved_settings.backup_schedule_hours,
+            )
+
         yield
+
+        if scheduler is not None and scheduler.running:
+            scheduler.shutdown(wait=False)
 
     app = FastAPI(
         title="Binocular",

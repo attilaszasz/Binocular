@@ -117,3 +117,47 @@ async def test_reschedule_type_updates_job(
         await svc.stop()
     finally:
         await inv_repo.connection.close()
+
+
+@pytest.mark.asyncio
+async def test_add_backup_job_registers_when_hours_positive(
+    schedule_repo: ScheduleRepository,
+    tmp_path: Path,
+) -> None:
+    """add_backup_job should register a binocular_backup job when hours > 0."""
+    inv_repo = await _build_inv_repo(tmp_path / "inv.db")
+    try:
+        svc = SchedulerService(schedule_repo, inv_repo, _null_check_factory)  # type: ignore[arg-type]
+        await svc.start()
+
+        async def _dummy_backup() -> None:
+            pass
+
+        svc.add_backup_job(_dummy_backup, hours=24)
+        assert svc._scheduler.get_job("binocular_backup") is not None
+
+        await svc.stop()
+    finally:
+        await inv_repo.connection.close()
+
+
+@pytest.mark.asyncio
+async def test_add_backup_job_skips_when_hours_zero(
+    schedule_repo: ScheduleRepository,
+    tmp_path: Path,
+) -> None:
+    """add_backup_job should not register a job when hours == 0."""
+    inv_repo = await _build_inv_repo(tmp_path / "inv.db")
+    try:
+        svc = SchedulerService(schedule_repo, inv_repo, _null_check_factory)  # type: ignore[arg-type]
+        await svc.start()
+
+        async def _dummy_backup() -> None:
+            pass
+
+        svc.add_backup_job(_dummy_backup, hours=0)
+        assert svc._scheduler.get_job("binocular_backup") is None
+
+        await svc.stop()
+    finally:
+        await inv_repo.connection.close()

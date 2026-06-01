@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
@@ -75,6 +76,27 @@ class SchedulerService:
             coalesce=True,
             max_instances=1,
         )
+
+    def add_backup_job(
+        self, backup_service: Callable[[], Coroutine[Any, Any, Any]], hours: int
+    ) -> None:
+        """Register a recurring backup job on the existing scheduler.
+
+        If ``hours`` is 0, no job is registered.  The job uses a stable ID so
+        that repeated calls (e.g. after a restart) replace the prior
+        registration without duplication.
+        """
+        if hours <= 0:
+            return
+        self._scheduler.add_job(
+            backup_service,
+            trigger=IntervalTrigger(hours=hours),
+            id="binocular_backup",
+            replace_existing=True,
+            coalesce=True,
+            max_instances=1,
+        )
+        self._logger.info("backup_job_registered", interval_hours=hours)
 
     async def _run_scheduled_check(self, device_type_id: int) -> None:
         """Execute one scheduled check window for a device type."""

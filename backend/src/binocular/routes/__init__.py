@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from binocular.routes.activity import router as activity_router
+from binocular.routes.backups import router as backups_router
 from binocular.routes.checks import router as checks_router
 from binocular.routes.health import router as health_router
 from binocular.routes.inventory import router as inventory_router
@@ -19,5 +20,6 @@ api_router.include_router(modules_router, prefix="/api/v1")
 api_router.include_router(schedules_router, prefix="/api/v1")
 api_router.include_router(notifications_router, prefix="/api/v1")
 api_router.include_router(activity_router, prefix="/api/v1")
+api_router.include_router(backups_router, prefix="/api/v1")
 
 __all__ = ["api_router"]
