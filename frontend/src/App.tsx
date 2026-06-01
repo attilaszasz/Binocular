@@ -21,7 +21,7 @@ import {
   RefreshCw,
   Filter,
 } from 'lucide-react';
-import { FormEvent, Fragment, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import {
@@ -837,7 +837,7 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -865,11 +865,19 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [typeFilter, statusFilter, fallbackLogs]);
 
   useEffect(() => {
-    void fetchLogs();
-  }, [typeFilter, statusFilter]);
+    let active = true;
+    void (async () => {
+      await Promise.resolve();
+      if (!active) return;
+      void fetchLogs();
+    })();
+    return () => {
+      active = false;
+    };
+  }, [fetchLogs]);
 
   const toggleExpand = (id: number) => {
     setExpandedIds((current) => {
@@ -921,7 +929,7 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
             <select
               id="log-type-filter"
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'check' | 'notification')}
               className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
             >
               <option value="all">All Types</option>
@@ -935,7 +943,7 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
             <select
               id="log-status-filter"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'success' | 'failed')}
               className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
             >
               <option value="all">All Statuses</option>
@@ -1628,14 +1636,6 @@ function TableHead({ children }: { children: string }) {
   );
 }
 
-function LogBadge({ level }: { level: LogEntry['level'] }) {
-  const className = {
-    INFO: 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-    WARN: 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
-    ERROR: 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400',
-  }[level];
-  return <span className={`inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium ${className}`}>{level}</span>;
-}
 
 function ModuleStatus({ status }: { status: InstalledModule['validationStatus'] }) {
   const className =
