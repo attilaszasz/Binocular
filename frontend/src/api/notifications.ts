@@ -4,16 +4,16 @@ export type NotificationChannel = {
   id: number;
   type: 'smtp' | 'gotify';
   enabled: boolean;
-  config: Record<string, any>;
+  config: Record<string, string | number | boolean | undefined | null>;
 };
 
 export type UpdateChannelRequest = {
   enabled: boolean;
-  config: Record<string, any>;
+  config: Record<string, string | number | boolean | undefined | null>;
 };
 
 export type TestChannelRequest = {
-  config: Record<string, any>;
+  config: Record<string, string | number | boolean | undefined | null>;
 };
 
 export type TestChannelResponse = {

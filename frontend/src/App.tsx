@@ -1008,25 +1008,25 @@ function SettingsPage() {
         const smtp = channels.find((c) => c.type === 'smtp');
         if (smtp) {
           setSmtpEnabled(smtp.enabled);
-          setSmtpHost(smtp.config.smtpHost || smtp.config.smtp_host || '');
+          setSmtpHost(String(smtp.config.smtpHost || smtp.config.smtp_host || ''));
           setSmtpPort(String(smtp.config.smtpPort || smtp.config.smtp_port || '587'));
-          setSmtpUsername(smtp.config.smtpUsername || smtp.config.smtp_username || '');
-          setSmtpPassword(smtp.config.smtpPassword || smtp.config.smtp_password || '');
+          setSmtpUsername(String(smtp.config.smtpUsername || smtp.config.smtp_username || ''));
+          setSmtpPassword(String(smtp.config.smtpPassword || smtp.config.smtp_password || ''));
           setSmtpUseTls(
             smtp.config.smtpUseTls !== undefined
-              ? smtp.config.smtpUseTls
+              ? (smtp.config.smtpUseTls as boolean)
               : smtp.config.smtp_use_tls !== undefined
-              ? smtp.config.smtp_use_tls
+              ? (smtp.config.smtp_use_tls as boolean)
               : true
           );
-          setMailFrom(smtp.config.mailFrom || smtp.config.mail_from || '');
-          setMailTo(smtp.config.mailTo || smtp.config.mail_to || '');
+          setMailFrom(String(smtp.config.mailFrom || smtp.config.mail_from || ''));
+          setMailTo(String(smtp.config.mailTo || smtp.config.mail_to || ''));
         }
         const gotify = channels.find((c) => c.type === 'gotify');
         if (gotify) {
           setGotifyEnabled(gotify.enabled);
-          setGotifyUrl(gotify.config.gotifyUrl || gotify.config.gotify_url || '');
-          setGotifyToken(gotify.config.gotifyToken || gotify.config.gotify_token || '');
+          setGotifyUrl(String(gotify.config.gotifyUrl || gotify.config.gotify_url || ''));
+          setGotifyToken(String(gotify.config.gotifyToken || gotify.config.gotify_token || ''));
         }
       } catch (err) {
         console.error('Failed to load settings', err);
