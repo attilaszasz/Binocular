@@ -114,7 +114,7 @@ class SchedulerService:
 
         try:
             devices = await self._inventory_repo.list_active_devices()
-            type_devices = [d for d in devices if d.device_type_id == device_type_id]
+            type_devices = [d for d in devices if d.module_id == device_type_id]
             if not type_devices:
                 await self._schedule_repo.record_run_finished(
                     device_type_id,

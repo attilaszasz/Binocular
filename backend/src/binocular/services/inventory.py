@@ -126,6 +126,8 @@ class InventoryService:
             )
             raise ValueError(msg)
 
-        return int(row["id"])
+        val = row["id"]
+        assert isinstance(val, int)
+        return val
 
 
