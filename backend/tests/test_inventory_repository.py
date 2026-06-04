@@ -15,21 +15,33 @@ async def open_migrated_repository(tmp_path: Path) -> InventoryRepository:
     return InventoryRepository(connection)
 
 
+async def _seed_module(repository: InventoryRepository) -> int:
+    """Insert a valid installed module and return its DB id."""
+    await repository.execute(
+        "INSERT INTO modules (module_id, display_name, source_path, source_hash, "
+        "status, validation_status, validation_summary_json) "
+        "VALUES (?, ?, ?, ?, 'installed', 'valid', '{}')",
+        ("camera", "Camera", "/fake/camera.py", "abc123"),
+    )
+    row = await repository.fetch_one("SELECT id FROM modules WHERE module_id = ?", ("camera",))
+    assert row is not None
+    return int(row["id"])
+
+
 @pytest.mark.asyncio
-async def test_inventory_repository_reuses_normalized_device_types(tmp_path: Path) -> None:
+async def test_inventory_repository_devices_share_module(tmp_path: Path) -> None:
     repository = await open_migrated_repository(tmp_path)
     try:
-        first_type_id = await repository.get_or_create_device_type("Sony Alpha", "sony alpha")
-        second_type_id = await repository.get_or_create_device_type("  sony alpha  ", "sony alpha")
+        module_id = await _seed_module(repository)
 
         first = await repository.create_device(
-            device_type_id=first_type_id,
+            module_id=module_id,
             name="Sony A7IV",
             model="ILCE-7M4",
             current_version="02",
         )
         second = await repository.create_device(
-            device_type_id=second_type_id,
+            module_id=module_id,
             name="Sony A7R V",
             model="ILCE-7RM5",
             current_version="v1.2b",
@@ -39,19 +51,20 @@ async def test_inventory_repository_reuses_normalized_device_types(tmp_path: Pat
     finally:
         await repository.connection.close()
 
-    assert first_type_id == second_type_id
     assert first.current_version == "02"
     assert second.current_version == "v1.2b"
     assert [device.id for device in devices] == [first.id, second.id]
+    assert first.module_id == module_id
+    assert second.module_id == module_id
 
 
 @pytest.mark.asyncio
 async def test_inventory_repository_archives_devices_out_of_active_list(tmp_path: Path) -> None:
     repository = await open_migrated_repository(tmp_path)
     try:
-        device_type_id = await repository.get_or_create_device_type("Networking", "networking")
+        module_id = await _seed_module(repository)
         device = await repository.create_device(
-            device_type_id=device_type_id,
+            module_id=module_id,
             name="UDM Pro",
             model="UDM-Pro",
             current_version="3.2.12",
@@ -70,9 +83,9 @@ async def test_inventory_repository_archives_devices_out_of_active_list(tmp_path
 async def test_inventory_repository_records_successful_check(tmp_path: Path) -> None:
     repository = await open_migrated_repository(tmp_path)
     try:
-        device_type_id = await repository.get_or_create_device_type("Camera", "camera")
+        module_id = await _seed_module(repository)
         device = await repository.create_device(
-            device_type_id=device_type_id,
+            module_id=module_id,
             name="Camera A",
             model="A1",
             current_version="1.0",
@@ -99,9 +112,9 @@ async def test_inventory_repository_records_failed_check_without_success_timesta
 ) -> None:
     repository = await open_migrated_repository(tmp_path)
     try:
-        device_type_id = await repository.get_or_create_device_type("Camera", "camera")
+        module_id = await _seed_module(repository)
         device = await repository.create_device(
-            device_type_id=device_type_id,
+            module_id=module_id,
             name="Camera A",
             model="A1",
             current_version="1.0",

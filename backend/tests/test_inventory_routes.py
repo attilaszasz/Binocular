@@ -9,9 +9,25 @@ from binocular.db.connection import ConnectionManager
 from binocular.db.migrations import MigrationRunner
 
 
+async def _seed_module(db_path: Path, module_id: str, display_name: str) -> None:
+    connection = await ConnectionManager(db_path).open()
+    try:
+        await connection.execute(
+            "INSERT INTO modules (module_id, display_name, source_path, source_hash, "
+            "status, validation_status, validation_summary_json) "
+            "VALUES (?, ?, ?, ?, 'installed', 'valid', '{}')",
+            (module_id, display_name, f"/fake/{module_id}.py", "abc123"),
+        )
+        await connection.commit()
+    finally:
+        await connection.close()
+
+
 async def migrated_app_client(tmp_path: Path) -> AsyncClient:
     settings = Settings(environment="test", data_dir=tmp_path)
     await MigrationRunner.from_settings(settings).apply_pending()
+    await _seed_module(settings.resolved_database_path, "sony-alpha", "Sony Alpha")
+    await _seed_module(settings.resolved_database_path, "networking", "Networking")
     app = create_app(settings)
     transport = ASGITransport(app=app)
     return AsyncClient(transport=transport, base_url="http://testserver")
@@ -25,7 +41,7 @@ async def test_inventory_routes_create_update_and_group_devices(tmp_path: Path) 
             json={
                 "name": "Sony A7IV",
                 "model": "ILCE-7M4",
-                "deviceType": " Sony Alpha ",
+                "moduleId": "sony-alpha",
                 "currentVersion": "02",
             },
         )
@@ -37,7 +53,7 @@ async def test_inventory_routes_create_update_and_group_devices(tmp_path: Path) 
             json={
                 "name": "Sony A7 IV",
                 "model": "ILCE-7M4",
-                "deviceType": "sony alpha",
+                "moduleId": "sony-alpha",
                 "currentVersion": "03.00",
             },
         )
@@ -58,7 +74,10 @@ async def test_inventory_routes_reject_blank_fields(tmp_path: Path) -> None:
     async with await migrated_app_client(tmp_path) as client:
         response = await client.post(
             "/api/v1/inventory",
-            json={"name": " ", "model": "ILCE-7M4", "deviceType": "Sony", "currentVersion": "1"},
+            json={
+                "name": " ", "model": "ILCE-7M4",
+                "moduleId": "sony-alpha", "currentVersion": "1",
+            },
         )
 
     assert response.status_code == 422
@@ -73,7 +92,7 @@ async def test_inventory_routes_archive_hides_device(tmp_path: Path) -> None:
                 json={
                     "name": "UDM Pro",
                     "model": "UDM-Pro",
-                    "deviceType": "Networking",
+                    "moduleId": "networking",
                     "currentVersion": "3.2.12",
                 },
             )
@@ -94,7 +113,7 @@ async def test_inventory_routes_confirm_update_requires_latest_version(tmp_path:
                 json={
                     "name": "Sony A7IV",
                     "model": "ILCE-7M4",
-                    "deviceType": "Sony Alpha",
+                    "moduleId": "sony-alpha",
                     "currentVersion": "2.00",
                 },
             )

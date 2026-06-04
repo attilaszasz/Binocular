@@ -21,13 +21,13 @@ describe('inventory API', () => {
     const payload = {
       name: 'Sony A7IV',
       model: 'ILCE-7M4',
-      deviceType: 'Sony Alpha',
+      moduleId: 'sony-alpha',
       currentVersion: '02',
     };
 
     await createDevice(payload);
     await updateDevice(1, payload);
-    await confirmDeviceUpdate(1);
+    await confirmDeviceUpdate(1, { version: '3.00' });
     await archiveDevice(1);
 
     expect(fetch).toHaveBeenNthCalledWith(

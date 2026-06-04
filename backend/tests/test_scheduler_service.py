@@ -11,7 +11,7 @@ from binocular.services.scheduler import SchedulerService
 
 _DEVICES_DDL = (
     "CREATE TABLE IF NOT EXISTS devices ("
-    "id INTEGER PRIMARY KEY, device_type_id INTEGER,"
+    "id INTEGER PRIMARY KEY, module_id INTEGER,"
     " name TEXT, model TEXT, current_version TEXT,"
     " latest_version TEXT, last_checked_at TEXT,"
     " last_success_at TEXT,"
@@ -21,11 +21,26 @@ _DEVICES_DDL = (
     " updated_at TEXT DEFAULT CURRENT_TIMESTAMP)"
 )
 
+_MODULES_DDL = (
+    "CREATE TABLE IF NOT EXISTS modules ("
+    "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    " module_id TEXT NOT NULL, display_name TEXT NOT NULL,"
+    " source_path TEXT NOT NULL, source_hash TEXT NOT NULL,"
+    " author TEXT, version TEXT,"
+    " status TEXT NOT NULL DEFAULT 'installed',"
+    " validation_status TEXT NOT NULL DEFAULT 'unvalidated',"
+    " validation_summary_json TEXT NOT NULL DEFAULT '{}',"
+    " last_validated_at TEXT,"
+    " created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+    " updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+)
+
 
 async def _build_inv_repo(db_path: Path) -> InventoryRepository:
     manager = ConnectionManager(db_path)
     conn = await manager.open()
     await conn.execute(_DEVICES_DDL)
+    await conn.execute(_MODULES_DDL)
     return InventoryRepository(conn)
 
 
@@ -37,6 +52,15 @@ async def schedule_repo(tmp_path: Path) -> ScheduleRepository:
     await conn.execute("CREATE TABLE device_types (id INTEGER PRIMARY KEY, name TEXT)")
     await conn.execute("INSERT INTO device_types (id, name) VALUES (1, 'Type A')")
     await conn.execute("INSERT INTO device_types (id, name) VALUES (2, 'Type B')")
+    await conn.execute(_MODULES_DDL)
+    await conn.execute(
+        "INSERT INTO modules (id, module_id, display_name, source_path, source_hash) "
+        "VALUES (1, 'type-a', 'Type A', '/fake/a.py', 'abc')"
+    )
+    await conn.execute(
+        "INSERT INTO modules (id, module_id, display_name, source_path, source_hash) "
+        "VALUES (2, 'type-b', 'Type B', '/fake/b.py', 'abc')"
+    )
     await conn.executescript(
         """
         CREATE TABLE device_type_schedules (

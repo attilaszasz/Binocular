@@ -36,6 +36,9 @@ class SchedulerService:
     async def start(self) -> None:
         """Rebuild interval jobs from persisted schedule configuration."""
         schedules = await self._schedule_repo.list_schedules()
+        if not schedules:
+            self._logger.info("scheduler_start_skipped_no_schedules")
+            return
         job_count = 0
         for schedule in schedules:
             if not schedule.enabled:

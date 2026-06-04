@@ -7,6 +7,24 @@ import pytest
 from binocular.db.connection import ConnectionManager
 from binocular.repositories.schedules import ScheduleRepository
 
+CREATE_MODULES_SQL = """
+CREATE TABLE IF NOT EXISTS modules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    module_id TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    source_path TEXT NOT NULL,
+    source_hash TEXT NOT NULL,
+    author TEXT,
+    version TEXT,
+    status TEXT NOT NULL DEFAULT 'installed',
+    validation_status TEXT NOT NULL DEFAULT 'unvalidated',
+    validation_summary_json TEXT NOT NULL DEFAULT '{}',
+    last_validated_at TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
 
 @pytest.mark.asyncio
 async def test_migration_004_creates_device_type_schedules_table(tmp_path: Path) -> None:
@@ -17,6 +35,11 @@ async def test_migration_004_creates_device_type_schedules_table(tmp_path: Path)
     try:
         await conn.execute("CREATE TABLE device_types (id INTEGER PRIMARY KEY, name TEXT)")
         await conn.execute("INSERT INTO device_types (id, name) VALUES (1, 'Sony Alpha')")
+        await conn.executescript(CREATE_MODULES_SQL)
+        await conn.execute(
+            "INSERT INTO modules (id, module_id, display_name, source_path, source_hash) "
+            "VALUES (1, 'sony-alpha', 'Sony Alpha', '/fake/path.py', 'abc123')"
+        )
         migration_sql = (
             Path(__file__).parent.parent
             / "src"
@@ -47,10 +70,15 @@ async def test_list_schedules_returns_all_rows(tmp_path: Path) -> None:
     conn = await manager.open()
     try:
         await conn.execute("CREATE TABLE device_types (id INTEGER PRIMARY KEY, name TEXT)")
+        await conn.executescript(CREATE_MODULES_SQL)
         await conn.executescript(
             """
             INSERT INTO device_types (id, name) VALUES (1, 'Type A');
             INSERT INTO device_types (id, name) VALUES (2, 'Type B');
+            INSERT INTO modules (id, module_id, display_name, source_path, source_hash)
+                VALUES (1, 'type-a', 'Type A', '/fake/a.py', 'abc');
+            INSERT INTO modules (id, module_id, display_name, source_path, source_hash)
+                VALUES (2, 'type-b', 'Type B', '/fake/b.py', 'abc');
             CREATE TABLE device_type_schedules (
                 device_type_id INTEGER PRIMARY KEY REFERENCES device_types(id),
                 enabled INTEGER NOT NULL DEFAULT 0,
@@ -87,6 +115,11 @@ async def test_record_run_health(tmp_path: Path) -> None:
     try:
         await conn.execute("CREATE TABLE device_types (id INTEGER PRIMARY KEY, name TEXT)")
         await conn.execute("INSERT INTO device_types (id, name) VALUES (1, 'Type A')")
+        await conn.executescript(CREATE_MODULES_SQL)
+        await conn.execute(
+            "INSERT INTO modules (id, module_id, display_name, source_path, source_hash) "
+            "VALUES (1, 'type-a', 'Type A', '/fake/a.py', 'abc123')"
+        )
         await conn.executescript(
             """
             CREATE TABLE device_type_schedules (

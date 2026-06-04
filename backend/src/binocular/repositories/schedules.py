@@ -30,13 +30,15 @@ class ScheduleRepository(Repository):
         """Return all device-type schedule rows joined to type names."""
         rows = await self.fetch_all(
             """
-            SELECT s.device_type_id, dt.name AS device_type, s.enabled,
+            SELECT s.device_type_id,
+                   COALESCE(m.display_name, 'Deprecated') AS device_type,
+                   s.enabled,
                    s.interval_minutes, s.next_run_at, s.last_started_at,
                    s.last_completed_at, s.last_success_at, s.last_failure_at,
                    s.last_failure_reason, s.last_skip_reason, s.updated_at
             FROM device_type_schedules s
-            JOIN device_types dt ON dt.id = s.device_type_id
-            ORDER BY dt.name COLLATE NOCASE
+            LEFT JOIN modules m ON m.id = s.device_type_id
+            ORDER BY device_type COLLATE NOCASE
             """
         )
         return [self._record_from_row(row) for row in rows]
@@ -129,12 +131,14 @@ class ScheduleRepository(Repository):
         """Return one schedule row by device type id."""
         rows = await self.fetch_all(
             """
-            SELECT s.device_type_id, dt.name AS device_type, s.enabled,
+            SELECT s.device_type_id,
+                   COALESCE(m.display_name, 'Deprecated') AS device_type,
+                   s.enabled,
                    s.interval_minutes, s.next_run_at, s.last_started_at,
                    s.last_completed_at, s.last_success_at, s.last_failure_at,
                    s.last_failure_reason, s.last_skip_reason, s.updated_at
             FROM device_type_schedules s
-            JOIN device_types dt ON dt.id = s.device_type_id
+            LEFT JOIN modules m ON m.id = s.device_type_id
             WHERE s.device_type_id = ?
             """,
             (device_type_id,),

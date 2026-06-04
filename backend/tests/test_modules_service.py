@@ -8,6 +8,7 @@ from binocular.db.migrations import MigrationRunner
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.runner import ModuleRunner
 from binocular.extensions.validator import ModuleValidator
+from binocular.repositories.inventory import InventoryRepository
 from binocular.repositories.modules import ModuleRepository
 from binocular.services.modules import ModuleLifecycleError, ModuleLifecycleService
 
@@ -34,6 +35,7 @@ async def service_for(tmp_path: Path) -> ModuleLifecycleService:
         ModuleRepository(connection),
         ModuleValidator(ModuleLoader(modules_dir), ModuleRunner()),
         modules_dir,
+        InventoryRepository(connection),
     )
 
 

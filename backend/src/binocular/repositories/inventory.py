@@ -10,7 +10,8 @@ class DeviceRecord:
     """Persisted device row joined with its type."""
 
     id: int
-    device_type_id: int
+    module_id: int | None
+    module_id_str: str | None
     device_type: str
     name: str
     model: str
@@ -26,44 +27,20 @@ class DeviceRecord:
 class InventoryRepository(Repository):
     """Read and write inventory records."""
 
-    async def get_or_create_device_type(self, name: str, normalized_name: str) -> int:
-        row = await self.fetch_one(
-            "SELECT id FROM device_types WHERE normalized_name = ?",
-            (normalized_name,),
-        )
-        if row is not None:
-            return self._required_int(row["id"])
-
-        await self.execute(
-            """
-            INSERT INTO device_types (name, normalized_name)
-            VALUES (?, ?)
-            """,
-            (name, normalized_name),
-        )
-        row = await self.fetch_one(
-            "SELECT id FROM device_types WHERE normalized_name = ?",
-            (normalized_name,),
-        )
-        if row is None:
-            msg = "Created device type could not be reloaded"
-            raise RuntimeError(msg)
-        return self._required_int(row["id"])
-
     async def create_device(
         self,
         *,
-        device_type_id: int,
+        module_id: int | None,
         name: str,
         model: str,
         current_version: str,
     ) -> DeviceRecord:
         await self.execute(
             """
-            INSERT INTO devices (device_type_id, name, model, current_version)
+            INSERT INTO devices (module_id, name, model, current_version)
             VALUES (?, ?, ?, ?)
             """,
-            (device_type_id, name, model, current_version),
+            (module_id, name, model, current_version),
         )
         row = await self.fetch_one("SELECT last_insert_rowid() AS id")
         if row is None:
@@ -75,7 +52,7 @@ class InventoryRepository(Repository):
         self,
         device_id: int,
         *,
-        device_type_id: int,
+        module_id: int | None,
         name: str,
         model: str,
         current_version: str,
@@ -83,14 +60,14 @@ class InventoryRepository(Repository):
         row_count = await self.execute(
             """
             UPDATE devices
-            SET device_type_id = ?,
+            SET module_id = ?,
                 name = ?,
                 model = ?,
                 current_version = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ? AND is_archived = 0
             """,
-            (device_type_id, name, model, current_version, device_id),
+            (module_id, name, model, current_version, device_id),
         )
         if row_count == 0:
             return None
@@ -163,11 +140,15 @@ class InventoryRepository(Repository):
     async def get_device(self, device_id: int) -> DeviceRecord | None:
         row = await self.fetch_one(
             """
-            SELECT d.id, d.device_type_id, dt.name AS device_type, d.name, d.model,
-                   d.current_version, d.latest_version, d.last_checked_at, d.last_success_at,
+            SELECT d.id, d.module_id,
+                   m.module_id AS module_id_str,
+                   COALESCE(m.display_name, 'Unlinked') AS device_type,
+                   d.name, d.model,
+                   d.current_version, d.latest_version,
+                   d.last_checked_at, d.last_success_at,
                    d.last_check_status AS status, d.created_at, d.updated_at
             FROM devices d
-            JOIN device_types dt ON dt.id = d.device_type_id
+            LEFT JOIN modules m ON m.id = d.module_id
             WHERE d.id = ? AND d.is_archived = 0
             """,
             (device_id,),
@@ -186,22 +167,40 @@ class InventoryRepository(Repository):
     async def list_active_devices(self) -> list[DeviceRecord]:
         rows = await self.fetch_all(
             """
-            SELECT d.id, d.device_type_id, dt.name AS device_type, d.name, d.model,
-                   d.current_version, d.latest_version, d.last_checked_at, d.last_success_at,
+            SELECT d.id, d.module_id,
+                   m.module_id AS module_id_str,
+                   COALESCE(m.display_name, 'Unlinked') AS device_type,
+                   d.name, d.model,
+                   d.current_version, d.latest_version,
+                   d.last_checked_at, d.last_success_at,
                    d.last_check_status AS status, d.created_at, d.updated_at
             FROM devices d
-            JOIN device_types dt ON dt.id = d.device_type_id
+            LEFT JOIN modules m ON m.id = d.module_id
             WHERE d.is_archived = 0
-            ORDER BY dt.name COLLATE NOCASE, d.name COLLATE NOCASE, d.id
+            ORDER BY COALESCE(m.display_name, 'ZZZ_Unlinked') COLLATE NOCASE,
+                     d.name COLLATE NOCASE, d.id
             """
         )
         return [self._record_from_row(row) for row in rows]
+
+    async def unlink_devices_for_module(self, module_db_id: int) -> int:
+        """Set module_id to NULL for all devices referencing the given module row."""
+        row_count = await self.execute(
+            (
+                "UPDATE devices SET module_id = NULL, "
+                "updated_at = CURRENT_TIMESTAMP "
+                "WHERE module_id = ?"
+            ),
+            (module_db_id,),
+        )
+        return row_count
 
     @staticmethod
     def _record_from_row(row: dict[str, object]) -> DeviceRecord:
         return DeviceRecord(
             id=InventoryRepository._required_int(row["id"]),
-            device_type_id=InventoryRepository._required_int(row["device_type_id"]),
+            module_id=InventoryRepository._optional_int(row["module_id"]),
+            module_id_str=InventoryRepository._optional_text(row.get("module_id_str")),
             device_type=str(row["device_type"]),
             name=str(row["name"]),
             model=str(row["model"]),
@@ -221,6 +220,17 @@ class InventoryRepository(Repository):
         if isinstance(value, str):
             return int(value)
         msg = f"Expected integer-compatible value, got {type(value).__name__}"
+        raise TypeError(msg)
+
+    @staticmethod
+    def _optional_int(value: object) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            return int(value)
+        msg = f"Expected integer-compatible value or None, got {type(value).__name__}"
         raise TypeError(msg)
 
     @staticmethod

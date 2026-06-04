@@ -19,12 +19,12 @@ class DevicePayload(BaseModel):
 
     name: str = Field(min_length=1)
     model: str = Field(min_length=1)
-    device_type: str = Field(alias="deviceType", min_length=1)
+    module_id: str = Field(alias="moduleId", min_length=1)
     current_version: str = Field(alias="currentVersion", min_length=1)
 
     model_config = ConfigDict(populate_by_name=True)
 
-    @field_validator("name", "model", "device_type", "current_version")
+    @field_validator("name", "model", "module_id", "current_version")
     @classmethod
     def strip_required_text(cls, value: str) -> str:
         stripped = value.strip()
@@ -37,7 +37,7 @@ class DevicePayload(BaseModel):
         return DeviceInput(
             name=self.name,
             model=self.model,
-            device_type=self.device_type,
+            module_id=self.module_id,
             current_version=self.current_version,
         )
 
@@ -46,7 +46,7 @@ class DeviceResponse(BaseModel):
     """Inventory device response."""
 
     id: int
-    device_type_id: int = Field(alias="deviceTypeId")
+    module_id: str | None = Field(alias="moduleId")
     device_type: str = Field(alias="deviceType")
     name: str
     model: str
@@ -64,10 +64,12 @@ class DeviceResponse(BaseModel):
 class DeviceGroupResponse(BaseModel):
     """Grouped inventory response item."""
 
-    id: int
+    module_id: str | None = Field(alias="moduleId")
     name: str
     count: int
     devices: list[DeviceResponse]
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class InventoryResponse(BaseModel):
@@ -105,7 +107,11 @@ async def create_device(
     payload: DevicePayload,
     service: InventoryServiceDependency,
 ) -> DeviceResponse:
-    return _device_response(await service.create_device(payload.to_input()))
+    try:
+        record = await service.create_device(payload.to_input())
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return _device_response(record)
 
 
 @router.patch("/{device_id}", response_model=DeviceResponse)
@@ -114,7 +120,10 @@ async def update_device(
     payload: DevicePayload,
     service: InventoryServiceDependency,
 ) -> DeviceResponse:
-    record = await service.update_device(device_id, payload.to_input())
+    try:
+        record = await service.update_device(device_id, payload.to_input())
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
     return _device_response(record)
@@ -142,7 +151,7 @@ async def confirm_update(device_id: int, service: InventoryServiceDependency) ->
 
 def _group_response(group: DeviceGroup) -> DeviceGroupResponse:
     return DeviceGroupResponse(
-        id=group.id,
+        module_id=group.module_id,
         name=group.name,
         count=group.count,
         devices=[_device_response(device) for device in group.devices],
@@ -152,7 +161,7 @@ def _group_response(group: DeviceGroup) -> DeviceGroupResponse:
 def _device_response(record: DeviceRecord) -> DeviceResponse:
     return DeviceResponse(
         id=record.id,
-        device_type_id=record.device_type_id,
+        module_id=record.module_id_str,
         device_type=record.device_type,
         name=record.name,
         model=record.model,

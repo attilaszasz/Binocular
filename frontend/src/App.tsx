@@ -12,6 +12,7 @@ import {
   Settings,
   Sun,
   TerminalSquare,
+  Unlink,
   X,
   Mail,
   Send,
@@ -81,7 +82,7 @@ const pageTitles: Record<string, string> = {
 const emptyDeviceInput: DeviceInput = {
   name: '',
   model: '',
-  deviceType: '',
+  moduleId: '',
   currentVersion: '',
 };
 
@@ -175,7 +176,7 @@ export function App() {
     setFormValues({
       name: device.name,
       model: device.model,
-      deviceType: device.deviceType,
+      moduleId: device.moduleId ?? '',
       currentVersion: device.currentVersion,
     });
   }
@@ -212,7 +213,7 @@ export function App() {
 
   async function handleMarkUpdated(device: InventoryDevice) {
     try {
-      const updated = await confirmDeviceUpdate(device.id);
+      const updated = await confirmDeviceUpdate(device.id, { version: device.latestVersion ?? '' });
       addLog('INFO', `User confirmed update for ${updated.name}. Version synced to ${updated.currentVersion}`);
       await refreshInventory();
     } catch (error) {
@@ -505,6 +506,17 @@ function InventoryPage({
   onRunAllChecks: () => void;
 }) {
   const canCheck = selectedModuleId !== '';
+
+  const sortedGroups = useMemo(
+    () =>
+      [...groups].sort((a, b) => {
+        const aUnlinked = a.name === 'Unlinked' ? 1 : 0;
+        const bUnlinked = b.name === 'Unlinked' ? 1 : 0;
+        return aUnlinked - bUnlinked;
+      }),
+    [groups],
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -556,15 +568,47 @@ function InventoryPage({
       <form
         id="inventory-form"
         onSubmit={onSubmit}
-        className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:grid-cols-5"
+        className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:grid-cols-6"
       >
         <InventoryInput label="Name" value={formValues.name} onChange={(value) => onFormChange('name', value)} />
         <InventoryInput label="Model" value={formValues.model} onChange={(value) => onFormChange('model', value)} />
-        <InventoryInput
-          label="Device type"
-          value={formValues.deviceType}
-          onChange={(value) => onFormChange('deviceType', value)}
-        />
+        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+          <span>Module</span>
+          {modules.length > 0 ? (
+            <select
+              value={formValues.moduleId}
+              onChange={(event) => onFormChange('moduleId', event.target.value)}
+              className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            >
+              <option value="">Select a module...</option>
+              {modules.map((module) => (
+                <option key={module.moduleId} value={module.moduleId}>
+                  {module.displayName}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <>
+              <select
+                disabled
+                value=""
+                className="mt-1 h-10 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 opacity-60 outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              >
+                <option value="">Select a module...</option>
+              </select>
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Install and validate a module first</p>
+            </>
+          )}
+        </label>
+        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+          <span>Device Type</span>
+          <input
+            readOnly
+            tabIndex={-1}
+            value={formValues.moduleId !== '' ? (modules.find((m) => m.moduleId === formValues.moduleId)?.displayName ?? '') : ''}
+            className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 outline-none cursor-default dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400"
+          />
+        </label>
         <InventoryInput
           label="Current version"
           value={formValues.currentVersion}
@@ -621,8 +665,8 @@ function InventoryPage({
         </div>
       )}
 
-      {groups.map((group) => (
-        <section key={group.id} className="space-y-4">
+      {sortedGroups.map((group) => (
+        <section key={group.moduleId ?? 'ungrouped'} className="space-y-4">
           <h3 className="flex items-center text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             <Package size={16} className="mr-2" />
             {group.name} ({group.count})
@@ -728,6 +772,15 @@ function DeviceCard({
         <div>
           <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100">{device.name}</h4>
           <p className="mt-1 font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{device.model}</p>
+          {device.deviceType && (
+            <p className="mt-1 text-xs font-medium text-indigo-600 dark:text-indigo-400">{device.deviceType}</p>
+          )}
+          {device.moduleId === null && (
+            <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+              <Unlink size={12} />
+              Unlinked
+            </span>
+          )}
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{statusLabel(device)}</p>
         </div>
         <div className="flex gap-2">

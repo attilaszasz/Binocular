@@ -22,6 +22,19 @@ async def check_firmware(input, scrape_client):
 """
 
 
+async def _seed_camera_module(inventory: InventoryRepository) -> int:
+    """Insert a valid installed module and return its DB id."""
+    await inventory.execute(
+        "INSERT INTO modules (module_id, display_name, source_path, source_hash, "
+        "status, validation_status, validation_summary_json) "
+        "VALUES (?, ?, ?, ?, 'installed', 'valid', '{}')",
+        ("camera", "Camera", "/fake/camera.py", "abc123"),
+    )
+    row = await inventory.fetch_one("SELECT id FROM modules WHERE module_id = ?", ("camera",))
+    assert row is not None
+    return int(row["id"])
+
+
 async def prepared_client(
     tmp_path: Path,
     *,
@@ -35,11 +48,11 @@ async def prepared_client(
     connection = await ConnectionManager(settings.resolved_database_path).open()
     inventory = InventoryRepository(connection)
     modules = ModuleRepository(connection)
-    device_type_id = await inventory.get_or_create_device_type("Camera", "camera")
+    module_db_id = await _seed_camera_module(inventory)
     device_ids: list[int] = []
     for index in range(device_count):
         device = await inventory.create_device(
-            device_type_id=device_type_id,
+            module_id=module_db_id,
             name=f"Camera {index + 1}",
             model="BAD" if index == 1 else "A1",
             current_version="1.0",

@@ -28,8 +28,10 @@ async def test_sqlite_state_survives_app_recreation(tmp_path: Path) -> None:
         connection = await ConnectionManager(settings.resolved_database_path).open()
         try:
             await connection.execute(
-                "INSERT INTO device_types (name, normalized_name) VALUES (?, ?)",
-                ("Cameras", "cameras"),
+                "INSERT INTO modules (module_id, display_name, source_path, source_hash, status, "
+                "validation_status, validation_summary_json) "
+                "VALUES (?, ?, ?, ?, 'installed', 'valid', '{}')",
+                ("cameras", "Cameras", "/fake/path.py", "abc123"),
             )
             await connection.commit()
         finally:
@@ -40,7 +42,7 @@ async def test_sqlite_state_survives_app_recreation(tmp_path: Path) -> None:
         connection = await ConnectionManager(settings.resolved_database_path).open()
         try:
             cursor = await connection.execute(
-                "SELECT name FROM device_types WHERE name = ?",
+                "SELECT display_name FROM modules WHERE display_name = ?",
                 ("Cameras",),
             )
             row = await cursor.fetchone()
@@ -48,4 +50,4 @@ async def test_sqlite_state_survives_app_recreation(tmp_path: Path) -> None:
             await connection.close()
 
     assert row is not None
-    assert row["name"] == "Cameras"
+    assert row["display_name"] == "Cameras"

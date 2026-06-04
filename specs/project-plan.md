@@ -55,7 +55,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 - [X] E010 [P1] [PRODUCT] [P] {PRD:CAP-005} Manual On-Demand Checks — single/bulk checks, side-by-side comparison
 - [X] E011 [P1] [PRODUCT] [P] {PRD:CAP-004}{SAD:ADR-0007} Automated Scheduled Checking — per-type interval jobs, restart-safe
 - [X] E017 [P3] [PRODUCT] [P] {PRD:CAP-013} Module Dev Kit & Docs — authoring guide + standalone test harness
-- [ ] E022 [P1] [PRODUCT] {PRD:CAP-001}{SAD:ADR-0009} Device-Module Linking & Refactor — replace standalone device type with module selector, derive type from linked module
+- [X] E022 [P1] [PRODUCT] {PRD:CAP-001}{SAD:ADR-0009} Device-Module Linking & Refactor — replace standalone device type with module selector, derive type from linked module
 
 ### Wave 6 — Alerting, Visibility & Backups
 

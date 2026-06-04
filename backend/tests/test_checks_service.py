@@ -20,6 +20,19 @@ async def open_repositories(tmp_path: Path) -> tuple[InventoryRepository, Module
     return InventoryRepository(connection), ModuleRepository(connection)
 
 
+async def _seed_camera_module(repository: InventoryRepository) -> int:
+    """Insert a valid installed module and return its DB id."""
+    await repository.execute(
+        "INSERT INTO modules (module_id, display_name, source_path, source_hash, "
+        "status, validation_status, validation_summary_json) "
+        "VALUES (?, ?, ?, ?, 'installed', 'valid', '{}')",
+        ("camera", "Camera", "/fake/camera.py", "abc123"),
+    )
+    row = await repository.fetch_one("SELECT id FROM modules WHERE module_id = ?", ("camera",))
+    assert row is not None
+    return int(row["id"])
+
+
 def write_module(tmp_path: Path, body: str, *, module_id: str = "test-module") -> Path:
     modules_dir = tmp_path / "modules"
     modules_dir.mkdir(parents=True, exist_ok=True)
@@ -36,9 +49,9 @@ MODULE_METADATA = {{"module_id": "{module_id}", "display_name": "Test Module"}}
 
 
 async def create_device(repository: InventoryRepository, *, current_version: str = "1.0") -> int:
-    device_type_id = await repository.get_or_create_device_type("Camera", "camera")
+    module_id = await _seed_camera_module(repository)
     device = await repository.create_device(
-        device_type_id=device_type_id,
+        module_id=module_id,
         name="Camera A",
         model="A1",
         current_version=current_version,

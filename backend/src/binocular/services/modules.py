@@ -6,9 +6,14 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+import structlog
+
 from binocular.extensions.contract import ModuleValidationResult
 from binocular.extensions.validator import ModuleValidator
+from binocular.repositories.inventory import InventoryRepository
 from binocular.repositories.modules import ModuleRecord, ModuleRepository
+
+logger = structlog.get_logger("binocular.services.modules")
 
 MAX_MODULE_UPLOAD_BYTES = 256 * 1024
 
@@ -46,10 +51,12 @@ class ModuleLifecycleService:
         repository: ModuleRepository,
         validator: ModuleValidator,
         modules_dir: Path,
+        inventory_repository: InventoryRepository,
     ) -> None:
         self.repository = repository
         self.validator = validator
         self.modules_dir = modules_dir
+        self.inventory_repository = inventory_repository
 
     async def list_modules(self) -> list[ModuleRecord]:
         return await self.repository.list_modules()
@@ -99,9 +106,19 @@ class ModuleLifecycleService:
         )
 
     async def delete_module(self, module_id: str) -> bool:
-        record = await self.repository.delete_module(module_id)
+        record = await self.repository.get_module(module_id)
         if record is None:
             return False
+
+        unlinked = await self.inventory_repository.unlink_devices_for_module(record.id)
+        logger.info(
+            "module.deleting",
+            module_id=module_id,
+            unlinked_devices=unlinked,
+        )
+
+        await self.repository.delete_module(module_id)
+
         try:
             Path(record.source_path).unlink(missing_ok=True)
         except OSError as error:

@@ -4,7 +4,7 @@ export type DeviceStatus = 'never_checked' | 'check_failed' | 'update_available'
 
 export type InventoryDevice = {
   id: number;
-  deviceTypeId: number;
+  moduleId: string | null;
   deviceType: string;
   name: string;
   model: string;
@@ -18,7 +18,7 @@ export type InventoryDevice = {
 };
 
 export type DeviceGroup = {
-  id: number;
+  moduleId: string | null;
   name: string;
   count: number;
   devices: InventoryDevice[];
@@ -31,8 +31,12 @@ export type InventoryResponse = {
 export type DeviceInput = {
   name: string;
   model: string;
-  deviceType: string;
+  moduleId: string;
   currentVersion: string;
+};
+
+export type ConfirmUpdateInput = {
+  version: string;
 };
 
 export function listInventory() {
@@ -51,6 +55,6 @@ export function archiveDevice(deviceId: number) {
   return apiClient.request<void>(`/inventory/${deviceId}`, { method: 'DELETE' });
 }
 
-export function confirmDeviceUpdate(deviceId: number) {
-  return apiClient.request<InventoryDevice>(`/inventory/${deviceId}/confirm-update`, { method: 'POST' });
+export function confirmDeviceUpdate(deviceId: number, payload: ConfirmUpdateInput) {
+  return apiClient.request<InventoryDevice>(`/inventory/${deviceId}/confirm-update`, { method: 'POST', body: payload });
 }

@@ -8,13 +8,13 @@ import { ThemeProvider } from './theme/ThemeProvider';
 const inventoryResponse = {
   groups: [
     {
-      id: 1,
+      moduleId: 'sony-alpha',
       name: 'Sony Alpha',
       count: 2,
       devices: [
         {
           id: 1,
-          deviceTypeId: 1,
+          moduleId: 'sony-alpha',
           deviceType: 'Sony Alpha',
           name: 'Sony A7IV',
           model: 'ILCE-7M4',
@@ -28,7 +28,7 @@ const inventoryResponse = {
         },
         {
           id: 2,
-          deviceTypeId: 1,
+          moduleId: 'sony-alpha',
           deviceType: 'Sony Alpha',
           name: 'Sony 24-70mm',
           model: 'SEL2470GM2',
@@ -265,7 +265,8 @@ describe('App shell', () => {
     await screen.findByText('Sony A7IV');
     await user.type(screen.getByLabelText('Name'), 'Lumix GH6');
     await user.type(screen.getByLabelText('Model'), 'DC-GH6');
-    await user.type(screen.getByLabelText('Device type'), 'Panasonic Lumix');
+    await user.selectOptions(screen.getByLabelText('Module'), 'sony-alpha');
+    expect(screen.getByLabelText('Device Type')).toHaveValue('Sony Alpha');
     await user.type(screen.getByLabelText('Current version'), '2.3');
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -276,7 +277,7 @@ describe('App shell', () => {
         body: JSON.stringify({
           name: 'Lumix GH6',
           model: 'DC-GH6',
-          deviceType: 'Panasonic Lumix',
+          moduleId: 'sony-alpha',
           currentVersion: '2.3',
         }),
       }),

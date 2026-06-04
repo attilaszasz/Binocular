@@ -14,6 +14,7 @@ from binocular.db.connection import ConnectionManager
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.runner import ModuleRunner
 from binocular.extensions.validator import ModuleValidator
+from binocular.repositories.inventory import InventoryRepository
 from binocular.repositories.modules import ModuleRecord, ModuleRepository
 from binocular.services.modules import (
     MAX_MODULE_UPLOAD_BYTES,
@@ -86,7 +87,12 @@ async def get_module_lifecycle_service(request: Request) -> AsyncIterator[Module
         loader = ModuleLoader(modules_dir)
         runner = ModuleRunner(timeout_seconds=settings.module_timeout_seconds)
         validator = ModuleValidator(loader, runner)
-        yield ModuleLifecycleService(ModuleRepository(connection), validator, modules_dir)
+        yield ModuleLifecycleService(
+            ModuleRepository(connection),
+            validator,
+            modules_dir,
+            InventoryRepository(connection),
+        )
     finally:
         await connection.close()
 
