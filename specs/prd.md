@@ -4,7 +4,7 @@
 
 ## Product Overview
 
-Binocular is a self-hosted, single-user web application that automates the discovery of firmware updates for high-value **offline** devices — cameras, lenses, and homelab hardware that manufacturers never auto-update. Users maintain a digital inventory of their devices, grouped by device type, and Binocular periodically checks manufacturer firmware pages using user-managed extension modules. When a newer version than the user's recorded version is found, Binocular notifies them through configurable channels (Email/SMTP, Gotify).
+Binocular is a self-hosted, single-user web application that automates the discovery of firmware updates for high-value **offline** devices — cameras, lenses, and homelab hardware that manufacturers never auto-update. Users maintain a digital inventory of their devices, each explicitly linked to an extension module, and Binocular periodically checks manufacturer firmware pages using those modules. When a newer version than the user's recorded version is found, Binocular notifies them through configurable channels (Email/SMTP, Gotify).
 
 It runs on a private, trusted LAN with no login, stores all data self-contained (no external database server), and is distributed primarily as a Docker container. The value: replace a manual, easy-to-forget, fragmented chore with reliable, unattended monitoring that surfaces only when action is needed.
 
@@ -79,7 +79,7 @@ The v1 product scope equals the full product brief: a complete detect → compar
 
 ### In-Scope Capabilities
 
-- Device inventory and lifecycle management, grouped by device type, with stored current versions and one-click update confirmation.
+- Device inventory and lifecycle management, with each device linked to an extension module that determines its device type, stored current versions, and one-click update confirmation.
 - A pluggable extension-module engine with a strict authoring contract, plus full module lifecycle management (upload, update, delete) through the UI.
 - Automated scheduled checking with per-device-type frequency, plus manual on-demand checks (single and bulk) with side-by-side version comparison.
 - Update detection, version comparison, and notification dispatch via Email/SMTP and Gotify.
@@ -105,7 +105,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 
 | Capability ID | Capability | Priority | Outcome |
 |---------------|------------|----------|---------|
-| CAP-001 | Device Inventory & Lifecycle | P1 | Users maintain a grouped inventory with stored versions and one-click update confirmation. |
+| CAP-001 | Device Inventory & Lifecycle | P1 | Users maintain an inventory of devices each linked to an extension module, with stored versions and one-click update confirmation. |
 | CAP-002 | Extension Module Engine & Authoring Contract | P1 | A strict, documented contract lets modules supply device-specific firmware-checking intelligence in a standardized format. |
 | CAP-003 | Module Lifecycle Management | P1 | Users upload, update, and delete modules through the UI to control which device types are supported. |
 | CAP-004 | Automated Scheduled Checking | P1 | The system checks sources unattended on a per-device-type frequency. |
@@ -185,9 +185,9 @@ Validation is correctness-first and pre-release, since the product collects no f
 
 ## Domain Glossary / Terminology
 
-- **Device**: A single owned hardware item (e.g., a specific camera body) with a recorded current firmware version.
-- **Device Type**: A grouping of devices that share a firmware source and check configuration (e.g., "Sony E-Mount Lenses").
-- **Extension Module**: A user-managed script implementing the authoring contract that knows how to determine the latest firmware version for a device type.
+- **Device**: A single owned hardware item (e.g., a specific camera body) with a recorded current firmware version. Each device is explicitly linked to an extension module at creation, and its device type is derived from that module.
+- **Device Type**: A firmware-source grouping (e.g., "Sony E-Mount Lenses") — derived from the extension module a device is linked to, rather than assigned directly by the user.
+- **Extension Module**: A user-managed script implementing the authoring contract that knows how to determine the latest firmware version for a device type. Each module defines its device type, and devices are explicitly linked to a module — the module determines the device's type.
 - **Authoring Contract**: The strict, documented interface every module must implement to return data in a standardized format.
 - **Check**: An execution (manual or scheduled) that uses a module to determine the latest available version for a device.
 - **Update Confirmation**: The one-click action a user takes after physically updating a device, syncing the stored version and resetting alert status.

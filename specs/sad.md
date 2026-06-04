@@ -201,6 +201,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 | ADR-0006 | Centralized responsible-scraping HTTP client provided to modules | accepted | 2026-05-31 | — | [0006-centralized-responsible-scraping-http-client-provided-to-modules.md](adrs/0006-centralized-responsible-scraping-http-client-provided-to-modules.md) |
 | ADR-0007 | In-process scheduling with APScheduler and Apprise notifications | accepted | 2026-05-31 | — | [0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md](adrs/0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md) |
 | ADR-0008 | Trusted-LAN single-user security model with optional basic auth | accepted | 2026-05-31 | — | [0008-trusted-lan-single-user-security-model-with-optional-basic-auth.md](adrs/0008-trusted-lan-single-user-security-model-with-optional-basic-auth.md) |
+| ADR-0009 | Module-Derived Device Type — Remove Standalone Device Type Field, Derive from Linked Module | accepted | 2026-06-04 | — | [0009-module-derived-device-type-remove-standalone-device-type-field.md](adrs/0009-module-derived-device-type-remove-standalone-device-type-field.md) |
 
 <!-- Rows are managed by the ADR Author subagent. Do not embed full decision prose here. -->
 
@@ -243,4 +244,5 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Responsible scraping uses a host-owned async `httpx` client wrapper with robots.txt checks, identifiable User-Agent defaults, per-origin pacing, bounded retry/backoff, and typed diagnostics for visible failures.
 - Extension modules use a trusted in-process Python contract with importlib path loading, host ScrapeClient injection, per-invocation timeout/error boundaries, and two-phase static/runtime validation; validation is not a sandbox.
 - Bundled official starter modules are automatically discovered, validated, and seeded/upserted into the SQLite database on application startup, enabling out-of-the-box tracking of devices without manual upload.
+- Device type is derived from the linked extension module; the standalone DeviceType entity is removed from the domain model. Devices reference modules directly via `module_id` FK; device type grouping is computed at query time. See {SAD:ADR-0009}.
 

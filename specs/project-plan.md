@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 21 (P1: 13 · P2: 7 · P3: 1) | **Waves**: 7
+**Total Epics**: 22 (P1: 14 · P2: 7 · P3: 1) | **Waves**: 7
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -50,11 +50,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 ### Wave 5 — Checking Workflows
 
-> The manual and scheduled check paths plus the authoring dev kit. Distinct entry points → parallel.
+> The manual and scheduled check paths, the device-module linking refactor, and the authoring dev kit. Distinct entry points → parallel.
 
 - [X] E010 [P1] [PRODUCT] [P] {PRD:CAP-005} Manual On-Demand Checks — single/bulk checks, side-by-side comparison
 - [X] E011 [P1] [PRODUCT] [P] {PRD:CAP-004}{SAD:ADR-0007} Automated Scheduled Checking — per-type interval jobs, restart-safe
 - [X] E017 [P3] [PRODUCT] [P] {PRD:CAP-013} Module Dev Kit & Docs — authoring guide + standalone test harness
+- [ ] E022 [P1] [PRODUCT] {PRD:CAP-001}{SAD:ADR-0009} Device-Module Linking & Refactor — replace standalone device type with module selector, derive type from linked module
 
 ### Wave 6 — Alerting, Visibility & Backups
 
@@ -90,7 +91,7 @@ graph LR
     M4 -->|"E008 · E009<br>E015 · E020"| M4
 
     M4 --> M5["Check<br>workflows"]
-    M5 -->|"E010 · E011<br>E017"| M5
+    M5 -->|"E010 · E011<br>E017 · E022"| M5
 
     M5 --> M6["Full loop +<br>operations"]
     M6 -->|"E012 · E014<br>E019 · E021"| M6
@@ -107,7 +108,7 @@ graph LR
 | 2 | E002, E003, E004, E007 | Yes | Early CI lands here; infra epics touch distinct areas. |
 | 3 | E005, E006, E013, E018 | Yes | Inventory, module engine, operability, staged release pipeline. |
 | 4 | E008, E009, E015, E020 | Yes | Module lifecycle UI, detection core, Sony + Panasonic starter modules. |
-| 5 | E010, E011, E017 | Yes | Manual + scheduled checks, authoring dev kit. |
+| 5 | E010, E011, E017, E022 | No | Manual + scheduled checks, device-module linking refactor, authoring dev kit. E022 depends on E005/E008. |
 | 6 | E012, E014, E019, E021 | Yes | Notifications complete the loop; logging, backups, and auto module seeding added. |
 | 7 | E016 | N/A (single) | Responsive/dark-mode polish across existing surfaces. |
 
@@ -118,7 +119,7 @@ graph LR
 - **Wave 2**: E002 (CI workflows under `.github/`), E003 (`frontend/`), E004 (`backend/src/db/`), E007 (`backend/src/scraping/`) have no shared mutable files.
 - **Wave 3**: E005 (devices domain), E006 (module engine), E013 (operability/auth/config), E018 (release workflows) are isolated.
 - **Wave 4**: E008 (module UI/API), E009 (detection service), E015 (Sony module files + fixtures), E020 (Panasonic module files + fixtures) are isolated.
-- **Wave 5**: E010 (manual-check path), E011 (scheduler), E017 (docs/dev-kit) are isolated.
+- **Wave 5**: E010 (manual-check path), E011 (scheduler), E017 (docs/dev-kit), E022 (device-module linking refactor). E022 depends on E005/E008 and is not parallel with those.
 - **Wave 6**: E012 (notifier), E014 (activity log), E019 (backup job/runbook), E021 (module seeding) are isolated.
 
 ### Integration Risks
@@ -267,7 +268,7 @@ graph LR
 - **Key entities**: Device, DeviceType
 - **Depends on**: E004, E003
 - **Dependency contracts**: Persists via repositories from E004; renders in the SPA shell from E003.
-- **Depended on by**: E009, E010, E016
+- **Depended on by**: E009, E010, E016, E022
 - **Produces (shared)**: `Device`, `DeviceType` entities; `/api/v1/devices`, `/api/v1/device-types`
 - **Constraints**: Grouping by device type; update confirmation is a single action
 - **Acceptance criteria**:
@@ -362,7 +363,7 @@ graph LR
 - **Key entities**: Module
 - **Depends on**: E006, E003
 - **Dependency contracts**: Invokes the validation pipeline from E006; renders in the SPA shell from E003.
-- **Depended on by**: E016
+- **Depended on by**: E016, E022
 - **Produces (shared)**: `/api/v1/modules` lifecycle endpoints + UI
 - **Constraints**: Invalid modules never enter the modules directory; validation feedback is per-phase
 - **Acceptance criteria**:
@@ -515,6 +516,31 @@ graph LR
   - **Constraints**: Local-only; parity with in-app validation
 - **Pipeline hints**: lightweight
 
+### E022 — Device-Module Linking & Refactor
+
+- **Category**: PRODUCT | **Priority**: P1
+- **Source**: {PRD:CAP-001}{SAD:ADR-0009}
+- **Scope**: Replace the standalone device type field with a module selector on the device creation/edit form. Devices are explicitly linked to an extension module; the device type is derived from the linked module. Remove the DeviceType entity and its CRUD endpoints. Add a migration that adds `module_id` FK to devices and removes the `device_type_id` column. Update the inventory view to group devices by their derived module type.
+- **Actors**: Operator
+- **Key entities**: Device
+- **Depends on**: E005, E008
+- **Dependency contracts**: Reads existing device data from E005; queries module listing from E008 (`/api/v1/modules`) for the selector; persists via E004 repositories.
+- **Depended on by**: —
+- **Produces (shared)**: Updated Device entity with `module_id` FK; `/api/v1/devices` with module-linked data; device form with module selector; migration removing `device_type_id`.
+- **Constraints**: Device must be linked to a module at creation; device type is read-only and derived from the module; existing device data must be migrated (module_id assigned where possible).
+- **Acceptance criteria**:
+  - [ ] The device creation/edit form presents a module selector instead of a device type field.
+  - [ ] Device type is displayed as a derived read-only field based on the linked module.
+  - [ ] A database migration adds `module_id` FK and removes `device_type_id`.
+  - [ ] Inventory view groups devices by their derived module type.
+  - [ ] Existing device-type API and UI surfaces are cleanly removed.
+- **Specify input**:
+  - **Description**: Replace standalone device type with module selector on device form; derive device type from linked module. Includes migration and inventory-view update.
+  - **Actors**: Operator
+  - **Key entities**: Device
+  - **Depends on artifacts**: E005 device inventory, E008 module listing endpoint
+  - **Constraints**: Migration-safe; existing data preserved; module required at creation
+
 ### E012 — Notification & Alerting
 
 - **Category**: PRODUCT | **Priority**: P1
@@ -639,7 +665,7 @@ graph LR
 
 | Capability | Priority | Epic(s) |
 |------------|----------|---------|
-| CAP-001 Device Inventory & Lifecycle | P1 | E005 |
+| CAP-001 Device Inventory & Lifecycle | P1 | E005, E022 |
 | CAP-002 Extension Module Engine & Authoring Contract | P1 | E006 |
 | CAP-003 Module Lifecycle Management | P1 | E008 |
 | CAP-004 Automated Scheduled Checking | P1 | E011 |
@@ -665,6 +691,7 @@ graph LR
 | ADR-0006 Centralized responsible-scraping client | accepted | E007 |
 | ADR-0007 APScheduler + Apprise | accepted | E011 (scheduling), E012 (notifications) |
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E013 |
+| ADR-0009 Module-derived device type | accepted | E022 |
 
 ### DOD DDR Coverage
 
@@ -677,6 +704,7 @@ graph LR
 ### Uncovered Items
 
 - None. Every PRD capability, every `accepted` ADR, and every DDR maps to at least one epic.
+- Note: E022 (Device-Module Linking & Refactor) is a new P1 epic that supersedes the standalone DeviceType approach in E005. ADR-0009 documents this decision.
 
 ## Shared Artifact Surface
 
@@ -685,6 +713,7 @@ graph LR
 | Entity | Introduced by | Consumed by |
 |--------|---------------|-------------|
 | Device, DeviceType | E005 | E009, E010, E016 |
+| Device (module_id FK) | E022 | E009, E010, E016 |
 | Module, ModuleValidationResult | E006 | E008, E009, E015, E020, E017 |
 | CheckResult / detection event | E009 | E010, E011, E012, E014 |
 | NotificationChannel | E012 | E012 |
@@ -696,6 +725,7 @@ graph LR
 |---------|---------------|-------------|
 | `/healthz` | E001 | Container HEALTHCHECK, E002 |
 | `/api/v1/devices`, `/api/v1/device-types` | E005 | E010, E016 |
+| `/api/v1/devices` (module-linked) | E022 | E010, E016 |
 | `/api/v1/modules` | E008 | E016 |
 | `/api/v1/checks` | E010 | E016 |
 | `/api/v1/notifications` | E012 | UI config |
