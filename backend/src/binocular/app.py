@@ -43,9 +43,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             busy_timeout_ms=resolved_settings.sqlite_busy_timeout_ms,
         )
         try:
-            async with await db_manager.open() as db_conn:
+            db_conn = await db_manager.open()
+            try:
                 seeder = OfficialModuleSeeder(resolved_settings, db_conn)
                 await seeder.discover_and_seed()
+            finally:
+                await db_conn.close()
         except Exception as exc:
             logger.error("seeding_lifespan_failed", error=str(exc), exc_info=exc)
 
