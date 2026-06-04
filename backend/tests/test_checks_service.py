@@ -30,7 +30,9 @@ async def _seed_camera_module(repository: InventoryRepository) -> int:
     )
     row = await repository.fetch_one("SELECT id FROM modules WHERE module_id = ?", ("camera",))
     assert row is not None
-    return int(row["id"])
+    val = row["id"]
+    assert isinstance(val, int)
+    return val
 
 
 def write_module(tmp_path: Path, body: str, *, module_id: str = "test-module") -> Path:

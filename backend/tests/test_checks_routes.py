@@ -30,7 +30,9 @@ async def _seed_module(inventory: InventoryRepository) -> int:
     )
     row = await inventory.fetch_one("SELECT id FROM modules WHERE module_id = ?", ("camera",))
     assert row is not None
-    return int(row["id"])
+    val = row["id"]
+    assert isinstance(val, int)
+    return val
 
 
 async def prepared_client(tmp_path: Path) -> tuple[AsyncClient, int]:
