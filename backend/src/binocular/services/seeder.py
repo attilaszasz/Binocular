@@ -164,7 +164,7 @@ class OfficialModuleSeeder:
 
     def _active_path(self, module_id: str) -> Path:
         filename = re.sub(r"[^a-zA-Z0-9_.-]+", "_", module_id).strip("._-")
-        return self._modules_dir / f"{filename}.py"
+        return (self._modules_dir / f"{filename}.py").resolve()
 
     @staticmethod
     def _hash_file(path: Path) -> str:

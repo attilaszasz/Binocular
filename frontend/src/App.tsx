@@ -103,6 +103,7 @@ export function App() {
   const [isModulesLoading, setIsModulesLoading] = useState(false);
   const [formValues, setFormValues] = useState<DeviceInput>(emptyDeviceInput);
   const [editingDevice, setEditingDevice] = useState<InventoryDevice | null>(null);
+  const [showForm, setShowForm] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>(initialLogs);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -193,6 +194,7 @@ export function App() {
   function cancelEditing() {
     setEditingDevice(null);
     setFormValues(emptyDeviceInput);
+    setShowForm(false);
   }
 
   async function handleSubmitDevice(event: FormEvent<HTMLFormElement>) {
@@ -406,6 +408,8 @@ export function App() {
                   bulkSummary={bulkSummary}
                   checkingDeviceIds={checkingDeviceIds}
                   isBulkChecking={isBulkChecking}
+                  showForm={showForm}
+                  onShowForm={setShowForm}
                   onModuleChange={setPreferredCheckModuleId}
                   onRunDeviceCheck={handleRunDeviceCheck}
                   onRunAllChecks={handleRunAllChecks}
@@ -475,9 +479,11 @@ function InventoryPage({
   error,
   formValues,
   editingDevice,
+  showForm,
   onFormChange,
   onSubmit,
   onCancelEdit,
+  onShowForm,
   onEdit,
   onArchive,
   onMarkUpdated,
@@ -498,9 +504,11 @@ function InventoryPage({
   error: string | null;
   formValues: DeviceInput;
   editingDevice: InventoryDevice | null;
+  showForm: boolean;
   onFormChange: (field: keyof DeviceInput, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancelEdit: () => void;
+  onShowForm: (show: boolean) => void;
   onEdit: (device: InventoryDevice) => void;
   onArchive: (device: InventoryDevice) => void;
   onMarkUpdated: (device: InventoryDevice) => void;
@@ -565,21 +573,23 @@ function InventoryPage({
             <Binoculars size={16} className="mr-2" />
             {isBulkChecking ? 'Checking...' : 'Check All'}
           </button>
-          <a
-            href="#inventory-form"
+          <button
+            type="button"
+            onClick={() => onShowForm(true)}
             className="inline-flex items-center rounded-xl border border-muted bg-panel px-4 py-2 text-sm font-medium text-ink shadow-sm motion-safe:transition hover:bg-panel-hover"
           >
             <Plus size={16} className="mr-2" />
             Add Device
-          </a>
+          </button>
         </div>
       </div>
 
-      <form
-        id="inventory-form"
-        onSubmit={onSubmit}
-        className="grid gap-3 rounded-2xl border border-panel bg-panel p-4 shadow-sm md:grid-cols-6"
-      >
+      {(showForm || editingDevice !== null) && (
+        <form
+          id="inventory-form"
+          onSubmit={onSubmit}
+          className="grid gap-3 rounded-2xl border border-panel bg-panel p-4 shadow-sm md:grid-cols-5"
+        >
         <InventoryInput label="Name" value={formValues.name} onChange={(value) => onFormChange('name', value)} />
         <InventoryInput label="Model" value={formValues.model} onChange={(value) => onFormChange('model', value)} />
         <label className="block text-sm font-medium text-muted">
@@ -610,15 +620,6 @@ function InventoryPage({
             </>
           )}
         </label>
-        <label className="block text-sm font-medium text-muted">
-          <span>Device Type</span>
-          <input
-            readOnly
-            tabIndex={-1}
-            value={formValues.moduleId !== '' ? (modules.find((m) => m.moduleId === formValues.moduleId)?.displayName ?? '') : ''}
-            className="mt-1 h-10 w-full rounded-xl border border-muted bg-surface px-3 text-sm text-muted outline-none cursor-default"
-          />
-        </label>
         <InventoryInput
           label="Current version"
           value={formValues.currentVersion}
@@ -631,7 +632,7 @@ function InventoryPage({
           >
             {editingDevice === null ? 'Add' : 'Save'}
           </button>
-          {editingDevice !== null && (
+          {editingDevice !== null ? (
             <button
               type="button"
               onClick={onCancelEdit}
@@ -639,9 +640,18 @@ function InventoryPage({
             >
               Cancel
             </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onShowForm(false)}
+              className="h-10 rounded-xl border border-muted px-3 text-sm text-ink"
+            >
+              Cancel
+            </button>
           )}
         </div>
       </form>
+      )}
 
       {error !== null && (
         <div className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error">

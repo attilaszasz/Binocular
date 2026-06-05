@@ -132,7 +132,7 @@ class ModuleLifecycleService:
         if not filename:
             msg = "Module ID does not produce a valid filename"
             raise ModuleLifecycleError("validation_failed", msg)
-        return self.modules_dir / f"{filename}.py"
+        return (self.modules_dir / f"{filename}.py").resolve()
 
     @staticmethod
     def _hash_file(path: Path) -> str:
