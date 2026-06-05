@@ -28,10 +28,15 @@ class RunDeviceCheckRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class RunBulkCheckRequest(RunDeviceCheckRequest):
+class RunBulkCheckRequest(BaseModel):
     """Run all-devices check request payload."""
 
+    module_id: str | None = Field(default=None, alias="moduleId")
+    source_url: str | None = Field(default=None, alias="sourceUrl")
+    extra: dict[str, str] = Field(default_factory=dict)
     max_concurrency: int | None = Field(default=None, alias="maxConcurrency", ge=1, le=8)
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CheckResultResponse(BaseModel):

@@ -21,7 +21,10 @@ export type RunCheckInput = {
   extra?: Record<string, string>;
 };
 
-export type RunAllChecksInput = RunCheckInput & {
+export type RunAllChecksInput = {
+  moduleId?: string | null;
+  sourceUrl?: string | null;
+  extra?: Record<string, string>;
   maxConcurrency?: number | null;
 };
 

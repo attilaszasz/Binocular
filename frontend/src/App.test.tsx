@@ -196,7 +196,6 @@ describe('App shell', () => {
     renderApp('/inventory');
 
     expect(await screen.findByText('Sony A7IV')).toBeInTheDocument();
-    expect(await screen.findByRole('combobox', { name: 'Manual check module' })).toHaveValue('sony-alpha');
 
     await user.click(screen.getAllByRole('button', { name: 'Check Now' })[0]);
 
@@ -218,7 +217,7 @@ describe('App shell', () => {
 
     expect(fetch).toHaveBeenCalledWith(
       '/api/v1/checks/all',
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ moduleId: 'sony-alpha' }) }),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({}) }),
     );
     expect(await screen.findByText('Manual bulk check complete: 1/1 succeeded, 0 failed.')).toBeInTheDocument();
   });
@@ -263,10 +262,10 @@ describe('App shell', () => {
     renderApp('/inventory');
 
     await screen.findByText('Sony A7IV');
+    await user.click(screen.getByRole('button', { name: 'Add Device' }));
     await user.type(screen.getByLabelText('Name'), 'Lumix GH6');
     await user.type(screen.getByLabelText('Model'), 'DC-GH6');
     await user.selectOptions(screen.getByLabelText('Module'), 'sony-alpha');
-    expect(screen.getByLabelText('Device Type')).toHaveValue('Sony Alpha');
     await user.type(screen.getByLabelText('Current version'), '2.3');
     await user.click(screen.getByRole('button', { name: 'Add' }));
 

@@ -309,33 +309,69 @@ class CheckService:
     async def run_all_device_checks(
         self,
         *,
-        module_id: str,
+        module_id: str | None = None,
         source_url: str | None = None,
         extra: dict[str, str] | None = None,
         max_concurrency: int | None = None,
     ) -> list[CheckResult]:
-        """Run manual checks for every active device with bounded concurrency."""
+        """Run manual checks for every active device with bounded concurrency.
 
-        module = await self.module_repository.get_module(module_id)
-        if module is None:
-            raise CheckConfigurationError("module_not_found", "Module not found")
-        if module.status != "installed" or module.validation_status != "valid":
-            raise CheckConfigurationError("module_not_runnable", "Module is not runnable")
+        When *module_id* is provided, every device is checked with that module.
+        When omitted, each device is checked with its own linked module.
+        """
 
         devices = await self.inventory_repository.list_active_devices()
         concurrency = min(max(max_concurrency or 4, 1), 8)
         semaphore = asyncio.Semaphore(concurrency)
 
-        async def run_one(device: DeviceRecord) -> CheckResult:
+        if module_id is not None:
+            module = await self.module_repository.get_module(module_id)
+            if module is None:
+                raise CheckConfigurationError("module_not_found", "Module not found")
+            if module.status != "installed" or module.validation_status != "valid":
+                raise CheckConfigurationError("module_not_runnable", "Module is not runnable")
+
+            async def run_one_same(device: DeviceRecord) -> CheckResult:
+                async with semaphore:
+                    return await self.run_device_check(
+                        device.id,
+                        module_id=module_id,
+                        source_url=source_url,
+                        extra=extra,
+                    )
+
+            return list(await asyncio.gather(*(run_one_same(device) for device in devices)))
+
+        results: list[CheckResult] = []
+
+        async def run_one(device: DeviceRecord) -> CheckResult | None:
+            if device.module_id_str is None:
+                return None
             async with semaphore:
                 return await self.run_device_check(
                     device.id,
-                    module_id=module_id,
+                    module_id=device.module_id_str,
                     source_url=source_url,
                     extra=extra,
                 )
 
-        return list(await asyncio.gather(*(run_one(device) for device in devices)))
+        outcomes = await asyncio.gather(*(run_one(device) for device in devices))
+        for outcome in outcomes:
+            if outcome is not None:
+                results.append(outcome)
+
+        for device in devices:
+            if device.module_id_str is None:
+                results.append(
+                    self._unpersisted_failure(
+                        device.id,
+                        "",
+                        "Device is not linked to a module",
+                        "no_module_linked",
+                    )
+                )
+
+        return results
 
     @staticmethod
     def _unpersisted_failure(

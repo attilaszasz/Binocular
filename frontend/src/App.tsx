@@ -94,7 +94,6 @@ export function App() {
   const [moduleError, setModuleError] = useState<string | null>(null);
   const [moduleValidation, setModuleValidation] = useState<ModuleValidationSummary | null>(null);
   const [selectedModuleFile, setSelectedModuleFile] = useState<File | null>(null);
-  const [preferredCheckModuleId, setPreferredCheckModuleId] = useState('');
   const [manualResults, setManualResults] = useState<Record<number, CheckResult>>({});
   const [manualError, setManualError] = useState<string | null>(null);
   const [checkingDeviceIds, setCheckingDeviceIds] = useState<Set<number>>(new Set());
@@ -133,9 +132,6 @@ export function App() {
     () => modules.filter((module) => module.status === 'installed' && module.validationStatus === 'valid'),
     [modules],
   );
-  const selectedCheckModuleId = validModules.some((module) => module.moduleId === preferredCheckModuleId)
-    ? preferredCheckModuleId
-    : (validModules[0]?.moduleId ?? '');
 
   const stats = useMemo(() => {
     const total = devices.length;
@@ -235,14 +231,15 @@ export function App() {
   }
 
   async function handleRunDeviceCheck(device: InventoryDevice) {
-    if (selectedCheckModuleId === '') {
-      setManualError('Install and validate a module before running manual checks');
+    const moduleId = device.moduleId;
+    if (!moduleId) {
+      setManualError('This device is not linked to a module');
       return;
     }
     setManualError(null);
     setCheckingDeviceIds((current) => new Set(current).add(device.id));
     try {
-      const result = await runDeviceCheck(device.id, { moduleId: selectedCheckModuleId });
+      const result = await runDeviceCheck(device.id, { moduleId });
       setManualResults((current) => ({ ...current, [device.id]: result }));
       setBulkSummary(null);
       addLog(result.status === 'failed' ? 'WARN' : 'INFO', `Manual check completed for ${device.name}`);
@@ -261,15 +258,15 @@ export function App() {
   }
 
   async function handleRunAllChecks() {
-    if (selectedCheckModuleId === '') {
-      setManualError('Install and validate a module before running manual checks');
+    if (devices.length === 0) {
+      setManualError('No devices to check');
       return;
     }
     setManualError(null);
     setBulkSummary(null);
     setIsBulkChecking(true);
     try {
-      const response = await runAllChecks({ moduleId: selectedCheckModuleId });
+      const response = await runAllChecks({});
       setManualResults((current) => ({
         ...current,
         ...Object.fromEntries(response.results.map((result) => [result.deviceId, result])),
@@ -402,7 +399,6 @@ export function App() {
                   onArchive={handleArchiveDevice}
                   onMarkUpdated={handleMarkUpdated}
                   modules={validModules}
-                  selectedModuleId={selectedCheckModuleId}
                   manualResults={manualResults}
                   manualError={manualError}
                   bulkSummary={bulkSummary}
@@ -410,7 +406,6 @@ export function App() {
                   isBulkChecking={isBulkChecking}
                   showForm={showForm}
                   onShowForm={setShowForm}
-                  onModuleChange={setPreferredCheckModuleId}
                   onRunDeviceCheck={handleRunDeviceCheck}
                   onRunAllChecks={handleRunAllChecks}
                 />
@@ -488,13 +483,11 @@ function InventoryPage({
   onArchive,
   onMarkUpdated,
   modules,
-  selectedModuleId,
   manualResults,
   manualError,
   bulkSummary,
   checkingDeviceIds,
   isBulkChecking,
-  onModuleChange,
   onRunDeviceCheck,
   onRunAllChecks,
 }: {
@@ -513,17 +506,16 @@ function InventoryPage({
   onArchive: (device: InventoryDevice) => void;
   onMarkUpdated: (device: InventoryDevice) => void;
   modules: InstalledModule[];
-  selectedModuleId: string;
   manualResults: Record<number, CheckResult>;
   manualError: string | null;
   bulkSummary: { total: number; succeeded: number; failed: number } | null;
   checkingDeviceIds: Set<number>;
   isBulkChecking: boolean;
-  onModuleChange: (moduleId: string) => void;
   onRunDeviceCheck: (device: InventoryDevice) => void;
   onRunAllChecks: () => void;
 }) {
-  const canCheck = selectedModuleId !== '';
+  const devices = useMemo(() => groups.flatMap((group) => group.devices), [groups]);
+  const canCheckAll = devices.some((d) => d.moduleId !== null);
 
   const sortedGroups = useMemo(
     () =>
@@ -545,29 +537,10 @@ function InventoryPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="sr-only" htmlFor="manualCheckModule">
-            Manual check module
-          </label>
-          <select
-            id="manualCheckModule"
-            value={selectedModuleId}
-            onChange={(event) => onModuleChange(event.target.value)}
-            className="h-10 rounded-xl border border-muted bg-panel px-3 text-sm text-ink shadow-sm outline-none motion-safe:transition focus:border-accent focus:ring-2 focus:ring-accent-focus/20"
-          >
-            {modules.length === 0 ? (
-              <option value="">No valid modules</option>
-            ) : (
-              modules.map((module) => (
-                <option key={module.moduleId} value={module.moduleId}>
-                  {module.displayName}
-                </option>
-              ))
-            )}
-          </select>
           <button
             type="button"
             onClick={onRunAllChecks}
-            disabled={!canCheck || isBulkChecking}
+            disabled={!canCheckAll || isBulkChecking}
             className="inline-flex h-10 items-center rounded-xl border border-muted bg-panel px-4 text-sm font-medium text-ink shadow-sm motion-safe:transition hover:bg-panel-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Binoculars size={16} className="mr-2" />
@@ -701,7 +674,7 @@ function InventoryPage({
                 onMarkUpdated={onMarkUpdated}
                 manualResult={manualResults[device.id]}
                 isChecking={checkingDeviceIds.has(device.id)}
-                canCheck={canCheck}
+                canCheck={device.moduleId !== null}
                 onRunCheck={onRunDeviceCheck}
               />
             ))}
