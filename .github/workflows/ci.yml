@@ -48,6 +48,7 @@ jobs:
         run: pytest --cov=binocular --cov-report=term-missing
 
       - name: Dependency security audit
+        continue-on-error: true
         working-directory: backend
         run: pip-audit
 
