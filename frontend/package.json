@@ -1,1 +1,40 @@
-{"type":"module","scripts":{"dev":"vite --host 0.0.0.0","build":"tsc -b && vite build","lint":"eslint .","typecheck":"tsc -b","test":"vitest"},"dependencies":{"@vitejs/plugin-react":"latest","lucide-react":"latest","react":"^18.3.1","react-dom":"^18.3.1","react-router-dom":"^7.0.0","typescript":"latest","vite":"latest"},"devDependencies":{"@eslint/js":"latest","@testing-library/jest-dom":"latest","@testing-library/react":"latest","@testing-library/user-event":"latest","@types/react":"latest","@types/react-dom":"latest","@vitest/coverage-v8":"^4.1.7","autoprefixer":"latest","eslint":"latest","eslint-plugin-react-hooks":"latest","eslint-plugin-react-refresh":"latest","globals":"latest","jsdom":"latest","postcss":"latest","tailwindcss":"^3.4.17","typescript-eslint":"latest","vitest":"latest"}}
+{
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "test": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "lucide-react": "latest",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.0.0",
+    "typescript": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@playwright/test": "^1.60.0",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitest/coverage-v8": "^4.1.7",
+    "autoprefixer": "latest",
+    "eslint": "latest",
+    "eslint-plugin-react-hooks": "latest",
+    "eslint-plugin-react-refresh": "latest",
+    "globals": "latest",
+    "jsdom": "latest",
+    "postcss": "latest",
+    "tailwindcss": "^3.4.17",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
+  }
+}

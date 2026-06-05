@@ -4,21 +4,112 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme Token System ─────────────────────────────────────────────
+ * All color values are RGB triplets (space-separated, no commas).
+ * They are consumed by Tailwind via `rgb(var(--color-*) / <alpha-value>)`.
+ * The `:root.dark` variant overrides every token for dark mode.
+ *
+ * Token families:
+ *   surface  – page/app background, low-elevation surfaces
+ *   panel    – cards, containers, elevated surfaces
+ *   ink      – primary / high-contrast text
+ *   muted    – secondary text, borders, disabled text
+ *   accent   – interactive elements, links, primary actions
+ *
+ * States: default, hover, focus, disabled, active
+ * ────────────────────────────────────────────────────────────────── */
+
+/* ── Light (default) ────────────────────────────────────────────── */
 :root {
+  /* Surface */
   --color-surface: 244 241 234;
+  --color-surface-hover: 235 230 220;
+
+  /* Panel */
   --color-panel: 255 255 255;
+  --color-panel-hover: 245 245 245;
+
+  /* Ink */
   --color-ink: 31 41 55;
+  --color-ink-hover: 15 23 42;
+  --color-ink-disabled: 156 163 175;
+
+  /* Muted */
   --color-muted: 91 104 117;
+  --color-muted-hover: 71 85 99;
+
+  /* Accent */
   --color-accent: 10 132 120;
+  --color-accent-hover: 8 115 105;
+  --color-accent-focus: 10 132 120;        /* used with opacity modifier for rings */
+  --color-accent-disabled: 209 213 219;
+  --color-accent-active: 6 95 87;
+
+  /* Error (rose) */
+  --color-error: 190 18 60;            /* rose-700 */
+  --color-error-bg: 255 241 242;       /* rose-50 */
+  --color-error-border: 254 205 211;   /* rose-200 */
+
+  /* Success (emerald) */
+  --color-success: 4 120 87;           /* emerald-700 */
+  --color-success-bg: 236 253 245;     /* emerald-50 */
+  --color-success-border: 167 243 208; /* emerald-200 */
+
+  /* Warning (amber) */
+  --color-warning: 180 83 9;           /* amber-700 */
+  --color-warning-bg: 255 251 235;     /* amber-50 */
+  --color-warning-border: 253 230 138; /* amber-200 */
+
+  /* Gradient edge */
+  --color-gradient-edge: 226 232 240;  /* slate-200 */
 }
 
+/* ── Dark ───────────────────────────────────────────────────────── */
 :root.dark {
+  /* Surface */
   --color-surface: 18 24 31;
+  --color-surface-hover: 24 32 40;
+
+  /* Panel */
   --color-panel: 28 36 46;
+  --color-panel-hover: 36 44 55;
+
+  /* Ink */
   --color-ink: 236 241 245;
+  --color-ink-hover: 255 255 255;
+  --color-ink-disabled: 75 85 99;
+
+  /* Muted */
   --color-muted: 159 173 185;
+  --color-muted-hover: 131 148 163;
+
+  /* Accent */
   --color-accent: 69 192 172;
+  --color-accent-hover: 86 207 188;
+  --color-accent-focus: 69 192 172;
+  --color-accent-disabled: 55 65 81;
+  --color-accent-active: 56 174 156;
+
+  /* Error — effective colors blended against dark surface/panel */
+  --color-error: 253 164 175;          /* rose-300 */
+  --color-error-bg: 41 28 37;          /* rose-500 / 10% on dark surface */
+  --color-error-border: 114 47 65;     /* rose-500 / 40% on dark panel */
+
+  /* Success */
+  --color-success: 52 211 153;         /* emerald-400 */
+  --color-success-bg: 18 40 41;        /* emerald-500 / 10% on dark surface */
+  --color-success-border: 24 81 71;    /* emerald-500 / 30% on dark panel */
+
+  /* Warning */
+  --color-warning: 251 191 36;         /* amber-400 */
+  --color-warning-bg: 41 37 29;        /* amber-500 / 10% on dark surface */
+  --color-warning-border: 93 73 36;    /* amber-500 / 30% on dark panel */
+
+  /* Gradient edge */
+  --color-gradient-edge: 30 41 59;     /* slate-800 */
 }
+
+/* ── Base Styles ────────────────────────────────────────────────── */
 
 body {
   margin: 0;
@@ -31,4 +122,36 @@ body {
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Motion Reduction ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Mobile Touch Targets ────────────────────────────────────────── */
+@media (max-width: 639px) {
+  button,
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  a[role='button'],
+  [role='button'],
+  .nav-link,
+  [class*='NavLink'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Allow inline items to keep natural sizing */
+  button.inline-flex,
+  a.inline-flex {
+    min-width: auto;
+  }
 }

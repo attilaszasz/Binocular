@@ -70,7 +70,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 > Cross-view responsive and dark-mode polish, applied once the feature surfaces exist.
 
-- [ ] E016 [P2] [PRODUCT] {PRD:CAP-012} Responsive UI & Dark Mode — first-class responsive + dark theme across views
+- [X] E016 [P2] [PRODUCT] {PRD:CAP-012} Responsive UI & Dark Mode — first-class responsive + dark theme across views
 
 ## Dependency Diagram
 

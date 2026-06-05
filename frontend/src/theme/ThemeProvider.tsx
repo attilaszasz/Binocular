@@ -1,30 +1,32 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react';
-
-export type ThemeMode = 'light' | 'dark';
+import { resolveTheme, STORAGE_KEY, type ThemeMode } from './resolveTheme';
 
 type ThemeContextValue = {
   mode: ThemeMode;
   toggleMode: () => void;
 };
 
-const storageKey = 'binocular-theme';
-
 export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function getInitialMode(): ThemeMode {
-  const stored = window.localStorage.getItem(storageKey);
-  if (stored === 'light' || stored === 'dark') {
-    return stored;
-  }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
+// Re-export for consumers that previously imported from this module
+export type { ThemeMode };
 
+/**
+ * Provides theme context and synchronizes the `dark` class on <html>.
+ *
+ * - On mount, reads theme via resolveTheme() (localStorage → system → fallback).
+ * - On every mode change, persists to localStorage and toggles the class.
+ */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>(getInitialMode);
+  const [mode, setMode] = useState<ThemeMode>(resolveTheme);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', mode === 'dark');
-    window.localStorage.setItem(storageKey, mode);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, mode);
+    } catch {
+      // localStorage unavailable
+    }
   }, [mode]);
 
   function toggleMode() {

@@ -287,4 +287,16 @@ describe('App shell', () => {
 
     expect(fetch).toHaveBeenCalledWith('/api/v1/inventory/1', expect.objectContaining({ method: 'DELETE' }));
   });
+
+  it('renders without crashing in dark mode', async () => {
+    window.localStorage.setItem('binocular-theme', 'dark');
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true });
+    renderApp('/inventory');
+
+    expect(await screen.findByText('Sony A7IV')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Device Inventory' })).toBeInTheDocument();
+
+    // Verify the ThemeProvider wraps the app and renders the toggle button
+    expect(screen.getByLabelText('Switch to light mode')).toBeInTheDocument();
+  });
 });
