@@ -47,6 +47,10 @@ jobs:
         working-directory: backend
         run: pytest --cov=binocular --cov-report=term-missing
 
+      - name: Upgrade pip
+        working-directory: backend
+        run: python -m pip install --upgrade pip
+
       - name: Dependency security audit
         working-directory: backend
         run: pip-audit
