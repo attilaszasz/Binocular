@@ -76,7 +76,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 > No dependencies on incomplete epics. Adds the Panasonic Lumix Lenses module alongside the existing Sony Alpha and Panasonic Lumix MFT Cameras modules.
 
-- [ ] E023 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Panasonic Lumix Lenses Module — Panasonic Lumix Lenses detection from https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html with fixtures
+- [X] E023 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Panasonic Lumix Lenses Module — Panasonic Lumix Lenses detection from https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html with fixtures
 
 ## Dependency Diagram
 
