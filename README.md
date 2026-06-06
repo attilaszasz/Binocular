@@ -196,6 +196,8 @@ Binocular dispatches notifications through [Apprise](https://github.com/caronc/a
 
 Configure channels in the UI (Settings > Notifications) or via environment variables in `.env`. A detected update dispatches to all configured channels. Dispatch failures are logged in the activity log for visibility; the check result is preserved regardless.
 
+For Gmail specifically, see `docs/gmail-smtp-setup.md` for a step-by-step App Password guide.
+
 ---
 
 ## Backups
@@ -391,13 +393,14 @@ curl http://127.0.0.1:8000/healthz
 
 | Document | Purpose |
 |---|---|
-| `docs/restore.md` | Database backup and restore procedures |
-| `docs/release.md` | Maintainer release runbook |
-| `docs/modules-authoring-guide.md` | How to write extension modules |
-| `specs/prd.md` | Product Requirements Document |
-| `specs/sad.md` | Software Architecture Document |
-| `specs/dod.md` | Deployment & Operations Document |
-| `specs/project-plan.md` | Project Implementation Plan |
+| [Gmail SMTP Setup](docs/gmail-smtp-setup.md) | Step-by-step Gmail notification configuration |
+| [Backup & Restore](docs/restore.md) | Database backup and restore procedures |
+| [Release Runbook](docs/release.md) | Maintainer release runbook |
+| [Module Authoring Guide](docs/modules-authoring-guide.md) | How to write extension modules |
+| [Product Requirements](specs/prd.md) | Product Requirements Document |
+| [Architecture](specs/sad.md) | Software Architecture Document |
+| [Deployment & Operations](specs/dod.md) | Deployment & Operations Document |
+| [Project Plan](specs/project-plan.md) | Project Implementation Plan |
 
 ---
 
