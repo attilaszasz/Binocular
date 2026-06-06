@@ -9,7 +9,7 @@ from binocular.extensions.contract import ModuleCheckInput, ModuleCheckResult
 from binocular.scraping.client import ScrapeClient
 
 MODULE_METADATA = {
-    "module_id": "official.panasonic_lumix",
+    "module_id": "official.panasonic_lumix_mft_cameras",
     "display_name": "Panasonic Lumix MFT Cameras",
     "version": "1.0.0",
     "author": "Binocular",

@@ -23,7 +23,7 @@
 
 | ID | Decision | Rationale |
 |----|----------|-----------|
-| AD-001 | Add `official.panasonic_lumix` as a bundled module using the existing extension contract. | Keeps starter modules consistent and avoids core service changes. |
+| AD-001 | Add `official.panasonic_lumix_mft_cameras` as a bundled module using the existing extension contract. | Keeps starter modules consistent and avoids core service changes. |
 | AD-002 | Use Panasonic's global DSC firmware index instead of Alpha Universe for version detection. | Alpha Universe has Panasonic picker data but lacks Panasonic firmware versions. |
 | AD-003 | Parse bounded table rows and JavaScript link handlers from fixtures. | Mirrors the source shape while avoiding broad unbounded regex behavior. |
 

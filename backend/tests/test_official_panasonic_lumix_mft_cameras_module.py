@@ -76,7 +76,7 @@ def test_panasonic_module_loads_through_extension_contract() -> None:
 
     assert result.failure is None
     assert result.loaded_module is not None
-    assert result.loaded_module.metadata.module_id == "official.panasonic_lumix"
+    assert result.loaded_module.metadata.module_id == "official.panasonic_lumix_mft_cameras"
     assert result.loaded_module.metadata.display_name == "Panasonic Lumix MFT Cameras"
 
 

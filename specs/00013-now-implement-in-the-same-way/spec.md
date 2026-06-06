@@ -63,7 +63,7 @@ Test: Given the repository docs, when a module author opens official module docu
 
 ## Requirements
 
-FR-001: The system MUST ship an official `official.panasonic_lumix` module implementing the existing extension contract.
+FR-001: The system MUST ship an official `official.panasonic_lumix_mft_cameras` module implementing the existing extension contract.
 
 FR-002: The module MUST fetch page content only through the injected `ScrapeClient` and MUST NOT import direct HTTP clients.
 
