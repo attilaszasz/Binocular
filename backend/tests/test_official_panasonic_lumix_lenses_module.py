@@ -9,10 +9,8 @@ from binocular.extensions.contract import ModuleCheckInput
 from binocular.extensions.loader import ModuleLoader
 from binocular.official_modules import panasonic_lumix_lenses
 from binocular.official_modules.panasonic_lumix_lenses import (
-    FirmwareEntry,
     check_firmware,
     extract_latest_version,
-    find_firmware_entry,
     parse_firmware_entries,
 )
 from binocular.scraping.client import ScrapeClient, ScrapeDiagnostics, ScrapeResponse
@@ -71,7 +69,12 @@ def test_parses_lens_entries_from_fixture() -> None:
 
     assert len(entries) >= 3
     assert extract_latest_version(read_fixture("panasonic_firmware_index.html"), "S-R1635") == "2.0"
-    assert extract_latest_version(read_fixture("panasonic_firmware_index.html"), "H-ES12035") == "1.1"
+    assert (
+        extract_latest_version(
+            read_fixture("panasonic_firmware_index.html"), "H-ES12035"
+        )
+        == "1.1"
+    )
 
 
 def test_lens_module_loads_through_extension_contract() -> None:
