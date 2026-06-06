@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 22 (P1: 14 · P2: 7 · P3: 1) | **Waves**: 7
+**Total Epics**: 23 (P1: 14 · P2: 8 · P3: 1) | **Waves**: 8
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -72,6 +72,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E016 [P2] [PRODUCT] {PRD:CAP-012} Responsive UI & Dark Mode — first-class responsive + dark theme across views
 
+### Wave 8 — Additional Official Modules
+
+> No dependencies on incomplete epics. Adds the Panasonic Lumix Lenses module alongside the existing Sony Alpha and Panasonic Lumix MFT Cameras modules.
+
+- [ ] E023 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Panasonic Lumix Lenses Module — Panasonic Lumix Lenses detection from https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html with fixtures
+
 ## Dependency Diagram
 
 Activity-on-arrow style: nodes are milestones, arrows are epics. `<br>` denotes parallel epics released into the same milestone.
@@ -111,6 +117,7 @@ graph LR
 | 5 | E010, E011, E017, E022 | No | Manual + scheduled checks, device-module linking refactor, authoring dev kit. E022 depends on E005/E008. |
 | 6 | E012, E014, E019, E021 | Yes | Notifications complete the loop; logging, backups, and auto module seeding added. |
 | 7 | E016 | N/A (single) | Responsive/dark-mode polish across existing surfaces. |
+| 8 | E023 | N/A (single) | Panasonic Lumix Lenses module with fixtures and golden tests. |
 
 ## Parallel Execution Guidance
 
@@ -541,6 +548,31 @@ graph LR
   - **Depends on artifacts**: E005 device inventory, E008 module listing endpoint
   - **Constraints**: Migration-safe; existing data preserved; module required at creation
 
+### E023 — Official Panasonic Lumix Lenses Module
+
+- **Category**: PRODUCT | **Priority**: P2
+- **Source**: {PRD:CAP-011}
+- **Scope**: Ship the official Panasonic Lumix Lenses module as a companion to the existing Panasonic Lumix MFT Cameras module (E020), with captured page fixtures from `https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html` and golden tests verifying detected-latest correctness for L-mount (S-*) and Micro Four Thirds (H-*) lens models.
+- **Actors**: Operator, module author
+- **Key entities**: Module, page fixtures
+- **Depends on**: E006, E007
+- **Dependency contracts**: Implements the authoring contract from E006; fetches via the scraping client from E007.
+- **Depended on by**: —
+- **Produces (shared)**: Panasonic Lumix Lenses module; Panasonic Lenses fixture corpus; golden tests
+- **Constraints**: Fixture-based correctness validation at release; serves as a reference template; must not import direct HTTP clients (httpx, requests)
+- **Acceptance criteria**:
+  - [ ] The Panasonic Lumix Lenses module detects the latest version against captured fixtures.
+  - [ ] Golden/fixture regression tests cover the Panasonic Lumix Lenses module.
+  - [ ] The module validates correctly via the dev kit (`python -m binocular.extensions.devkit check`).
+  - [ ] The module is auto-discovered and seeded by the seeder (E021) on startup.
+- **Specify input**:
+  - **Description**: Official Panasonic Lumix Lenses module with fixtures and golden correctness tests, scraping `https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html`.
+  - **Actors**: Operator, module author
+  - **Key entities**: Module, page fixtures
+  - **Depends on artifacts**: E006 contract, E007 client
+  - **Constraints**: Fixture-validated; reference-quality; no direct HTTP imports
+- **Pipeline hints**: lightweight
+
 ### E012 — Notification & Alerting
 
 - **Category**: PRODUCT | **Priority**: P1
@@ -675,7 +707,7 @@ graph LR
 | CAP-008 Responsible Scraping Enforcement | P1 | E007 |
 | CAP-009 Self-Hosted Operability | P1 | E013 |
 | CAP-010 Activity Logging & Visibility | P2 | E014 |
-| CAP-011 | Official Starter Modules | P2 | E015, E020, E021 |
+| CAP-011 | Official Starter Modules | P2 | E015, E020, E021, E023 |
 | CAP-012 | Responsive UI & Dark Mode | P2 | E016 |
 | CAP-013 | Module Authoring Guidance & Dev Kit | P3 | E017 |
 
@@ -687,8 +719,8 @@ graph LR
 | ADR-0002 Python 3.13 + FastAPI backend | accepted | E001 |
 | ADR-0003 React/Vite/Tailwind SPA as static files | accepted | E003 |
 | ADR-0004 SQLite + aiosqlite + raw SQL | accepted | E004 |
-| ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E006, E021 |
-| ADR-0006 Centralized responsible-scraping client | accepted | E007 |
+| ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E006, E021, E023 |
+| ADR-0006 Centralized responsible-scraping client | accepted | E007, E023 |
 | ADR-0007 APScheduler + Apprise | accepted | E011 (scheduling), E012 (notifications) |
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E013 |
 | ADR-0009 Module-derived device type | accepted | E022 |
@@ -737,8 +769,8 @@ graph LR
 |--------|---------------|-------------|
 | App factory + router aggregator, structlog config | E001 | All |
 | DB connection, migration runner, repository base | E004 | E005, E006, E008, E009, E011, E012, E013, E014, E019, E021 |
-| ScrapeClient | E007 | E006, E015, E020, E017 |
-| Module engine + authoring contract | E006 | E008, E009, E015, E020, E017, E021 |
+| ScrapeClient | E007 | E006, E015, E020, E017, E023 |
+| Module engine + authoring contract | E006 | E008, E009, E015, E020, E017, E021, E023 |
 | Scheduler service | E011 | E012, E014, E019 |
 | Notifier service | E012 | — |
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |

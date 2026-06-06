@@ -16,7 +16,7 @@ Binocular is a self-hosted firmware-update watcher for offline devices — camer
 4. **When a newer version is found**, Binocular dispatches a notification through your configured channels (Email/SMTP, Gotify).
 5. **You update the device physically**, then confirm the new version in one click — resetting alert status until the next update appears.
 
-Extension modules are user-authored Python scripts that implement a documented authoring contract. They run unsandboxed, in-process, with full application privileges — an explicit, user-vetted trust boundary. Two official starter modules for Sony Alpha and Panasonic Lumix are bundled and automatically seeded on startup.
+Extension modules are user-authored Python scripts that implement a documented authoring contract. They run unsandboxed, in-process, with full application privileges — an explicit, user-vetted trust boundary. Three official starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, and Panasonic Lumix Lenses are bundled and automatically seeded on startup.
 
 ---
 
@@ -167,10 +167,11 @@ Extension modules are the pluggable intelligence that teaches Binocular how to c
 
 ### Official Modules (Bundled)
 
-Two starter modules ship with the image and are automatically seeded into the database on startup:
+Three starter modules ship with the image and are automatically seeded into the database on startup:
 
 - **Sony Alpha** — covers Sony E-mount camera bodies and lenses
-- **Panasonic Lumix** — covers Panasonic Lumix camera bodies and lenses
+- **Panasonic Lumix MFT Cameras** — covers Panasonic Lumix Micro Four Thirds camera bodies
+- **Panasonic Lumix Lenses** — covers Panasonic Lumix L-mount and Micro Four Thirds lenses
 
 These serve as both immediate value and working examples for writing your own modules.
 
