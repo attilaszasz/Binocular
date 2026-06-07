@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Binocular Firmware Update</title>
+</head>
+<body style="margin:0;padding:0;background-color:{{ surface_color }};">
+  <!--[if mso]><table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding:0;"><![endif]-->
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;background-color:{{ surface_color }};">
+    <tr>
+      <td align="center" style="padding:20px 0;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;width:100%;">
+          <tr>
+            <td style="padding:0 10px;">
+              <!-- Header -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tr>
+                  <td style="padding:24px 24px 8px 24px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                      <tr>
+                        <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:28px;font-weight:700;color:{{ accent_color }};line-height:1.2;padding-bottom:4px;">
+                          Binocular
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:400;color:{{ metadata_color }};line-height:1.4;">
+                          Firmware Update Alert
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <!-- Card Body -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;background-color:{{ card_color }};border-radius:8px;">
+                <tr>
+                  <td style="padding:24px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                      <!-- Device Name -->
+                      <tr>
+                        <td style="padding-bottom:16px;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                            <tr>
+                              <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;color:{{ metadata_color }};text-transform:uppercase;letter-spacing:0.5px;line-height:1.3;padding-bottom:4px;">
+                                Device
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:400;color:{{ heading_color }};line-height:1.4;word-break:break-word;overflow-wrap:break-word;">
+                                {{ device_name }}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Device Type -->
+                      <tr>
+                        <td style="padding-bottom:16px;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                            <tr>
+                              <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;color:{{ metadata_color }};text-transform:uppercase;letter-spacing:0.5px;line-height:1.3;padding-bottom:4px;">
+                                Type
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:400;color:{{ heading_color }};line-height:1.4;word-break:break-word;overflow-wrap:break-word;">
+                                {{ device_type }}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Version Comparison -->
+                      <tr>
+                        <td style="padding-bottom:16px;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                            <tr>
+                              <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;color:{{ metadata_color }};text-transform:uppercase;letter-spacing:0.5px;line-height:1.3;padding-bottom:12px;">
+                                Version Update
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                                  <tr>
+                                    <!-- Current Version -->
+                                    <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:400;color:{{ metadata_color }};line-height:1.4;word-break:break-word;overflow-wrap:break-word;vertical-align:middle;padding-right:8px;white-space:nowrap;">
+                                      {{ current_version }}
+                                    </td>
+                                    <!-- Arrow -->
+                                    <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:700;color:{{ accent_color }};line-height:1.2;vertical-align:middle;padding-right:8px;width:24px;text-align:center;">
+                                      →
+                                    </td>
+                                    <!-- Latest Version (Emphasized) -->
+                                    <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:{{ success_text }};line-height:1.4;word-break:break-word;overflow-wrap:break-word;vertical-align:middle;background-color:{{ success_bg }};border-radius:4px;padding:4px 10px;">
+                                      {{ latest_version }}
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Source URL (conditional) -->
+                      {% if source_url %}
+                      <tr>
+                        <td style="padding-bottom:16px;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                            <tr>
+                              <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;color:{{ metadata_color }};text-transform:uppercase;letter-spacing:0.5px;line-height:1.3;padding-bottom:4px;">
+                                Source
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:400;color:{{ heading_color }};line-height:1.4;word-break:break-word;overflow-wrap:break-word;">
+                                {{ source_url }}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      {% endif %}
+                      <!-- Separator -->
+                      <tr>
+                        <td style="padding-bottom:12px;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                            <tr>
+                              <td style="border-top:1px solid #E2E0D8;font-size:0;line-height:0;">&nbsp;</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Timestamp -->
+                      <tr>
+                        <td>
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                            <tr>
+                              <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:400;color:{{ metadata_color }};line-height:1.4;">
+                                {{ timestamp }}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <!-- Footer -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tr>
+                  <td style="padding:16px 24px 24px 24px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                      <tr>
+                        <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:400;color:{{ metadata_color }};line-height:1.4;text-align:center;">
+                          Sent by Binocular &mdash; your set-and-forget firmware monitor
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+  <!--[if mso]></td></tr></table><![endif]-->
+</body>
+</html>

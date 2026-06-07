@@ -14,6 +14,7 @@ dependencies = [
     "beautifulsoup4>=4.12,<5.0",
     "fastapi>=0.115,<1.0",
     "httpx>=0.28,<1.0",
+    "jinja2>=3.1,<4.0",
     "pydantic-settings>=2.7,<3.0",
     "python-multipart>=0.0.20,<1.0",
     "structlog>=24.4,<26.0",
@@ -33,7 +34,7 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/binocular"]
-artifacts = ["src/binocular/static_dist/**"]
+artifacts = ["src/binocular/static_dist/**", "src/binocular/templates/**"]
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --strict-config"

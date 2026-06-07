@@ -1,0 +1,7 @@
+A newer firmware version is available for your device '{{ device_name }}' ({{ device_type }}).
+
+- Current Version: {{ current_version }}
+- Latest Version: {{ latest_version }}
+- Source URL: {{ source_url }}
+
+Sent by Binocular — {{ timestamp }}

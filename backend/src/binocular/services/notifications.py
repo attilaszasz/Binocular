@@ -1,103 +1,199 @@
 """Notification service using Apprise for SMTP and Gotify alerts."""
 
 import asyncio
+import re
 import urllib.parse
 from typing import Any, cast
 
 import apprise
 import structlog
+from apprise import NotifyFormat
 
 from binocular.repositories.notifications import NotificationChannelRepository
+from binocular.services import email_renderer
 
 _LOGGER = structlog.get_logger("binocular.services.notifications")
 
+# Compiled once — used by _redact_url to strip user:password from Apprise URLs
+_REDACT_RE = re.compile(r"(?<=://)[^@]+(?=@)")
+
 
 class NotifierService:
-    """Service to construct Apprise schemes and dispatch alerts asynchronously."""
+    """Service to construct Apprise schemes and dispatch alerts per-channel.
+
+    SMTP channels receive HTML body format (when requested); Gotify
+    channels always receive plain text.  Each channel is dispatched
+    independently via its own Apprise instance.
+    """
 
     def __init__(self, repository: NotificationChannelRepository) -> None:
         self.repository = repository
         self._logger = _LOGGER
+        # Accessed via module so @patch("binocular.services.email_renderer.EmailRenderer") works
+        self._renderer = email_renderer.EmailRenderer()
 
-    async def send_notification(self, title: str, body: str) -> bool:
-        """Fetch all enabled channels from DB, build Apprise object, and send."""
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
 
+    @staticmethod
+    def _redact_url(url: str) -> str:
+        """Redact user:password portion of Apprise URL for safe logging."""
+        return _REDACT_RE.sub("***:***", url)
+
+    # ------------------------------------------------------------------
+    # Per-channel dispatch
+    # ------------------------------------------------------------------
+
+    async def send_notification(
+        self,
+        title: str,
+        body: str,
+        *,
+        body_format: NotifyFormat | None = None,
+        template_data: dict[str, object] | None = None,
+        device_id: int | None = None,
+    ) -> bool:
+        """Fetch enabled channels, dispatch per-channel with format-aware routing.
+
+        SMTP channels receive HTML (via template rendering) when
+        *body_format* is ``NotifyFormat.HTML``; Gotify channels always
+        receive plain text.  Each channel is dispatched independently.
+        """
         channels = await self.repository.list_channels()
         enabled_channels = [c for c in channels if c.enabled]
         if not enabled_channels:
             self._logger.debug("no_enabled_notification_channels")
             return True
 
-        apobj = apprise.Apprise()
+        # FR-009: cap at 20 channels per dispatch
+        max_channels = 20
+        if len(enabled_channels) > max_channels:
+            self._logger.info(
+                "notification_channel_cap_reached",
+                skipped=len(enabled_channels) - max_channels,
+                cap=max_channels,
+            )
+            enabled_channels = enabled_channels[:max_channels]
+
+        overall_success = True
+
         for channel in enabled_channels:
+            url = self.build_apprise_url(channel.type, channel.config)
+            if not url:
+                self._logger.warning(
+                    "failed_to_build_notification_url",
+                    channel_type=channel.type,
+                )
+                overall_success = False
+                continue
+
+            redacted = self._redact_url(url)
+            self._logger.debug(
+                "dispatching_notification",
+                channel_type=channel.type,
+                url=redacted,
+                apprise_version=apprise.__version__,
+                device_id=device_id,
+            )
+
+            apobj = apprise.Apprise()
+            apobj.add(url)
+
+            dispatch_body = body
+            dispatch_format: NotifyFormat | None = None
+            format_label = "text"
+
+            # ── Determine format per channel type ─────────────────────
+            if channel.type == "smtp" and body_format == NotifyFormat.HTML:
+                if template_data:
+                    # Attempt HTML template rendering
+                    try:
+                        html_body = self._renderer.render(**template_data)
+                        dispatch_body = html_body
+                        dispatch_format = NotifyFormat.HTML
+                        format_label = "HTML"
+                    except Exception as render_error:
+                        self._logger.exception(
+                            "email_render_failed_plain_text_fallback",
+                            error=str(render_error),
+                            channel_type=channel.type,
+                        )
+                        # Use caller-supplied plain-text body as fallback
+                        dispatch_body = body
+                        dispatch_format = None
+                        format_label = "text"
+                else:
+                    # Caller already supplied HTML body; dispatch as-is
+                    dispatch_body = body
+                    dispatch_format = NotifyFormat.HTML
+                    format_label = "HTML"
+
+            # ── Dispatch ──────────────────────────────────────────────
             try:
-                url = self.build_apprise_url(channel.type, channel.config)
-                if url:
-                    apobj.add(url)
+                if dispatch_format is not None:
+                    success = await asyncio.to_thread(
+                        apobj.notify,
+                        dispatch_body,
+                        title=title,
+                        body_format=dispatch_format,
+                    )
+                else:
+                    success = await asyncio.to_thread(
+                        apobj.notify, dispatch_body, title=title
+                    )
             except Exception as error:
                 self._logger.exception(
-                    "failed_to_build_notification_url",
+                    "notification_dispatch_exception",
                     channel_type=channel.type,
                     error=str(error),
                 )
+                success = False
 
-        if not len(apobj):
-            self._logger.warning("no_valid_notification_urls_constructed")
-            return False
+            if not success:
+                overall_success = False
 
-        try:
-            # Dispatch synchronously inside a separate worker thread to avoid blocking event loop
-            success = await asyncio.to_thread(apobj.notify, body, title=title)
-
-            # Log to activity log
+            # ── Activity log ──────────────────────────────────────────
             try:
                 from binocular.repositories.activity import ActivityLogRepository
 
                 activity_repo = ActivityLogRepository(self.repository.connection)
-                for channel in enabled_channels:
-                    if success:
-                        await activity_repo.log_activity(
-                            event_type="notification",
-                            status="success",
-                            message=f"Notification successfully dispatched via {channel.type}",
-                        )
-                    else:
-                        await activity_repo.log_activity(
-                            event_type="notification",
-                            status="failed",
-                            message=f"Notification failed to dispatch via {channel.type}",
-                        )
+                status = "success" if success else "failed"
+                msg = (
+                    f"Notification via {channel.type} (format={format_label}) "
+                    f"dispatched {'successfully' if success else 'unsuccessfully'}"
+                )
+                await activity_repo.log_activity(
+                    event_type="notification",
+                    status=status,
+                    message=msg,
+                    device_name=str(device_id) if device_id is not None else None,
+                )
             except Exception:
                 self._logger.exception("failed_to_log_notification_activity")
 
-            if success:
-                self._logger.info("notifications_dispatched_successfully", count=len(apobj))
-            else:
-                self._logger.error("notifications_dispatch_failed", count=len(apobj))
-            return bool(success)
-        except Exception as error:
-            self._logger.exception("notifications_dispatch_raised_exception", error=str(error))
-            try:
-                from binocular.repositories.activity import ActivityLogRepository
+        if overall_success:
+            self._logger.info(
+                "notifications_dispatched_successfully",
+                count=len(enabled_channels),
+                apprise_version=apprise.__version__,
+            )
+        else:
+            self._logger.error(
+                "notifications_dispatch_partial_or_failed",
+                count=len(enabled_channels),
+                apprise_version=apprise.__version__,
+            )
+        return overall_success
 
-                activity_repo = ActivityLogRepository(self.repository.connection)
-                for channel in enabled_channels:
-                    await activity_repo.log_activity(
-                        event_type="notification",
-                        status="failed",
-                        message=(
-                            f"Notification dispatch raised exception via {channel.type}: {error}"
-                        ),
-                        traceback=str(error),
-                    )
-            except Exception:
-                self._logger.exception("failed_to_log_notification_activity_exception")
-            return False
+    # ------------------------------------------------------------------
+    # Test notifications (always plain-text per FR-011)
+    # ------------------------------------------------------------------
 
     async def send_test_notification(
         self, channel_type: str, config: dict[str, Any]
     ) -> tuple[bool, str]:
-        """stateless test dispatch to a specific channel config to verify settings."""
+        """Stateless test dispatch to a specific channel config (always plain-text)."""
 
         try:
             url = self.build_apprise_url(channel_type, config)
@@ -110,6 +206,7 @@ class NotifierService:
             test_title = "Binocular Notification Test"
             test_body = "This is a test notification from Binocular verifying your setup. It works!"
 
+            # FR-011: test notifications are always plain text regardless of channel type
             success = await asyncio.to_thread(apobj.notify, test_body, title=test_title)
             if success:
                 return True, "Notification successfully dispatched via Apprise"

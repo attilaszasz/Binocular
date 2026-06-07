@@ -1,11 +1,14 @@
 """Firmware update detection service."""
 
 import asyncio
+import re
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
 import structlog
+from apprise import NotifyFormat
 
 from binocular.extensions.contract import ModuleCheckInput
 from binocular.extensions.loader import ModuleLoader
@@ -20,6 +23,19 @@ from binocular.services.version_compare import VersionComparisonError, compare_v
 CheckStatus = Literal["up_to_date", "update_available", "failed"]
 
 _LOGGER = structlog.get_logger("binocular.services.checks")
+
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+
+
+def _truncate(value: str, limit: int) -> str:
+    """Truncate *value* to *limit* characters preserving integrity.
+
+    A trailing ellipsis is appended when truncation is applied.
+    Values within the limit are returned unchanged.
+    """
+    if len(value) <= limit:
+        return value
+    return value[:limit] + "..."
 
 
 class CheckConfigurationError(Exception):
@@ -74,6 +90,7 @@ class CheckService:
         module_id: str,
         source_url: str | None = None,
         extra: dict[str, str] | None = None,
+        _dispatch_cap: list[int] | None = None,
     ) -> CheckResult:
         """Run one module check for one active device."""
 
@@ -202,22 +219,70 @@ class CheckService:
             _LOGGER.exception("failed_to_persist_activity_log")
 
         if status == "update_available" and self.notifier_service is not None:
-            try:
-                title = f"New Firmware Update Available: {device.model}"
+            # ── FR-009 dispatch cap ──────────────────────────────────
+            cap_reached = _dispatch_cap is not None and _dispatch_cap[0] >= 20
+            if cap_reached:
+                try:
+                    activity_repo = ActivityLogRepository(self.inventory_repository.connection)
+                    await activity_repo.log_activity(
+                        event_type="check",
+                        status="skipped — dispatch cap reached",
+                        message=(
+                            f"Update available for {device.model} "
+                            f"({device.device_type}) but notification skipped — "
+                            f"dispatch cap reached"
+                        ),
+                        device_name=device.model,
+                        module_name=module_id,
+                    )
+                except Exception:
+                    _LOGGER.exception("failed_to_persist_activity_log")
+            else:
+                # ── FR-007 subject line ─────────────────────────────────
+                sanitized_model = self._strip_controls(device.model)
+                subject = f"Binocular: Firmware update for {sanitized_model}"
+
+                # ── FR-014 length limits ────────────────────────────────
+                device_name = _truncate(device.model, 128)
+                current_version = _truncate(device.current_version, 64)
+                latest_version = _truncate(module_result.latest_version, 64)
+                safe_source_url = _truncate(
+                    result_source_url or "N/A", 2048
+                )
+
                 body = (
-                    f"A newer firmware version is available for your device '{device.model}' "
+                    f"A newer firmware version is available for your device '{device_name}' "
                     f"({device.device_type}).\n\n"
-                    f"- Current Version: {device.current_version}\n"
-                    f"- Latest Version: {module_result.latest_version}\n"
-                    f"- Source URL: {result_source_url or 'N/A'}"
+                    f"- Current Version: {current_version}\n"
+                    f"- Latest Version: {latest_version}\n"
+                    f"- Source URL: {safe_source_url}"
                 )
-                await self.notifier_service.send_notification(title, body)
-            except Exception as error:
-                _LOGGER.exception(
-                    "failed_to_dispatch_check_notification",
-                    device_id=device.id,
-                    error=str(error),
-                )
+
+                template_data: dict[str, object] = {
+                    "device_name": device_name,
+                    "device_type": device.device_type,
+                    "current_version": current_version,
+                    "latest_version": latest_version,
+                    "source_url": safe_source_url,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                }
+
+                try:
+                    await self.notifier_service.send_notification(
+                        subject,
+                        body,
+                        body_format=NotifyFormat.HTML,
+                        template_data=template_data,
+                        device_id=device.id,
+                    )
+                    if _dispatch_cap is not None:
+                        _dispatch_cap[0] += 1
+                except Exception as error:
+                    _LOGGER.exception(
+                        "failed_to_dispatch_check_notification",
+                        device_id=device.id,
+                        error=str(error),
+                    )
 
         record = updated or await self.inventory_repository.require_device(device.id)
         diagnostics: dict[str, object] = dict(module_result.diagnostics)
@@ -324,6 +389,9 @@ class CheckService:
         concurrency = min(max(max_concurrency or 4, 1), 8)
         semaphore = asyncio.Semaphore(concurrency)
 
+        # FR-009: shared counter tracking dispatched emails this cycle
+        dispatch_cap_counter: list[int] = [0]
+
         if module_id is not None:
             module = await self.module_repository.get_module(module_id)
             if module is None:
@@ -338,6 +406,7 @@ class CheckService:
                         module_id=module_id,
                         source_url=source_url,
                         extra=extra,
+                        _dispatch_cap=dispatch_cap_counter,
                     )
 
             return list(await asyncio.gather(*(run_one_same(device) for device in devices)))
@@ -353,6 +422,7 @@ class CheckService:
                     module_id=device.module_id_str,
                     source_url=source_url,
                     extra=extra,
+                    _dispatch_cap=dispatch_cap_counter,
                 )
 
         outcomes = await asyncio.gather(*(run_one(device) for device in devices))
@@ -372,6 +442,17 @@ class CheckService:
                 )
 
         return results
+
+    @staticmethod
+    def _strip_controls(value: str) -> str:
+        """Strip ASCII/Unicode control characters from a string.
+
+        Removes ASCII 0x00-0x1F, DEL (0x7F), and Unicode C1
+        control characters (0x80-0x9F).  Used to sanitise
+        device names before insertion into email subject lines
+        (FR-007 / RFC 5322 header safety).
+        """
+        return _CONTROL_CHARS_RE.sub("", value)
 
     @staticmethod
     def _unpersisted_failure(

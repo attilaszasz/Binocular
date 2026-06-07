@@ -95,7 +95,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 > Depends on E012. Enhances email notification format from plain text to responsive HTML with the application's light color scheme and mobile-friendly layout.
 
-- [ ] E027 [P2] [PRODUCT] {PRD:CAP-007} HTML Email Notification Design — responsive HTML email, light-themed, mobile-friendly
+- [X] E027 [P2] [PRODUCT] {PRD:CAP-007} HTML Email Notification Design — responsive HTML email, light-themed, mobile-friendly
 
 ## Dependency Diagram
 
