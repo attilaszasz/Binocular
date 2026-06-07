@@ -165,7 +165,7 @@ export function App() {
     try {
       const response = await listModules();
       setModules(response.modules);
-    } catch (error) {
+    } catch {
       setModuleError('Failed to load');
     } finally {
       setIsModulesLoading(false);
@@ -1219,8 +1219,10 @@ function ModulesPage({
     const currentModule = modules.find((m) => m.moduleId === editingModuleId);
     if (currentModule === undefined) {
       // Module was deleted while editing
-      setEditingModuleId(null);
-      editingSnapshot.current = null;
+      queueMicrotask(() => {
+        setEditingModuleId(null);
+        editingSnapshot.current = null;
+      });
       return;
     }
     const snapshot = editingSnapshot.current;
@@ -1232,8 +1234,10 @@ function ModulesPage({
         snapshot.enabled !== currentEnabled ||
         snapshot.intervalMinutes !== currentInterval
       ) {
-        setEditingModuleId(null);
-        editingSnapshot.current = null;
+        queueMicrotask(() => {
+          setEditingModuleId(null);
+          editingSnapshot.current = null;
+        });
         setFrequencyError('This schedule was changed elsewhere. The editor will close.');
         setTimeout(() => setFrequencyError(null), 5000);
       }
