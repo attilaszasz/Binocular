@@ -76,7 +76,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await runner.apply_pending()
 
         # Seed official starter modules
-        from binocular.db.connection import ConnectionManager
         from binocular.services.seeder import OfficialModuleSeeder
 
         db_manager = ConnectionManager(
