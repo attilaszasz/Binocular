@@ -34,13 +34,14 @@ async def test_module_repository_persists_metadata_and_validation(tmp_path: Path
             validation_summary={"overall_status": "valid"},
         )
         await repository.connection.commit()
-        listed = await repository.list_modules()
+        listed, total = await repository.list_modules()
     finally:
         await repository.connection.close()
 
     assert created.module_id == "sony-alpha"
     assert updated.validation_status == "valid"
     assert json.loads(updated.validation_summary_json) == {"overall_status": "valid"}
+    assert total == 1
     assert [module.module_id for module in listed] == ["sony-alpha"]
 
 

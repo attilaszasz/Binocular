@@ -51,11 +51,12 @@ async def test_service_preserves_prior_module_on_failed_update(tmp_path: Path) -
         first = await service.install_validated_module(first_path)
         with pytest.raises(ModuleLifecycleError):
             await service.install_validated_module(bad_path)
-        listed = await service.list_modules()
+        listed, total = await service.list_modules()
     finally:
         await service.repository.connection.close()
 
     assert first.created is True
+    assert total == 1
     assert listed[0].version == "1.0.0"
     installed_source = (tmp_path / "modules" / "test-module.py").read_text(encoding="utf-8")
     assert installed_source == module_source("1.0.0")

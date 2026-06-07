@@ -65,7 +65,7 @@ async def test_modules_api_rejects_invalid_uploads_before_install(tmp_path: Path
     assert bad_syntax.status_code == 400
     assert bad_syntax.json()["detail"]["code"] == "validation_failed"
     assert bad_syntax.json()["detail"]["validationSummary"]["overall_status"] == "invalid"
-    assert listed.json() == {"modules": []}
+    assert listed.json() == {"modules": [], "total": 0, "page": 1, "pageSize": 0}
 
 
 @pytest.mark.asyncio
@@ -106,5 +106,5 @@ async def test_modules_api_deletes_module_and_reports_not_found(tmp_path: Path) 
     assert deleted.status_code == 204
     assert missing.status_code == 404
     assert missing.json()["detail"]["code"] == "module_not_found"
-    assert listed.json() == {"modules": []}
+    assert listed.json() == {"modules": [], "total": 0, "page": 1, "pageSize": 0}
     assert not (tmp_path / "modules" / "test-module.py").exists()

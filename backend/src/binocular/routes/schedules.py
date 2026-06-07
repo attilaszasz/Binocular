@@ -10,6 +10,8 @@ from binocular.config import Settings
 from binocular.db.connection import ConnectionManager
 from binocular.repositories.schedules import ScheduleRecord, ScheduleRepository
 
+_LOGGER = __import__("structlog").get_logger("binocular.routes.schedules")
+
 router = APIRouter(prefix="/schedules", tags=["schedules"])
 
 
@@ -94,6 +96,7 @@ async def upsert_device_type_schedule(
     device_type_id: int,
     payload: ScheduleUpdateRequest,
     repo: ScheduleRepoDependency,
+    request: Request,
 ) -> DeviceTypeScheduleResponse:
     await repo.upsert_schedule(
         device_type_id,
@@ -103,4 +106,23 @@ async def upsert_device_type_schedule(
     record = await repo.get_schedule(device_type_id)
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device type not found")
+
+    # Wire scheduler service: reschedule the per-device-type job synchronously.
+    # If the scheduler service is unavailable or the reschedule fails, log the
+    # error but still return 200 — the scheduler will pick up the DB state on
+    # next restart.
+    scheduler_svc = getattr(request.app.state, "scheduler_service", None)
+    if scheduler_svc is not None:
+        try:
+            scheduler_svc.reschedule_type(
+                device_type_id,
+                enabled=payload.enabled,
+                interval_minutes=payload.interval_minutes,
+            )
+        except Exception:
+            _LOGGER.exception(
+                "scheduler_reschedule_failed",
+                device_type_id=device_type_id,
+            )
+
     return _schedule_response(record)

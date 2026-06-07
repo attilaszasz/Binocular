@@ -63,3 +63,28 @@ DELETE FROM device_type_schedules;
 -- No remaining FKs point to it (devices column dropped,
 -- schedule rows deleted). The table is no longer needed.
 DROP TABLE IF EXISTS device_types;
+
+-- ──────────────────────────────────────────────
+-- Step 8: Fix device_type_schedules FK to reference modules
+-- ──────────────────────────────────────────────
+-- The device_type_schedules FK REFERENCES device_types(id) is now
+-- orphaned. Recreate the table with FK pointing to modules(id).
+-- All rows were deleted in Step 6, so no data is lost.
+PRAGMA foreign_keys = OFF;
+CREATE TABLE device_type_schedules_new (
+    device_type_id INTEGER PRIMARY KEY REFERENCES modules(id),
+    enabled INTEGER NOT NULL DEFAULT 0,
+    interval_minutes INTEGER NOT NULL DEFAULT 1440,
+    next_run_at TEXT,
+    last_started_at TEXT,
+    last_completed_at TEXT,
+    last_success_at TEXT,
+    last_failure_at TEXT,
+    last_failure_reason TEXT,
+    last_skip_reason TEXT,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO device_type_schedules_new SELECT * FROM device_type_schedules;
+DROP TABLE device_type_schedules;
+ALTER TABLE device_type_schedules_new RENAME TO device_type_schedules;
+PRAGMA foreign_keys = ON;

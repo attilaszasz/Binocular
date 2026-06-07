@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from binocular.config import Settings
@@ -46,6 +46,7 @@ class ModuleValidationSummaryResponse(BaseModel):
 
 
 class ModuleResponse(BaseModel):
+    id: int
     module_id: str = Field(alias="moduleId")
     display_name: str = Field(alias="displayName")
     author: str | None
@@ -57,12 +58,25 @@ class ModuleResponse(BaseModel):
     last_validated_at: str | None = Field(alias="lastValidatedAt")
     created_at: str = Field(alias="createdAt")
     updated_at: str = Field(alias="updatedAt")
+    schedule: "ModuleScheduleData | None" = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ModuleScheduleData(BaseModel):
+    enabled: bool
+    interval_minutes: int = Field(alias="intervalMinutes")
 
     model_config = ConfigDict(populate_by_name=True)
 
 
 class ModuleListResponse(BaseModel):
     modules: list[ModuleResponse]
+    total: int
+    page: int
+    page_size: int = Field(alias="pageSize")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ModuleLifecycleErrorResponse(BaseModel):
@@ -104,9 +118,20 @@ ModuleLifecycleServiceDependency = Annotated[
 
 
 @router.get("", response_model=ModuleListResponse)
-async def list_modules(service: ModuleLifecycleServiceDependency) -> ModuleListResponse:
-    modules = [_module_response(record) for record in await service.list_modules()]
-    return ModuleListResponse(modules=modules)
+async def list_modules(
+    service: ModuleLifecycleServiceDependency,
+    page: int = Query(1, ge=1),
+    page_size: int | None = Query(None, alias="pageSize", ge=1, le=100),
+) -> ModuleListResponse:
+    records, total = await service.list_modules(page=page, page_size=page_size)
+    modules = [_module_response(record) for record in records]
+    effective_page_size = page_size if page_size is not None else total
+    return ModuleListResponse(
+        modules=modules,
+        total=total,
+        page=page,
+        page_size=effective_page_size,
+    )
 
 
 @router.post("", response_model=ModuleResponse, status_code=status.HTTP_201_CREATED)
@@ -174,7 +199,14 @@ async def delete_module(module_id: str, service: ModuleLifecycleServiceDependenc
 
 
 def _module_response(record: ModuleRecord) -> ModuleResponse:
+    schedule: ModuleScheduleData | None = None
+    if record.schedule_enabled is not None and record.schedule_interval_minutes is not None:
+        schedule = ModuleScheduleData(
+            enabled=record.schedule_enabled,
+            interval_minutes=record.schedule_interval_minutes,
+        )
     return ModuleResponse(
+        id=record.id,
         module_id=record.module_id,
         display_name=record.display_name,
         author=record.author,
@@ -186,6 +218,7 @@ def _module_response(record: ModuleRecord) -> ModuleResponse:
         last_validated_at=record.last_validated_at,
         created_at=record.created_at,
         updated_at=record.updated_at,
+        schedule=schedule,
     )
 
 

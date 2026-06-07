@@ -58,8 +58,12 @@ class ModuleLifecycleService:
         self.modules_dir = modules_dir
         self.inventory_repository = inventory_repository
 
-    async def list_modules(self) -> list[ModuleRecord]:
-        return await self.repository.list_modules()
+    async def list_modules(
+        self,
+        page: int | None = None,
+        page_size: int | None = None,
+    ) -> tuple[list[ModuleRecord], int]:
+        return await self.repository.list_modules(page=page, page_size=page_size)
 
     async def install_validated_module(self, staged_path: Path) -> ModuleLifecycleResult:
         validation_result = await self.validator.validate(staged_path)
@@ -115,6 +119,11 @@ class ModuleLifecycleService:
             "module.deleting",
             module_id=module_id,
             unlinked_devices=unlinked,
+        )
+
+        await self.repository.execute(
+            "DELETE FROM device_type_schedules WHERE device_type_id = ?",
+            (record.id,),
         )
 
         await self.repository.delete_module(module_id)

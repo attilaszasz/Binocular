@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     app_name: str = "binocular"
     version: str = "0.1.0"
     environment: Literal["development", "test", "production"] = "production"
-    host: str = "0.0.0.0"
+    host: str = "0.0.0.0"  # nosec B104 -- acceptable for trusted LAN per project instructions
     port: int = Field(default=8000, ge=1, le=65535)
     log_level: str = "INFO"
     data_dir: Path = Path("data")

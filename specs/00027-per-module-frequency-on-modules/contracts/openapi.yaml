@@ -1,0 +1,191 @@
+openapi: 3.1.0
+info:
+  title: E026 — Per-Module Frequency on Modules Page
+  version: "1.0.0"
+paths:
+  /api/v1/modules:
+    get:
+      summary: List installed modules with per-module schedule data
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          description: "Number of modules per page (1–100). When omitted, returns all modules preserving pre-pagination backward compatibility."
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Paginated module list with schedule data. When requested page exceeds total available pages, an empty modules array is returned with accurate total/page/pageSize metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleListResponse"
+        "422":
+          description: Validation error (invalid page or pageSize)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Module list load failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/schedules/device-types/{deviceTypeId}:
+    put:
+      summary: Upsert schedule settings for a module (unchanged, reused per ADR-0009)
+      parameters:
+        - name: deviceTypeId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled, intervalMinutes]
+              properties:
+                enabled:
+                  type: boolean
+                intervalMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 10080
+      responses:
+        "200":
+          description: Schedule updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceTypeScheduleResponse"
+        "404":
+          description: Module not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Database write succeeded but scheduler update failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    ModuleResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        module_id:
+          type: string
+        display_name:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: [valid, invalid, unvalidated]
+        last_validated_at:
+          type: string
+          format: date-time
+          nullable: true
+        schedule:
+          oneOf:
+            - $ref: "#/components/schemas/ModuleScheduleData"
+            - type: "null"
+        schedule_error:
+          type: boolean
+          default: false
+          description: "When true, the schedule data failed to load for this module. The schedule field is null due to a load error rather than the absence of a schedule row."
+    ModuleScheduleData:
+      type: object
+      required: [enabled, intervalMinutes]
+      properties:
+        enabled:
+          type: boolean
+        intervalMinutes:
+          type: integer
+          minimum: 1
+          maximum: 10080
+    ModuleListResponse:
+      type: object
+      required: [modules, total, page, pageSize]
+      properties:
+        modules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleResponse"
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    DeviceTypeScheduleResponse:
+      type: object
+      properties:
+        device_type_id:
+          type: integer
+        device_type:
+          type: string
+          description: "Module identifier. Post-ADR-0009, this field derives its value from `modules.id` and is semantically equivalent to module_id."
+        enabled:
+          type: boolean
+        interval_minutes:
+          type: integer
+        next_run_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: "The next scheduled run time. Null when no run is scheduled (disabled, no upcoming trigger, or scheduler not yet initialized)."
+        last_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_success_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_failure_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_failure_reason:
+          type: string
+          nullable: true
+        last_skip_reason:
+          type: string
+          nullable: true
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          description: "Human-readable error message."

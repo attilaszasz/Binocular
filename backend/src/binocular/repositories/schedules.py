@@ -110,7 +110,7 @@ class ScheduleRepository(Repository):
 
         params.append(device_type_id)
         await self.execute(
-            f"UPDATE device_type_schedules SET {', '.join(updates)} WHERE device_type_id = ?",
+            f"UPDATE device_type_schedules SET {', '.join(updates)} WHERE device_type_id = ?",  # nosec B608 -- column names from hardcoded list, values parameterized
             tuple(params),
         )
 

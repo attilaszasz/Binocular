@@ -4,6 +4,8 @@ import {
   Binoculars,
   Check,
   CheckCircle2,
+  Clock,
+  Loader2,
   Menu,
   Moon,
   Package,
@@ -24,6 +26,7 @@ import {
 } from 'lucide-react';
 import { FormEvent, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import {
   archiveDevice,
@@ -49,6 +52,8 @@ import {
   listActivity,
   ActivityLog,
 } from './api';
+import { updateSchedule } from './api/schedules';
+import { FrequencyEditor } from './components/FrequencyEditor';
 import { useTheme } from './theme/useTheme';
 
 type LogEntry = {
@@ -161,8 +166,7 @@ export function App() {
       const response = await listModules();
       setModules(response.modules);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Modules failed to load';
-      setModuleError(message);
+      setModuleError('Failed to load');
     } finally {
       setIsModulesLoading(false);
     }
@@ -424,6 +428,7 @@ export function App() {
                   onFileSelect={setSelectedModuleFile}
                   onUpload={handleUploadModule}
                   onDelete={handleDeleteModule}
+                  onRetry={refreshModules}
                 />
               }
             />
@@ -1153,6 +1158,14 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
   );
 }
 
+function formatFrequencyLabel(intervalMinutes: number | null): string {
+  if (intervalMinutes === null) return '24h';
+  if (intervalMinutes >= 60 && intervalMinutes % 60 === 0) {
+    return `${intervalMinutes / 60}h`;
+  }
+  return `${intervalMinutes}m`;
+}
+
 function ModulesPage({
   modules,
   isLoading,
@@ -1162,6 +1175,7 @@ function ModulesPage({
   onFileSelect,
   onUpload,
   onDelete,
+  onRetry,
 }: {
   modules: InstalledModule[];
   isLoading: boolean;
@@ -1171,7 +1185,94 @@ function ModulesPage({
   onFileSelect: (file: File | null) => void;
   onUpload: (event: FormEvent<HTMLFormElement>) => void;
   onDelete: (module: InstalledModule) => void;
+  onRetry: () => void;
 }) {
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
+  const [frequencyError, setFrequencyError] = useState<string | null>(null);
+  const editingSnapshot = useRef<{ enabled: boolean; intervalMinutes: number } | null>(null);
+  const queryClient = useQueryClient();
+
+  const saveMutation = useMutation({
+    mutationFn: ({
+      moduleId,
+      payload,
+    }: {
+      moduleId: number;
+      payload: { enabled: boolean; intervalMinutes: number };
+    }) => updateSchedule(moduleId, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['modules'] });
+      setEditingModuleId(null);
+      editingSnapshot.current = null;
+      onRetry();
+    },
+    onError: (err: Error) => {
+      setFrequencyError(err.message ?? 'Schedule update failed');
+      setEditingModuleId(null);
+      editingSnapshot.current = null;
+    },
+  });
+
+  // External change detection: if schedule data changes while editor is open
+  useEffect(() => {
+    if (editingModuleId === null) return;
+    const currentModule = modules.find((m) => m.moduleId === editingModuleId);
+    if (currentModule === undefined) {
+      // Module was deleted while editing
+      setEditingModuleId(null);
+      editingSnapshot.current = null;
+      return;
+    }
+    const snapshot = editingSnapshot.current;
+    if (snapshot !== null) {
+      const currentSchedule = currentModule.schedule;
+      const currentEnabled = currentSchedule?.enabled ?? false;
+      const currentInterval = currentSchedule?.intervalMinutes ?? 1440;
+      if (
+        snapshot.enabled !== currentEnabled ||
+        snapshot.intervalMinutes !== currentInterval
+      ) {
+        setEditingModuleId(null);
+        editingSnapshot.current = null;
+        setFrequencyError('This schedule was changed elsewhere. The editor will close.');
+        setTimeout(() => setFrequencyError(null), 5000);
+      }
+    }
+  }, [modules, editingModuleId]);
+
+  // Auto-dismiss frequency error after 5 seconds
+  useEffect(() => {
+    if (frequencyError === null) return;
+    const timer = setTimeout(() => setFrequencyError(null), 5000);
+    return () => clearTimeout(timer);
+  }, [frequencyError]);
+
+  const startEditing = useCallback(
+    (module: InstalledModule) => {
+      setFrequencyError(null);
+      setEditingModuleId(module.moduleId);
+      editingSnapshot.current = module.schedule
+        ? { enabled: module.schedule.enabled, intervalMinutes: module.schedule.intervalMinutes }
+        : { enabled: false, intervalMinutes: 1440 };
+    },
+    [],
+  );
+
+  const handleCancel = useCallback(() => {
+    setEditingModuleId(null);
+    editingSnapshot.current = null;
+    setFrequencyError(null);
+  }, []);
+
+  const handleSave = useCallback(
+    (moduleId: string, payload: { enabled: boolean; intervalMinutes: number }) => {
+      const module = modules.find((m) => m.moduleId === moduleId);
+      if (!module) return;
+      saveMutation.mutate({ moduleId: module.id, payload });
+    },
+    [modules, saveMutation],
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
@@ -1203,53 +1304,167 @@ function ModulesPage({
         Modules are trusted Python code and run unsandboxed with application privileges.
       </div>
 
-      {error !== null && (
-        <div className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error">
-          {error}
+      {frequencyError !== null && (
+        <div
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+          role="alert"
+        >
+          {frequencyError}
         </div>
       )}
 
       {validation !== null && <ValidationSummary summary={validation} />}
 
-      {isLoading && <p className="text-sm text-muted">Loading modules...</p>}
+      {(isLoading || error !== null) && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-2xl border border-panel bg-panel p-6 shadow-sm">
+              <div className="mb-4 flex items-start justify-between">
+                <div className="h-12 w-12 rounded-xl bg-muted/20" />
+                <div className="h-5 w-16 rounded-full bg-muted/20" />
+              </div>
+              <div className="mb-1 h-5 w-3/4 rounded bg-muted/20" />
+              <div className="mb-1 h-4 w-1/2 rounded bg-muted/20" />
+              <div className="mb-5 h-4 w-1/3 rounded bg-muted/20" />
+              {error !== null ? (
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="text-sm font-medium text-error">Failed to load</span>
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className="inline-flex items-center rounded-lg border border-error-border px-2 py-0.5 text-xs font-medium text-error hover:bg-error-bg"
+                  >
+                    <RefreshCw size={12} className="mr-1" />
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-20 rounded bg-muted/20" />
+                  <div className="h-4 w-16 rounded bg-muted/20" />
+                </div>
+              )}
+              <div className="mt-3 flex items-center justify-between border-t border-panel pt-4">
+                <div className="h-4 w-32 rounded bg-muted/20" />
+                <div className="h-4 w-12 rounded bg-muted/20" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {!isLoading && modules.length === 0 && (
+      {!isLoading && error === null && modules.length === 0 && (
         <div className="rounded-2xl border border-dashed border-muted p-8 text-center text-sm text-muted">
           No modules installed yet.
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {modules.map((module) => (
-          <article
-            key={module.moduleId}
-            className="rounded-2xl border border-panel bg-panel p-6 shadow-sm"
-          >
-            <div className="mb-4 flex items-start justify-between">
-              <div className="rounded-xl bg-accent/10 p-3 text-accent">
-                <TerminalSquare size={24} />
-              </div>
-              <ModuleStatus status={module.validationStatus} />
-            </div>
-            <h3 className="truncate font-mono text-lg font-bold">{module.displayName}</h3>
-            <p className="mt-1 text-sm text-muted">{module.moduleId}</p>
-            <p className="mb-4 mt-1 text-sm text-muted">Version {module.version ?? 'unknown'}</p>
-            <div className="flex items-center justify-between border-t border-panel pt-4">
-              <span className="flex items-center text-sm font-medium text-muted">
-                <Server size={14} className="mr-1.5" />
-                {module.lastValidatedAt === null ? 'Not validated' : `Validated ${new Date(module.lastValidatedAt).toLocaleString()}`}
-              </span>
-              <button
-                type="button"
-                onClick={() => onDelete(module)}
-                className="text-sm font-medium text-error hover:text-error"
+      {!isLoading && error === null && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {modules.map((module) => {
+            const isEditing = editingModuleId === module.moduleId;
+
+            return (
+              <article
+                key={module.moduleId}
+                className="rounded-2xl border border-panel bg-panel p-6 shadow-sm"
               >
-                Delete
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
+                <div className="mb-4 flex items-start justify-between">
+                  <div className="rounded-xl bg-accent/10 p-3 text-accent">
+                    <TerminalSquare size={24} />
+                  </div>
+                  <ModuleStatus status={module.validationStatus} />
+                </div>
+                <h3 className="truncate font-mono text-lg font-bold">{module.displayName}</h3>
+                <p className="mt-1 text-sm text-muted">{module.moduleId}</p>
+                <p className="mb-4 mt-1 text-sm text-muted">Version {module.version ?? 'unknown'}</p>
+
+                {/* Frequency display or editor */}
+                {isEditing ? (
+                  <div
+                    tabIndex={-1}
+                    onBlur={(e) => {
+                      // Close editor on click-away (blur) if the new focus target
+                      // is outside the editor container.
+                      const container = e.currentTarget;
+                      requestAnimationFrame(() => {
+                        if (!container.contains(document.activeElement)) {
+                          handleCancel();
+                        }
+                      });
+                    }}
+                  >
+                    <FrequencyEditor
+                      currentIntervalMinutes={module.schedule?.intervalMinutes ?? null}
+                      enabled={module.schedule?.enabled ?? false}
+                      onSave={(payload) => handleSave(module.moduleId, payload)}
+                      onCancel={handleCancel}
+                      moduleId={module.id}
+                    />
+                    {saveMutation.isPending && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-muted">
+                        <Loader2 size={12} className="animate-spin" />
+                        Saving...
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    className="mb-4 flex items-center gap-2"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => startEditing(module)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        startEditing(module);
+                      }
+                    }}
+                    aria-label={`Edit check frequency for ${module.displayName}`}
+                  >
+                    <span className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-ink hover:bg-panel-hover motion-safe:transition-colors">
+                      <Clock size={12} />
+                      {formatFrequencyLabel(module.schedule?.intervalMinutes ?? null)}
+                    </span>
+                    <span
+                      className={[
+                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                        module.schedule?.enabled
+                          ? 'bg-emerald-600/10 text-emerald-600'
+                          : 'bg-muted/30 text-muted',
+                      ].join(' ')}
+                    >
+                      <span
+                        className={[
+                          'inline-block h-1.5 w-1.5 rounded-full',
+                          module.schedule?.enabled ? 'bg-emerald-500' : 'bg-muted',
+                        ].join(' ')}
+                      />
+                      {module.schedule?.enabled ? 'Active' : 'Paused'}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between border-t border-panel pt-4">
+                  <span className="flex items-center text-sm font-medium text-muted">
+                    <Server size={14} className="mr-1.5" />
+                    {module.lastValidatedAt === null
+                      ? 'Not validated'
+                      : `Validated ${new Date(module.lastValidatedAt).toLocaleString()}`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(module)}
+                    className="text-sm font-medium text-error hover:text-error"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

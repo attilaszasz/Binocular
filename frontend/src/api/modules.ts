@@ -19,6 +19,7 @@ export type ModuleValidationSummary = {
 };
 
 export type InstalledModule = {
+  id: number;
   moduleId: string;
   displayName: string;
   author: string | null;
@@ -30,10 +31,17 @@ export type InstalledModule = {
   lastValidatedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  schedule?: {
+    enabled: boolean;
+    intervalMinutes: number;
+  } | null;
 };
 
 export type ModuleListResponse = {
   modules: InstalledModule[];
+  total: number;
+  page: number;
+  pageSize: number;
 };
 
 export class ModuleUploadError extends Error {

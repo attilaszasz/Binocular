@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 25 (P1: 15 · P2: 9 · P3: 1) | **Waves**: 9
+**Total Epics**: 26 (P1: 15 · P2: 10 · P3: 1) | **Waves**: 10
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -85,6 +85,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E025 [P1] [OPERATIONAL] {SAD:ADR-0008}{DOD:DDR-004} PUID/PGID Entrypoint — add entrypoint script that reads PUID/PGID env vars, creates matching user/group, chowns volumes, and drops privileges via su-exec before launching uvicorn
 
+### Wave 10 — UX Refinement
+
+> Depends on E008 and E011. Makes per-module check frequency editable directly from the Modules page.
+
+- [X] E026 [P2] [PRODUCT] {PRD:CAP-004} Per-Module Frequency on Modules Page — make per-module automatic check frequency editable from the Modules management page
+
 ## Dependency Diagram
 
 Activity-on-arrow style: nodes are milestones, arrows are epics. `<br>` denotes parallel epics released into the same milestone.
@@ -117,6 +123,9 @@ graph LR
 
     M1 --> M9["Container<br>operability"]
     M9 -->|E025| M9
+
+    M5 --> M10["UX refinement"]
+    M10 -->|"E026"| M10
 ```
 
 ## Execution Wave Summary
@@ -132,6 +141,7 @@ graph LR
 | 7 | E016 | N/A (single) | Responsive/dark-mode polish across existing surfaces. |
 | 8 | E023, E024 | Yes | Panasonic Lumix Lenses and Godox Flashes modules with fixtures and golden tests. |
 | 9 | E025 | N/A (single) | PUID/PGID entrypoint for configurable container user permissions. |
+| 10 | E026 | N/A (single) | Per-module check frequency editing on the Modules page. |
 
 ## Parallel Execution Guidance
 
@@ -756,6 +766,30 @@ graph LR
   - **Depends on artifacts**: E001 Dockerfile
   - **Constraints**: Zero-config backward compatible; non-root; re-chown on start
 
+### E026 — Per-Module Frequency on Modules Page
+
+- **Category**: PRODUCT | **Priority**: P2
+- **Source**: {PRD:CAP-004}
+- **Scope**: Make the per-module automatic check frequency editable directly from the Modules management page. Users see and adjust the check interval for each module in-place, without navigating to a separate settings view. The frequency configuration surfaced here is the same per-device-type frequency from E011; modules define device types (per ADR-0009), so per-module frequency equals per-type frequency.
+- **Actors**: Operator
+- **Key entities**: Module, Schedule
+- **Depends on**: E008, E011
+- **Dependency contracts**: Extends the Modules page UI from E008; reads and writes the per-type schedule configuration from E011.
+- **Depended on by**: —
+- **Produces (shared)**: Frequency editor component on the Modules page
+- **Constraints**: Must match the existing per-type schedule configuration backend from E011; read-only on the Modules page for consistency with the scheduler's state
+- **Acceptance criteria**:
+  - [ ] Each module row on the Modules page displays its current automatic check frequency.
+  - [ ] The frequency is editable inline (e.g. dropdown or input) from the Modules page.
+  - [ ] Changing the frequency updates the scheduler's per-type interval and persists across restarts.
+  - [ ] The Modules page frequency control matches the behavior of any other frequency configuration surface.
+- **Specify input**:
+  - **Description**: Make per-module automatic check frequency editable inline on the Modules management page.
+  - **Actors**: Operator
+  - **Key entities**: Module, Schedule
+  - **Depends on artifacts**: E008 Modules page, E011 scheduler configuration
+  - **Constraints**: Same backend as E011; inline editing; restart-persistent
+
 ## Coverage Validation
 
 ### PRD Capability Coverage
@@ -765,7 +799,7 @@ graph LR
 | CAP-001 Device Inventory & Lifecycle | P1 | E005, E022 |
 | CAP-002 Extension Module Engine & Authoring Contract | P1 | E006 |
 | CAP-003 Module Lifecycle Management | P1 | E008 |
-| CAP-004 Automated Scheduled Checking | P1 | E011 |
+| CAP-004 Automated Scheduled Checking | P1 | E011, E026 |
 | CAP-005 Manual On-Demand Checking | P1 | E010 |
 | CAP-006 Update Detection & Comparison | P1 | E009 |
 | CAP-007 Notification & Alerting | P1 | E012 |
@@ -825,7 +859,7 @@ graph LR
 | `/healthz` | E001 | Container HEALTHCHECK, E002 |
 | `/api/v1/devices`, `/api/v1/device-types` | E005 | E010, E016 |
 | `/api/v1/devices` (module-linked) | E022 | E010, E016 |
-| `/api/v1/modules` | E008 | E016 |
+| `/api/v1/modules` | E008 | E016, E026 |
 | `/api/v1/checks` | E010 | E016 |
 | `/api/v1/notifications` | E012 | UI config |
 | `/api/v1/activity` | E014 | E016 |
@@ -838,7 +872,7 @@ graph LR
 | DB connection, migration runner, repository base | E004 | E005, E006, E008, E009, E011, E012, E013, E014, E019, E021 |
 | ScrapeClient | E007 | E006, E015, E020, E017, E023, E024 |
 | Module engine + authoring contract | E006 | E008, E009, E015, E020, E017, E021, E023, E024 |
-| Scheduler service | E011 | E012, E014, E019 |
+| Scheduler service | E011 | E012, E014, E019, E026 |
 | Notifier service | E012 | — |
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |
 
