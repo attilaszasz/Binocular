@@ -10,14 +10,20 @@ from fastapi import FastAPI
 
 from binocular.auth import BasicAuthMiddleware
 from binocular.config import Settings, get_settings
+from binocular.db.connection import ConnectionManager
 from binocular.db.migrations import MigrationRunner
+from binocular.extensions.loader import ModuleLoader
+from binocular.extensions.runner import ModuleRunner
 from binocular.logging import configure_logging
 from binocular.repositories.inventory import InventoryRepository
+from binocular.repositories.modules import ModuleRepository
 from binocular.repositories.notifications import NotificationChannelRepository
 from binocular.repositories.schedules import ScheduleRepository
 from binocular.routes import api_router
+from binocular.scraping.client import ScrapeClient
 from binocular.services.backup import BackupService
 from binocular.services.checks import CheckService
+from binocular.services.notifications import NotifierService
 from binocular.services.scheduler import SchedulerService
 from binocular.static import mount_spa
 
@@ -133,11 +139,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             sched_conn = await sched_manager.open()
             sched_repo = ScheduleRepository(sched_conn)
             inv_repo = InventoryRepository(sched_conn)
+            mod_repo = ModuleRepository(sched_conn)
+            notifier_repo = NotificationChannelRepository(sched_conn)
+            mod_loader = ModuleLoader(resolved_settings.modules_dir)
+            mod_runner = ModuleRunner(
+                timeout_seconds=resolved_settings.module_timeout_seconds,
+            )
+            scrape_client = ScrapeClient(
+                user_agent=resolved_settings.scrape_user_agent,
+                timeout_seconds=resolved_settings.scrape_timeout_seconds,
+                rate_limit_interval_seconds=resolved_settings.scrape_rate_limit_interval_seconds,
+                max_retries=resolved_settings.scrape_max_retries,
+                backoff_base_seconds=resolved_settings.scrape_backoff_base_seconds,
+            )
 
             def _check_service_factory() -> CheckService:
-                """Placeholder factory — CheckService requires per-request connections
-                and is not used by reschedule_type()."""
-                raise RuntimeError("CheckService is not available for the scheduler lifecycle")
+                return CheckService(
+                    inventory_repository=inv_repo,
+                    module_repository=mod_repo,
+                    module_loader=mod_loader,
+                    module_runner=mod_runner,
+                    scrape_client=scrape_client,
+                    notifier_service=NotifierService(notifier_repo),
+                )
 
             scheduler_service = SchedulerService(
                 sched_repo,

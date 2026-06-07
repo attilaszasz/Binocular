@@ -133,7 +133,7 @@ class SchedulerService:
             async def _check_one(device: DeviceRecord) -> bool:
                 async with semaphore:
                     result = await checks.run_device_check(
-                        device.id, module_id=self._resolve_module(device)
+                        device.id, module_id=device.module_id_str or str(device.module_id)
                     )
                     return result.status != "failed"
 
@@ -166,7 +166,3 @@ class SchedulerService:
             )
         finally:
             self._active_runs[device_type_id] = False
-
-    def _resolve_module(self, device: DeviceRecord) -> str:
-        """Resolve a check-capable module for a device (placeholder)."""
-        return "default"
