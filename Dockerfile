@@ -27,7 +27,7 @@ RUN groupadd --system binocular \
 RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN mkdir -p /app/data /app/modules
+RUN mkdir -p /app/data /app/modules && chmod 755 /app
 COPY --from=builder /wheels/*.whl /tmp/
 RUN python -m pip install --no-cache-dir --root-user-action=ignore /tmp/*.whl \
     && rm /tmp/*.whl
