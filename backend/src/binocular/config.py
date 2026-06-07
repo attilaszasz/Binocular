@@ -8,6 +8,18 @@ from typing import Any, Literal, Self
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_NOTIFICATION_ENV_MAP: dict[str, str] = {
+    "smtp_host": "SMTP_HOST",
+    "smtp_port": "SMTP_PORT",
+    "smtp_use_tls": "SMTP_USE_TLS",
+    "smtp_username": "SMTP_USERNAME",
+    "smtp_password": "SMTP_PASSWORD",
+    "mail_from": "SMTP_FROM",
+    "mail_to": "SMTP_TO",
+    "gotify_url": "GOTIFY_URL",
+    "gotify_token": "GOTIFY_TOKEN",
+}
+
 
 class Settings(BaseSettings):
     """Typed runtime settings with zero-configuration defaults."""
@@ -35,6 +47,17 @@ class Settings(BaseSettings):
     backup_schedule_hours: int = Field(default=24, ge=0)
     backup_retention_count: int = Field(default=7, ge=0)
 
+    # Notification channel settings (seeded from unprefixed env vars at startup)
+    smtp_host: str | None = None
+    smtp_port: int | None = None
+    smtp_use_tls: bool | None = None
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    mail_from: str | None = None
+    mail_to: str | None = None
+    gotify_url: str | None = None
+    gotify_token: str | None = None
+
     @property
     def resolved_database_path(self) -> Path:
         """Return the effective SQLite database path."""
@@ -56,10 +79,12 @@ class Settings(BaseSettings):
     @model_validator(mode="before")
     @classmethod
     def load_file_secrets(cls, data: Any) -> Any:
-        """Load supported `_FILE` secrets before normal settings validation."""
+        """Load `_FILE` secrets and notification env vars before normal settings validation."""
 
         values = dict(data) if isinstance(data, dict) else {}
         cls._load_secret(values, "auth_password", "BINOCULAR_AUTH_PASSWORD")
+        for field, env_name in _NOTIFICATION_ENV_MAP.items():
+            cls._load_env(values, field, env_name)
         return values if isinstance(data, dict) else data
 
     @model_validator(mode="after")
@@ -90,6 +115,30 @@ class Settings(BaseSettings):
         if not secret:
             raise ValueError(f"{file_env_name} is empty")
         values[field_name] = secret
+
+    @staticmethod
+    def _load_env(values: dict[str, Any], field_name: str, env_name: str) -> None:
+        """Read a notification env var (with optional _FILE support) into the values dict."""
+        file_env_name = f"{env_name}_FILE"
+        file_path = os.environ.get(file_env_name)
+        if file_path:
+            direct_env_value = os.environ.get(env_name)
+            direct_value = values.get(field_name)
+            if direct_env_value is not None or direct_value is not None:
+                raise ValueError(f"{env_name} and {file_env_name} cannot both be set")
+            path = Path(file_path)
+            try:
+                secret = path.read_text(encoding="utf-8").removesuffix("\n")
+            except OSError as error:
+                raise ValueError(f"{file_env_name} is not readable") from error
+            if not secret:
+                raise ValueError(f"{file_env_name} is empty")
+            values[field_name] = secret
+            return
+
+        val = os.environ.get(env_name)
+        if val is not None:
+            values[field_name] = val
 
     model_config = SettingsConfigDict(env_prefix="BINOCULAR_", extra="ignore")
 
