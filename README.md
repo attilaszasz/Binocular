@@ -133,6 +133,23 @@ The container runs as the non-root `binocular` user and uses a shallow `/healthz
 
 Both volumes must be persistent. Backing up Binocular means backing up the `binocular-data` volume — a single SQLite file contains all state. Copy the volume files or use the built-in scheduled backup job (see below).
 
+### User Mapping (PUID/PGID)
+
+If the mounted volumes are owned by a specific host user, the container's file operations may fail with permission errors. Set `PUID` and `PGID` environment variables to match your host user:
+
+```yaml
+services:
+  binocular:
+    image: ghcr.io/<owner>/binocular:latest
+    environment:
+      - PUID=1000   # your host user ID (run `id -u`)
+      - PGID=1000   # your host group ID (run `id -g`)
+```
+
+- Both default to `1000` when not set — the container works with zero configuration.
+- Environment variable names are case-sensitive and must be uppercase.
+- The entrypoint temporarily runs as root to create the matching user and group, `chown` the volumes, and then drops privileges before launching the application.
+
 ---
 
 ## Ports

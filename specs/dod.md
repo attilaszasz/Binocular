@@ -68,7 +68,7 @@ flowchart LR
 - **Compute model**: A single Docker container managed by Docker / Docker Compose. No orchestrator (Kubernetes/Swarm) assumed or required.
 - **Networking**: One exposed port (`8000`) on the trusted LAN. TLS, if desired, is provided by the operator's own reverse proxy (e.g. Caddy/Traefik/Nginx) — out of scope for the image.
 - **Storage infrastructure**: Two persistent volumes — `/app/data` (SQLite `binocular.db`) and `/app/modules` (user extension `.py` files). Operator-managed; backed up by file/volume copy.
-- **Container hardening**: Non-root fixed UID (e.g. `10001`), `no-new-privileges:true`, `cap_drop: [ALL]`; optional `read_only` rootfs with a `tmpfs` for `/tmp`. See {SAD:ADR-0008}, {SAD:ADR-0001}.
+- **Container hardening**: Non-root user configurable via `PUID`/`PGID` environment variables (default `PUID=1000 PGID=1000`), applied at entrypoint via user/group creation and `su-exec`; `no-new-privileges:true`, `cap_drop: [ALL]`; optional `read_only` rootfs with a `tmpfs` for `/tmp`. See {SAD:ADR-0008}, {SAD:ADR-0001}.
 
 ### Infrastructure Diagram
 
@@ -212,6 +212,16 @@ flowchart LR
 - **Tradeoffs**: Slightly more logic than a file copy; negligible at this scale.
 - **Consequences**: RPO ≤ 24h / RTO ≤ 1h are achievable with a single offsite copy.
 
+### DDR-004: Linuxserver-style PUID/PGID entrypoint for configurable container user
+
+- **Status**: Accepted
+- **Context**: Operators mount persistent volumes owned by arbitrary host UIDs. A fixed non-root UID in the container (as initially shipped) requires the operator either to `chown` the volume before first run or to accept files created by a mismatched UID, both of which create friction and potential permission errors. The trusted-LAN security model in {SAD:ADR-0008} mandates non-root execution but does not prescribe the mechanism.
+- **Decision**: Adopt the linuxserver.io pattern: an entrypoint script reads `PUID` and `PGID` environment variables (defaulting to `1000:1000`), creates a matching user/group if absent, `chown`s the `/app/data` and `/app/modules` volumes to that user, then uses `su-exec` (or `gosu`) to drop privileges before launching uvicorn.
+- **Rationale**: Single established convention familiar to homelab operators; eliminates the most common "permission denied" support issue; backward compatible (default PUID/PGID preserves existing behavior for operators who do not set them).
+- **Alternatives Considered**: Document fixed UID and let operator `chown` (rejected — adds friction and support burden per {DDR-002} minimal-ops posture); `setpriv`/`chpst` (rejected — less familiar than `su-exec`/`gosu` to the target audience).
+- **Tradeoffs**: Adds a small entrypoint script and the `su-exec` binary to the image (~25 KB); the re-chown on every start provides a correctness guarantee at the cost of a few milliseconds on container start.
+- **Consequences**: Operators can set `PUID=1000 PGID=1000` in `docker-compose.yml` to match their host UID without chowning volumes manually; the entrypoint becomes the single place where container user identity is managed.
+
 ## Risks, Assumptions, Constraints, and Open Questions
 
 ### Risks
@@ -236,5 +246,4 @@ flowchart LR
 ### Open Questions
 
 - Should a scheduled backup-to-path job be enabled by default, or opt-in via env var?
-- Should the image adopt linuxserver-style `PUID`/`PGID` re-chown at entrypoint, or document the fixed non-root UID and let operators `chown` the volume?
 - Should optional basic auth be defaulted on (or strongly prompted) for operators who reverse-proxy the UI beyond the trusted LAN?

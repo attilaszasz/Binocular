@@ -154,7 +154,7 @@ A multi-stage Docker build compiles the Vite frontend in a Node stage and copies
 
 ### Security
 
-Trusted-LAN, single-user model: no authentication by default, with optional basic-auth middleware for operators who expose the UI more broadly. Extension modules execute in-process with **no sandbox** — an explicit, accepted arbitrary-code-execution trust boundary mitigated (not eliminated) by non-root container execution and operator vetting. Secrets (SMTP/Gotify credentials) load via environment variables / `_FILE` Docker-secret patterns and are never hardcoded; raw SQL uses parameterized queries exclusively. See {SAD:ADR-0008}, {SAD:ADR-0005}.
+Trusted-LAN, single-user model: no authentication by default, with optional basic-auth middleware for operators who expose the UI more broadly. Extension modules execute in-process with **no sandbox** — an explicit, accepted arbitrary-code-execution trust boundary mitigated (not eliminated) by non-root container execution (with configurable UID/GID via `PUID`/`PGID` entrypoint) and operator vetting. Secrets (SMTP/Gotify credentials) load via environment variables / `_FILE` Docker-secret patterns and are never hardcoded; raw SQL uses parameterized queries exclusively. See {SAD:ADR-0008}, {SAD:ADR-0005}.
 
 ### Reliability
 
@@ -174,7 +174,7 @@ Outbound only: manufacturer firmware pages are scraped through the host-provided
 
 ### Operations
 
-Distributed primarily as a Docker image (single port, two volumes, non-root, healthcheck), with a host-runtime fallback. Zero-config startup with sensible defaults; `BINOCULAR_DB_PATH` configurable. Dependencies pinned (lock file with hashes). A standalone module dev/test kit lets authors validate modules locally against the same polite HTTP client.
+Distributed primarily as a Docker image (single port, two volumes, non-root with PUID/PGID configurable user via entrypoint, healthcheck), with a host-runtime fallback. Zero-config startup with sensible defaults; `BINOCULAR_DB_PATH` configurable. Dependencies pinned (lock file with hashes). A standalone module dev/test kit lets authors validate modules locally against the same polite HTTP client.
 
 ## Quality Attributes
 

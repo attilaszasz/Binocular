@@ -11,6 +11,8 @@ services:
       - binocular-modules:/app/modules
     environment:
       BINOCULAR_AUTH_ENABLED: "false"
+      # PUID=1000   # uncomment to set container user ID (run `id -u`)
+      # PGID=1000   # uncomment to set container group ID (run `id -g`)
 
 volumes:
   binocular-data:

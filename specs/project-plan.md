@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 24 (P1: 14 · P2: 9 · P3: 1) | **Waves**: 8
+**Total Epics**: 25 (P1: 15 · P2: 9 · P3: 1) | **Waves**: 9
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -79,6 +79,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 - [X] E023 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Panasonic Lumix Lenses Module — Panasonic Lumix Lenses detection from https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html with fixtures
 - [X] E024 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Godox Flashes Module — Godox Flashes detection from https://www.godox.com/firmware-flash/ with pagination-aware parsing and fixtures
 
+### Wave 9 — Container Operability
+
+> Depends only on E001 (application skeleton & container). Adds the entrypoint-based PUID/PGID support for configurable container user permissions.
+
+- [X] E025 [P1] [OPERATIONAL] {SAD:ADR-0008}{DOD:DDR-004} PUID/PGID Entrypoint — add entrypoint script that reads PUID/PGID env vars, creates matching user/group, chowns volumes, and drops privileges via su-exec before launching uvicorn
+
 ## Dependency Diagram
 
 Activity-on-arrow style: nodes are milestones, arrows are epics. `<br>` denotes parallel epics released into the same milestone.
@@ -108,6 +114,9 @@ graph LR
 
     M7 --> M8["All official<br>modules"]
     M8 -->|"E023 · E024"| M8
+
+    M1 --> M9["Container<br>operability"]
+    M9 -->|E025| M9
 ```
 
 ## Execution Wave Summary
@@ -122,6 +131,7 @@ graph LR
 | 6 | E012, E014, E019, E021 | Yes | Notifications complete the loop; logging, backups, and auto module seeding added. |
 | 7 | E016 | N/A (single) | Responsive/dark-mode polish across existing surfaces. |
 | 8 | E023, E024 | Yes | Panasonic Lumix Lenses and Godox Flashes modules with fixtures and golden tests. |
+| 9 | E025 | N/A (single) | PUID/PGID entrypoint for configurable container user permissions. |
 
 ## Parallel Execution Guidance
 
@@ -720,7 +730,31 @@ graph LR
   - **Actors**: Operator
   - **Key entities**: UI views, theme
   - **Depends on artifacts**: E003 shell, E005/E008/E010 views
-  - **Constraints**: Mobile+desktop parity; dark mode first-class
+   - **Constraints**: Mobile+desktop parity; dark mode first-class
+
+### E025 — PUID/PGID Entrypoint
+
+- **Category**: OPERATIONAL | **Priority**: P1
+- **Source**: {SAD:ADR-0008}, {DOD:DDR-004}
+- **Scope**: Add a Docker entrypoint script that reads `PUID` and `PGID` environment variables, creates a matching user and group, chowns `/app/data` and `/app/modules` to that user, and drops privileges via `su-exec` before launching uvicorn. Default to `PUID=1000 PGID=1000` for backward compatibility. This resolves the open question from {DOD:DDR-004} and implements the linuxserver.io PUID/PGID pattern.
+- **Actors**: Operator, system
+- **Key entities**: Entrypoint script, `su-exec` binary
+- **Depends on**: E001
+- **Dependency contracts**: Extends the Dockerfile from E001 with an entrypoint layer; relies on `su-exec` (or `gosu`) availability in the runtime image.
+- **Depended on by**: —
+- **Produces (shared)**: `docker/entrypoint.sh` (or similar); updated `Dockerfile` entrypoint directive
+- **Constraints**: Must not break existing zero-config startup (no env vars required); must preserve non-root execution from {SAD:ADR-0008}; re-chown on every start for volume permission correctness.
+- **Acceptance criteria**:
+  - [ ] Setting `PUID=1001 PGID=1001` creates a user with UID 1001 and GID 1001 inside the container.
+  - [ ] The `/app/data` and `/app/modules` directories are owned by the configured user after entrypoint runs.
+  - [ ] Uvicorn launches as the configured user, not root.
+  - [ ] With no `PUID`/`PGID` set, the container starts successfully with default values.
+- **Specify input**:
+  - **Description**: Linuxserver-style PUID/PGID entrypoint for configurable container user permissions.
+  - **Actors**: Operator, system
+  - **Key entities**: Entrypoint script, su-exec
+  - **Depends on artifacts**: E001 Dockerfile
+  - **Constraints**: Zero-config backward compatible; non-root; re-chown on start
 
 ## Coverage Validation
 
@@ -753,7 +787,7 @@ graph LR
 | ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E006, E021, E023 |
 | ADR-0006 Centralized responsible-scraping client | accepted | E007, E023 |
 | ADR-0007 APScheduler + Apprise | accepted | E011 (scheduling), E012 (notifications) |
-| ADR-0008 Trusted-LAN security, optional basic auth | accepted | E013 |
+| ADR-0008 Trusted-LAN security, optional basic auth | accepted | E013, E025 |
 | ADR-0009 Module-derived device type | accepted | E022 |
 
 ### DOD DDR Coverage
@@ -763,11 +797,13 @@ graph LR
 | DDR-001 GitHub Actions → multi-arch GHCR via SemVer | accepted | E002 (CI base), E018 (release/publish) |
 | DDR-002 Minimal homelab ops posture | accepted | E002 (logs/build gate), E013 (healthcheck/operability) |
 | DDR-003 SQLite live-safe backups | accepted | E004 (pre-migration snapshot), E019 (scheduled backup + restore) |
+| DDR-004 Linuxserver-style PUID/PGID entrypoint | accepted | E025 |
 
 ### Uncovered Items
 
 - None. Every PRD capability, every `accepted` ADR, and every DDR maps to at least one epic.
 - Note: E022 (Device-Module Linking & Refactor) is a new P1 epic that supersedes the standalone DeviceType approach in E005. ADR-0009 documents this decision.
+- Note: E025 (PUID/PGID Entrypoint) is a new P1 operational epic that implements the linuxserver-style PUID/PGID entrypoint pattern, resolving the open question in {DOD:DDR-004}.
 
 ## Shared Artifact Surface
 

@@ -254,7 +254,7 @@ Homelab users expect "set and forget" reliability and privacy.
 
 [ ] Data Persistence: Are all database files and logs stored in a single, clearly defined /data volume?
 
-[ ] Container User Permissions: Does the Docker container run as a non-root user (PUID/PGID support)?
+[X] Container User Permissions: Does the Docker container run as a non-root user (PUID/PGID support)?
 
 [ ] Logs: Are logs output to stdout/stderr (for Docker logs) and optionally a rolling file?
 

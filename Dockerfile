@@ -24,16 +24,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN groupadd --system binocular \
     && useradd --system --gid binocular --home-dir /app --create-home binocular
 
+RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-RUN mkdir -p /app/data /app/modules \
-    && chown -R binocular:binocular /app/data /app/modules
+RUN mkdir -p /app/data /app/modules
 COPY --from=builder /wheels/*.whl /tmp/
 RUN python -m pip install --no-cache-dir --root-user-action=ignore /tmp/*.whl \
     && rm /tmp/*.whl
 
-USER binocular
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).read()"
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uvicorn", "binocular.main:app", "--host", "0.0.0.0", "--port", "8000"]
