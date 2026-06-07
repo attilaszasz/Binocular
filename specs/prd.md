@@ -30,7 +30,7 @@ The cost of not solving it: degraded device functionality, missed security fixes
 
 Evidence is observational and domain-driven rather than formal market research, consistent with an open-source prosumer tool:
 
-- Manufacturers (e.g., Sony Alpha, Panasonic Lumix) publish firmware on heterogeneous, frequently-changing support portals with no unified update feed for offline devices.
+- Manufacturers (e.g., Sony Alpha, Panasonic Lumix, Godox Flashes) publish firmware on heterogeneous, frequently-changing support portals with no unified update feed for offline devices.
 - The homelab/self-hosting community has well-documented, consistent product expectations: zero-config first run, single-volume data persistence, non-root containers, dark mode, and honest failure signaling. These expectations are treated as product requirements here, not nice-to-haves.
 - Responsible-scraping norms (RFC 9309 robots.txt protocol; descriptive User-Agent identifying the tool; rate limiting and backoff) are established and expected of any tool that fetches third-party pages. Public-data scraping has favorable but **not** absolute legal standing (e.g., *hiQ v. LinkedIn*); ToS and cease-and-desist risk remain.
 - Because the product cannot collect telemetry, success must be validated as correctness (right version, no missed updates, no false alerts) before release rather than measured in the field.
@@ -85,7 +85,7 @@ The v1 product scope equals the full product brief: a complete detect → compar
 - Update detection, version comparison, and notification dispatch via Email/SMTP and Gotify.
 - Responsible-scraping enforcement (robots.txt, identifiable User-Agent, rate limiting, backoff) provided centrally by the host.
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
-- Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, and Panasonic Lumix Lenses that are automatically seeded and registered in the database on startup as working examples and templates.
+- Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, and Godox Flashes that are automatically seeded and registered in the database on startup as working examples and templates.
 - Self-hosted operability: Docker distribution, single data volume, zero-config startup, non-root execution, responsive UI with dark mode.
 - Local module sharing enablement: an authoring contract and import/export, plus authoring guidance for module creators.
 
@@ -115,7 +115,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-008 | Responsible Scraping Enforcement | P1 | All outbound checks honor robots.txt, identifiable User-Agent, rate limits, and backoff by default. |
 | CAP-009 | Self-Hosted Operability | P1 | Single-container, single-volume, zero-config, non-root deployment that survives restarts and upgrades with no data loss. |
 | CAP-010 | Activity Logging & Visibility | P2 | All check activity and errors are recorded in a size-bounded, in-UI viewable log. |
-| CAP-011 | Official Starter Modules | P2 | Sony Alpha, Panasonic Lumix MFT Cameras, and Panasonic Lumix Lenses modules are automatically registered and seeded in the database on startup, serving as immediate value and templates. |
+| CAP-011 | Official Starter Modules | P2 | Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, and Godox Flashes modules are automatically registered and seeded in the database on startup, serving as immediate value and templates. |
 | CAP-012 | Responsive UI & Dark Mode | P2 | The interface is fully usable on mobile and desktop with first-class dark mode. |
 | CAP-013 | Module Authoring Guidance & Dev Kit | P3 | Authoring docs and a standalone test path help users create and verify valid modules locally. |
 
@@ -152,7 +152,7 @@ Success is defined by **reliability and correctness**, validated before release 
 
 ## Dependencies
 
-- Manufacturer firmware pages' structure and availability (Sony Alpha, Panasonic Lumix, and any user-added sources).
+- Manufacturer firmware pages' structure and availability (Sony Alpha, Panasonic Lumix, Godox Flashes, and any user-added sources).
 - An SMTP server and/or a Gotify instance for notification delivery.
 - A Docker/OCI-compatible runtime and a persistent volume for data and modules.
 - Network egress from the trusted LAN to manufacturer sites.
@@ -177,11 +177,11 @@ Success is defined by **reliability and correctness**, validated before release 
 
 Validation is correctness-first and pre-release, since the product collects no field telemetry:
 
-- **Fixture-based correctness**: Captured real-page snapshots for the official Sony and Panasonic modules verify that detected latest versions match the actual published versions, with regression coverage when sources change.
+- **Fixture-based correctness**: Captured real-page snapshots for the official Sony, Panasonic, and Godox modules verify that detected latest versions match the actual published versions, with regression coverage when sources change.
 - **End-to-end alert-path smoke test**: Exercise the full detect → compare → notify loop for both notification channels (Email/SMTP and Gotify).
 - **Operability smoke test**: Verify zero-config startup, single-volume persistence, non-root execution, and no data loss across restarts and upgrades.
 - **Responsible-scraping verification**: Confirm robots.txt respect, identifiable User-Agent, rate limiting, and backoff behavior before release.
-- **Initial release**: Ship the full v1 scope with the three official modules as both immediate value and authoring templates; broader device coverage grows through user/community-authored modules.
+- **Initial release**: Ship the full v1 scope with the official modules as both immediate value and authoring templates; broader device coverage grows through user/community-authored modules.
 
 ## Domain Glossary / Terminology
 

@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 23 (P1: 14 · P2: 8 · P3: 1) | **Waves**: 8
+**Total Epics**: 24 (P1: 14 · P2: 9 · P3: 1) | **Waves**: 8
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -74,9 +74,10 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 ### Wave 8 — Additional Official Modules
 
-> No dependencies on incomplete epics. Adds the Panasonic Lumix Lenses module alongside the existing Sony Alpha and Panasonic Lumix MFT Cameras modules.
+> No dependencies on incomplete epics. Adds the Panasonic Lumix Lenses and Godox Flashes modules alongside the existing Sony Alpha and Panasonic Lumix MFT Cameras modules.
 
 - [X] E023 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Panasonic Lumix Lenses Module — Panasonic Lumix Lenses detection from https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html with fixtures
+- [ ] E024 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Godox Flashes Module — Godox Flashes detection from https://www.godox.com/firmware-flash/ with pagination-aware parsing and fixtures
 
 ## Dependency Diagram
 
@@ -104,6 +105,9 @@ graph LR
 
     M6 --> M7["Polished<br>release"]
     M7 -->|E016| M7
+
+    M7 --> M8["All official<br>modules"]
+    M8 -->|"E023 · E024"| M8
 ```
 
 ## Execution Wave Summary
@@ -117,7 +121,7 @@ graph LR
 | 5 | E010, E011, E017, E022 | No | Manual + scheduled checks, device-module linking refactor, authoring dev kit. E022 depends on E005/E008. |
 | 6 | E012, E014, E019, E021 | Yes | Notifications complete the loop; logging, backups, and auto module seeding added. |
 | 7 | E016 | N/A (single) | Responsive/dark-mode polish across existing surfaces. |
-| 8 | E023 | N/A (single) | Panasonic Lumix Lenses module with fixtures and golden tests. |
+| 8 | E023, E024 | Yes | Panasonic Lumix Lenses and Godox Flashes modules with fixtures and golden tests. |
 
 ## Parallel Execution Guidance
 
@@ -128,6 +132,7 @@ graph LR
 - **Wave 4**: E008 (module UI/API), E009 (detection service), E015 (Sony module files + fixtures), E020 (Panasonic module files + fixtures) are isolated.
 - **Wave 5**: E010 (manual-check path), E011 (scheduler), E017 (docs/dev-kit), E022 (device-module linking refactor). E022 depends on E005/E008 and is not parallel with those.
 - **Wave 6**: E012 (notifier), E014 (activity log), E019 (backup job/runbook), E021 (module seeding) are isolated.
+- **Wave 8**: E023 (Panasonic Lumix Lenses module files + fixtures) and E024 (Godox Flashes module files + fixtures) are isolated — distinct source URLs and fixture corpora.
 
 ### Integration Risks
 
@@ -573,6 +578,32 @@ graph LR
   - **Constraints**: Fixture-validated; reference-quality; no direct HTTP imports
 - **Pipeline hints**: lightweight
 
+### E024 — Official Godox Flashes Module
+
+- **Category**: PRODUCT | **Priority**: P2
+- **Source**: {PRD:CAP-011}
+- **Scope**: Ship the official Godox Flashes module as a companion to the existing official starter modules, with captured page fixtures from `https://www.godox.com/firmware-flash/` and golden tests verifying detected-latest correctness for flash models (e.g., iT32, V100S). The firmware listing is paginated and ordered by most recent updates; the parser must handle pagination stepping or search-box filtering to locate specific device models.
+- **Actors**: Operator, module author
+- **Key entities**: Module, page fixtures
+- **Depends on**: E006, E007
+- **Dependency contracts**: Implements the authoring contract from E006; fetches via the scraping client from E007.
+- **Depended on by**: —
+- **Produces (shared)**: Godox Flashes module; Godox Flashes fixture corpus; golden tests
+- **Constraints**: Fixture-based correctness validation at release; serves as a reference template; must not import direct HTTP clients (httpx, requests); must handle paginated firmware listing ordered by most recent updates
+- **Acceptance criteria**:
+  - [ ] The Godox Flashes module detects the latest version against captured fixtures.
+  - [ ] Golden/fixture regression tests cover the Godox Flashes module (including iT32 V1.15→V1.17 and V100S V1.04→V1.06 test cases).
+  - [ ] The module validates correctly via the dev kit (`python -m binocular.extensions.devkit check`).
+  - [ ] The module is auto-discovered and seeded by the seeder (E021) on startup.
+  - [ ] The parser correctly steps through paginated results or uses search-box filtering to locate specific device models.
+- **Specify input**:
+  - **Description**: Official Godox Flashes module with fixtures and golden correctness tests, scraping `https://www.godox.com/firmware-flash/` with pagination-aware parsing for iT32 and V100S flash models.
+  - **Actors**: Operator, module author
+  - **Key entities**: Module, page fixtures
+  - **Depends on artifacts**: E006 contract, E007 client
+  - **Constraints**: Fixture-validated; reference-quality; no direct HTTP imports; pagination-aware
+- **Pipeline hints**: lightweight
+
 ### E012 — Notification & Alerting
 
 - **Category**: PRODUCT | **Priority**: P1
@@ -647,7 +678,7 @@ graph LR
 
 - **Category**: TECHNICAL | **Priority**: P2
 - **Source**: {PRD:CAP-011}{SAD:ADR-0005}
-- **Scope**: Automatically register and seed bundled official starter modules (Sony Alpha and Panasonic Lumix) in the database and user modules directory on application startup. Ensure idempotency based on version and source file hash to avoid redundant writes.
+- **Scope**: Automatically register and seed bundled official starter modules (Sony Alpha, Panasonic Lumix, and Godox Flashes) in the database and user modules directory on application startup. Ensure idempotency based on version and source file hash to avoid redundant writes.
 - **Actors**: System
 - **Key entities**: ModuleRecord, ModuleLifecycleService, app lifespan
 - **Depends on**: E004, E006
@@ -661,7 +692,7 @@ graph LR
   - [ ] Valid modules are automatically copied to `/app/modules/` and seeded into the SQLite DB if missing or version/hash has changed.
   - [ ] Seeding is fully idempotent and does not overwrite modified user modules or cause startup loops.
 - **Specify input**:
-  - **Description**: Implement automatic discovery, validation, and seeding/registration of official starter modules (Sony and Panasonic) into the database on startup.
+  - **Description**: Implement automatic discovery, validation, and seeding/registration of official starter modules (Sony Alpha, Panasonic Lumix, and Godox Flashes) into the database on startup.
   - **Actors**: System
   - **Key entities**: ModuleRecord, ModuleLifecycleService
   - **Depends on artifacts**: E006 module engine, E004 SQLite database
@@ -707,7 +738,7 @@ graph LR
 | CAP-008 Responsible Scraping Enforcement | P1 | E007 |
 | CAP-009 Self-Hosted Operability | P1 | E013 |
 | CAP-010 Activity Logging & Visibility | P2 | E014 |
-| CAP-011 | Official Starter Modules | P2 | E015, E020, E021, E023 |
+| CAP-011 | Official Starter Modules | P2 | E015, E020, E021, E023, E024 |
 | CAP-012 | Responsive UI & Dark Mode | P2 | E016 |
 | CAP-013 | Module Authoring Guidance & Dev Kit | P3 | E017 |
 
@@ -769,8 +800,8 @@ graph LR
 |--------|---------------|-------------|
 | App factory + router aggregator, structlog config | E001 | All |
 | DB connection, migration runner, repository base | E004 | E005, E006, E008, E009, E011, E012, E013, E014, E019, E021 |
-| ScrapeClient | E007 | E006, E015, E020, E017, E023 |
-| Module engine + authoring contract | E006 | E008, E009, E015, E020, E017, E021, E023 |
+| ScrapeClient | E007 | E006, E015, E020, E017, E023, E024 |
+| Module engine + authoring contract | E006 | E008, E009, E015, E020, E017, E021, E023, E024 |
 | Scheduler service | E011 | E012, E014, E019 |
 | Notifier service | E012 | — |
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |
