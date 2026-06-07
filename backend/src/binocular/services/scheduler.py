@@ -133,7 +133,9 @@ class SchedulerService:
             async def _check_one(device: DeviceRecord) -> bool:
                 async with semaphore:
                     result = await checks.run_device_check(
-                        device.id, module_id=device.module_id_str or str(device.module_id)
+                        device.id,
+                        module_id=device.module_id_str or str(device.module_id),
+                        trigger="scheduled",
                     )
                     return result.status != "failed"
 

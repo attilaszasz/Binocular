@@ -20,6 +20,7 @@ class DeviceRecord:
     last_checked_at: str | None
     last_success_at: str | None
     status: str
+    last_notified_version: str | None
     created_at: str
     updated_at: str
 
@@ -146,7 +147,9 @@ class InventoryRepository(Repository):
                    d.name, d.model,
                    d.current_version, d.latest_version,
                    d.last_checked_at, d.last_success_at,
-                   d.last_check_status AS status, d.created_at, d.updated_at
+                   d.last_check_status AS status,
+                   d.last_notified_version,
+                   d.created_at, d.updated_at
             FROM devices d
             LEFT JOIN modules m ON m.id = d.module_id
             WHERE d.id = ? AND d.is_archived = 0
@@ -173,7 +176,9 @@ class InventoryRepository(Repository):
                    d.name, d.model,
                    d.current_version, d.latest_version,
                    d.last_checked_at, d.last_success_at,
-                   d.last_check_status AS status, d.created_at, d.updated_at
+                   d.last_check_status AS status,
+                   d.last_notified_version,
+                   d.created_at, d.updated_at
             FROM devices d
             LEFT JOIN modules m ON m.id = d.module_id
             WHERE d.is_archived = 0
@@ -195,6 +200,24 @@ class InventoryRepository(Repository):
         )
         return row_count
 
+    async def record_notification_dispatched(
+        self, device_id: int, version: str
+    ) -> int:
+        """Persist last_notified_version after a confirmed dispatch.
+
+        Returns the affected row count (0 if device is archived or not found).
+        """
+        row_count = await self.execute(
+            """
+            UPDATE devices
+            SET last_notified_version = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND is_archived = 0
+            """,
+            (version, device_id),
+        )
+        return row_count
+
     @staticmethod
     def _record_from_row(row: dict[str, object]) -> DeviceRecord:
         return DeviceRecord(
@@ -209,6 +232,7 @@ class InventoryRepository(Repository):
             last_checked_at=InventoryRepository._optional_text(row["last_checked_at"]),
             last_success_at=InventoryRepository._optional_text(row["last_success_at"]),
             status=str(row["status"]),
+            last_notified_version=InventoryRepository._optional_text(row["last_notified_version"]),
             created_at=str(row["created_at"]),
             updated_at=str(row["updated_at"]),
         )

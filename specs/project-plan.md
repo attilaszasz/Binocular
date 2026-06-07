@@ -101,7 +101,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 > Depends on E012. Adds last-notified-version tracking to suppress duplicate notifications for the same firmware version; re-notifies only when an even newer version appears.
 
-- [ ] E028 [P1] [PRODUCT] {PRD:CAP-007}{SAD:ADR-0007} Notification Deduplication — track last-notified version per device, gate repeat alerts
+- [X] E028 [P1] [PRODUCT] {PRD:CAP-007}{SAD:ADR-0007} Notification Deduplication — track last-notified version per device, gate repeat alerts
 
 ## Dependency Diagram
 

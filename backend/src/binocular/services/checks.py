@@ -82,6 +82,7 @@ class CheckService:
         self.module_runner = module_runner
         self.scrape_client = scrape_client
         self.notifier_service = notifier_service
+        self._transaction_lock = asyncio.Lock()
 
     async def run_device_check(
         self,
@@ -91,8 +92,15 @@ class CheckService:
         source_url: str | None = None,
         extra: dict[str, str] | None = None,
         _dispatch_cap: list[int] | None = None,
+        trigger: Literal["scheduled", "manual"] = "manual",
     ) -> CheckResult:
         """Run one module check for one active device."""
+
+        _LOGGER.info(
+            "check_initiated",
+            device_id=device_id,
+            trigger=trigger,
+        )
 
         device = await self.inventory_repository.get_device(device_id)
         if device is None:
@@ -197,13 +205,117 @@ class CheckService:
         status: Literal["up_to_date", "update_available"] = (
             "update_available" if comparison.is_newer else "up_to_date"
         )
-        updated = await self.inventory_repository.record_check_success(
-            device.id,
-            latest_version=module_result.latest_version,
-            status=status,
-        )
-        await self.inventory_repository.connection.commit()
 
+        # ── Dedup gate evaluation ─────────────────────────────────────
+        # Evaluate whether to dispatch a notification based on
+        # last_notified_version vs latest_version.
+        should_notify = False
+        dedup_decision: Literal["dispatched", "suppressed"] = "suppressed"
+        previous_last_notified: str | None = device.last_notified_version
+        dedup_suppressed = False  # True when version is not strictly newer
+
+        if status == "update_available":
+            last_notified = device.last_notified_version
+
+            # Empty string guard — treat as never notified (T008)
+            if last_notified is not None and last_notified.strip() == "":
+                last_notified = None
+
+            if last_notified is None:
+                # FR-003: Never notified — allow first dispatch
+                should_notify = True
+                dedup_decision = "dispatched"
+            else:
+                try:
+                    dedup_comparison = compare_versions(
+                        last_notified, module_result.latest_version
+                    )
+                    if dedup_comparison.is_newer:
+                        should_notify = True
+                        dedup_decision = "dispatched"
+                    else:
+                        dedup_suppressed = True
+                except VersionComparisonError:
+                    # FR-002 / plan.md Error Handling:
+                    # Unparseable last_notified_version → treat as NULL (never notified)
+                    # log error and allow dispatch
+                    _LOGGER.error(
+                        "invalid_last_notified_version_treated_as_null",
+                        device_id=device.id,
+                        last_notified_version=device.last_notified_version,
+                        module_id=module_id,
+                    )
+                    should_notify = True
+                    dedup_decision = "dispatched"
+
+            # Dispatch cap overrides dedup decision
+            cap_reached = _dispatch_cap is not None and _dispatch_cap[0] >= 20
+            if should_notify and cap_reached:
+                should_notify = False
+                dedup_decision = "suppressed"
+
+        # ── FR-009 dedup decision logging ─────────────────────────────
+        _LOGGER.info(
+            "notification_dedup_decision",
+            device_id=device.id,
+            latest_version=module_result.latest_version,
+            last_notified_version=device.last_notified_version,
+            decision=dedup_decision,
+            trigger=trigger,
+        )
+
+        # Adjust status: only dedup suppression downgrades to up_to_date.
+        # Cap suppression keeps update_available (the version is still newer).
+        persisted_status: Literal["up_to_date", "update_available"] = status
+        if dedup_suppressed:
+            persisted_status = "up_to_date"
+
+        # ── BEGIN IMMEDIATE transaction for serialized writes ─────────
+        updated: DeviceRecord | None = None
+        async with self._transaction_lock:
+            await self.inventory_repository.connection.execute("BEGIN IMMEDIATE")
+            try:
+                # Re-read device inside transaction to get fresh lock
+                locked_device = await self.inventory_repository.get_device(device.id)
+                if locked_device is None:
+                    await self.inventory_repository.connection.rollback()
+                    return self._unpersisted_failure(
+                        device_id,
+                        module_id,
+                        "Device not found",
+                        "device_not_found",
+                    )
+
+                updated = await self.inventory_repository.record_check_success(
+                    device.id,
+                    latest_version=module_result.latest_version,
+                    status=persisted_status,
+                )
+
+                # FR-004: Preemptively update last_notified_version inside
+                # the same transaction to close the race window with
+                # concurrent checks (FR-008).
+                # If dispatch later fails, we revert.
+                if should_notify and self.notifier_service is not None:
+                    has_channels = await self.notifier_service.has_enabled_channels()
+                    if has_channels:
+                        await self.inventory_repository.record_notification_dispatched(
+                            device.id, module_result.latest_version
+                        )
+                        _LOGGER.info(
+                            "last_notified_version_updated",
+                            device_id=device.id,
+                            previous_value=previous_last_notified,
+                            new_value=module_result.latest_version,
+                            trigger=trigger,
+                        )
+            except Exception:
+                await self.inventory_repository.connection.rollback()
+                raise
+            else:
+                await self.inventory_repository.connection.commit()
+
+        # ── Activity log ──────────────────────────────────────────────
         try:
             activity_repo = ActivityLogRepository(self.inventory_repository.connection)
             await activity_repo.log_activity(
@@ -218,25 +330,37 @@ class CheckService:
         except Exception:
             _LOGGER.exception("failed_to_persist_activity_log")
 
-        if status == "update_available" and self.notifier_service is not None:
-            # ── FR-009 dispatch cap ──────────────────────────────────
-            cap_reached = _dispatch_cap is not None and _dispatch_cap[0] >= 20
-            if cap_reached:
-                try:
-                    activity_repo = ActivityLogRepository(self.inventory_repository.connection)
-                    await activity_repo.log_activity(
-                        event_type="check",
-                        status="skipped — dispatch cap reached",
-                        message=(
-                            f"Update available for {device.model} "
-                            f"({device.device_type}) but notification skipped — "
-                            f"dispatch cap reached"
-                        ),
-                        device_name=device.model,
-                        module_name=module_id,
-                    )
-                except Exception:
-                    _LOGGER.exception("failed_to_persist_activity_log")
+        # ── Dispatch notification (outside transaction) ───────────────
+        if should_notify and self.notifier_service is not None:
+            has_channels = await self.notifier_service.has_enabled_channels()
+            if not has_channels:
+                # T009: Zero configured channels — skip dispatch, revert
+                _LOGGER.warning(
+                    "notification_skipped_zero_channels",
+                    device_id=device.id,
+                    reason="zero_channels_configured",
+                )
+                # Revert the preemptive last_notified_version update
+                async with self._transaction_lock:
+                    await self.inventory_repository.connection.execute("BEGIN IMMEDIATE")
+                    try:
+                        if previous_last_notified is None:
+                            # Set back to NULL
+                            await self.inventory_repository.connection.execute(
+                                "UPDATE devices SET last_notified_version = NULL, "
+                                "updated_at = CURRENT_TIMESTAMP "
+                                "WHERE id = ? AND is_archived = 0",
+                                (device.id,),
+                            )
+                        else:
+                            await self.inventory_repository.record_notification_dispatched(
+                                device.id, previous_last_notified
+                            )
+                    except Exception:
+                        await self.inventory_repository.connection.rollback()
+                        raise
+                    else:
+                        await self.inventory_repository.connection.commit()
             else:
                 # ── FR-007 subject line ─────────────────────────────────
                 sanitized_model = self._strip_controls(device.model)
@@ -267,15 +391,16 @@ class CheckService:
                     "timestamp": datetime.now(UTC).isoformat(),
                 }
 
+                dispatch_succeeded = False
                 try:
-                    await self.notifier_service.send_notification(
+                    dispatch_succeeded = await self.notifier_service.send_notification(
                         subject,
                         body,
                         body_format=NotifyFormat.HTML,
                         template_data=template_data,
                         device_id=device.id,
                     )
-                    if _dispatch_cap is not None:
+                    if dispatch_succeeded and _dispatch_cap is not None:
                         _dispatch_cap[0] += 1
                 except Exception as error:
                     _LOGGER.exception(
@@ -283,6 +408,33 @@ class CheckService:
                         device_id=device.id,
                         error=str(error),
                     )
+
+                if not dispatch_succeeded:
+                    # FR-005: All channels failed — revert last_notified_version
+                    _LOGGER.warning(
+                        "notification_dispatch_all_channels_failed",
+                        device_id=device.id,
+                    )
+                    async with self._transaction_lock:
+                        await self.inventory_repository.connection.execute("BEGIN IMMEDIATE")
+                        try:
+                            if previous_last_notified is None:
+                                await self.inventory_repository.connection.execute(
+                                    "UPDATE devices SET last_notified_version = NULL, "
+                                    "updated_at = CURRENT_TIMESTAMP "
+                                    "WHERE id = ? AND is_archived = 0",
+                                    (device.id,),
+                                )
+                            else:
+                                await self.inventory_repository.record_notification_dispatched(
+                                    device.id, previous_last_notified
+                                )
+                        except Exception:
+                            await self.inventory_repository.connection.rollback()
+                            raise
+                        else:
+                            await self.inventory_repository.connection.commit()
+            # ── end dispatch block ─────────────────────────────────────
 
         record = updated or await self.inventory_repository.require_device(device.id)
         diagnostics: dict[str, object] = dict(module_result.diagnostics)
@@ -296,7 +448,7 @@ class CheckService:
         return CheckResult(
             device_id=record.id,
             module_id=module_id,
-            status=status,
+            status=persisted_status,
             current_version=record.current_version,
             latest_version=record.latest_version,
             last_checked_at=record.last_checked_at,
@@ -378,6 +530,7 @@ class CheckService:
         source_url: str | None = None,
         extra: dict[str, str] | None = None,
         max_concurrency: int | None = None,
+        trigger: Literal["scheduled", "manual"] = "manual",
     ) -> list[CheckResult]:
         """Run manual checks for every active device with bounded concurrency.
 
@@ -407,6 +560,7 @@ class CheckService:
                         source_url=source_url,
                         extra=extra,
                         _dispatch_cap=dispatch_cap_counter,
+                        trigger=trigger,
                     )
 
             return list(await asyncio.gather(*(run_one_same(device) for device in devices)))
@@ -423,6 +577,7 @@ class CheckService:
                     source_url=source_url,
                     extra=extra,
                     _dispatch_cap=dispatch_cap_counter,
+                    trigger=trigger,
                 )
 
         outcomes = await asyncio.gather(*(run_one(device) for device in devices))

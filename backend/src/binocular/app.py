@@ -75,6 +75,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         runner = MigrationRunner.from_settings(resolved_settings)
         await runner.apply_pending()
 
+        # ── Startup signal: notification deduplication active ──────────
+        try:
+            sig_manager = ConnectionManager(
+                resolved_settings.resolved_database_path,
+                busy_timeout_ms=resolved_settings.sqlite_busy_timeout_ms,
+            )
+            sig_conn = await sig_manager.open()
+            try:
+                cursor = await sig_conn.execute(
+                    "SELECT COUNT(*) AS cnt FROM devices WHERE is_archived = 0"
+                )
+                row = await cursor.fetchone()
+                existing_devices_count = int(row["cnt"]) if row else 0
+            finally:
+                await sig_conn.close()
+            logger.info(
+                "notification_deduplication_active",
+                last_notified_version_column="devices.last_notified_version",
+                migration="009",
+                existing_devices_count=existing_devices_count,
+            )
+        except Exception as exc:
+            logger.error(
+                "notification_deduplication_startup_signal_failed",
+                error=str(exc),
+            )
+
         # Seed official starter modules
         from binocular.services.seeder import OfficialModuleSeeder
 

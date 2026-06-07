@@ -45,6 +45,11 @@ class NotifierService:
     # Per-channel dispatch
     # ------------------------------------------------------------------
 
+    async def has_enabled_channels(self) -> bool:
+        """Return True when at least one enabled notification channel exists."""
+        channels = await self.repository.list_channels()
+        return any(c.enabled for c in channels)
+
     async def send_notification(
         self,
         title: str,
@@ -64,7 +69,7 @@ class NotifierService:
         enabled_channels = [c for c in channels if c.enabled]
         if not enabled_channels:
             self._logger.debug("no_enabled_notification_channels")
-            return True
+            return False
 
         # FR-009: cap at 20 channels per dispatch
         max_channels = 20
@@ -76,7 +81,7 @@ class NotifierService:
             )
             enabled_channels = enabled_channels[:max_channels]
 
-        overall_success = True
+        overall_success = False
 
         for channel in enabled_channels:
             url = self.build_apprise_url(channel.type, channel.config)
@@ -85,7 +90,6 @@ class NotifierService:
                     "failed_to_build_notification_url",
                     channel_type=channel.type,
                 )
-                overall_success = False
                 continue
 
             redacted = self._redact_url(url)
@@ -151,7 +155,10 @@ class NotifierService:
                 success = False
 
             if not success:
-                overall_success = False
+                # Channel failed — overall_success stays False
+                pass
+            else:
+                overall_success = True
 
             # ── Activity log ──────────────────────────────────────────
             try:
