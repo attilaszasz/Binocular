@@ -36,26 +36,27 @@ class SchedulerService:
     async def start(self) -> None:
         """Rebuild interval jobs from persisted schedule configuration."""
         schedules = await self._schedule_repo.list_schedules()
-        if not schedules:
-            self._logger.info("scheduler_start_skipped_no_schedules")
-            return
         job_count = 0
-        for schedule in schedules:
-            if not schedule.enabled:
-                continue
-            job_id = f"scheduled_check_{schedule.device_type_id}"
-            self._scheduler.add_job(
-                self._run_scheduled_check,
-                trigger=IntervalTrigger(minutes=schedule.interval_minutes),
-                id=job_id,
-                args=[schedule.device_type_id],
-                replace_existing=True,
-                coalesce=True,
-                max_instances=1,
-            )
-            job_count += 1
-        self._logger.info("scheduler_started", job_count=job_count)
+        if schedules:
+            for schedule in schedules:
+                if not schedule.enabled:
+                    continue
+                job_id = f"scheduled_check_{schedule.device_type_id}"
+                self._scheduler.add_job(
+                    self._run_scheduled_check,
+                    trigger=IntervalTrigger(minutes=schedule.interval_minutes),
+                    id=job_id,
+                    args=[schedule.device_type_id],
+                    replace_existing=True,
+                    coalesce=True,
+                    max_instances=1,
+                )
+                job_count += 1
         self._scheduler.start()
+        if job_count:
+            self._logger.info("scheduler_started", job_count=job_count)
+        else:
+            self._logger.info("scheduler_started_no_initial_jobs")
 
     async def stop(self) -> None:
         """Shut down the scheduler gracefully."""
