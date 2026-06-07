@@ -92,7 +92,7 @@ async def test_send_notification_enabled_channels(
 
     mock_apprise_instance = MagicMock()
     mock_apprise_class.return_value = mock_apprise_instance
-    mock_apprise_instance.send.return_value = True
+    mock_apprise_instance.notify.return_value = True
     # mock_apprise_instance must support len() returning a positive count when add() is called
     mock_apprise_instance.__len__.return_value = 1
 
@@ -101,7 +101,7 @@ async def test_send_notification_enabled_channels(
 
     assert success is True
     mock_apprise_instance.add.assert_called_once_with("mailtos://smtp.test.com?to=alert%40test.com")
-    mock_apprise_instance.send.assert_called_once_with("Body", title="Title")
+    mock_apprise_instance.notify.assert_called_once_with("Body", title="Title")
 
 
 @pytest.mark.asyncio
@@ -111,7 +111,7 @@ async def test_send_test_notification(
 ) -> None:
     mock_apprise_instance = MagicMock()
     mock_apprise_class.return_value = mock_apprise_instance
-    mock_apprise_instance.send.return_value = True
+    mock_apprise_instance.notify.return_value = True
 
     service = NotifierService(mock_repository)
     success, detail = await service.send_test_notification(
@@ -121,7 +121,7 @@ async def test_send_test_notification(
     assert success is True
     assert "successfully dispatched" in detail
     mock_apprise_instance.add.assert_called_once_with("gotifys://g.com/tok")
-    mock_apprise_instance.send.assert_called_once_with(
+    mock_apprise_instance.notify.assert_called_once_with(
         "This is a test notification from Binocular verifying your setup. It works!",
         title="Binocular Notification Test",
     )

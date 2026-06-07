@@ -47,7 +47,7 @@ class NotifierService:
 
         try:
             # Dispatch synchronously inside a separate worker thread to avoid blocking event loop
-            success = await asyncio.to_thread(apobj.send, body, title=title)  # type: ignore[attr-defined]
+            success = await asyncio.to_thread(apobj.notify, body, title=title)
 
             # Log to activity log
             try:
@@ -110,7 +110,7 @@ class NotifierService:
             test_title = "Binocular Notification Test"
             test_body = "This is a test notification from Binocular verifying your setup. It works!"
 
-            success = await asyncio.to_thread(apobj.send, test_body, title=test_title)  # type: ignore[attr-defined]
+            success = await asyncio.to_thread(apobj.notify, test_body, title=test_title)
             if success:
                 return True, "Notification successfully dispatched via Apprise"
             else:
