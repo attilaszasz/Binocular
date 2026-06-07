@@ -5,21 +5,18 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from apprise import NotifyFormat
 
 from binocular.config import Settings
 from binocular.db.connection import ConnectionManager
 from binocular.db.migrations import MigrationRunner
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.runner import ModuleRunner
-from binocular.repositories.inventory import DeviceRecord, InventoryRepository
+from binocular.repositories.inventory import InventoryRepository
 from binocular.repositories.modules import ModuleRepository
-from binocular.repositories.notifications import NotificationChannelRecord
 from binocular.scraping.client import ScrapeClient
 from binocular.services.checks import CheckService
 from binocular.services.notifications import NotifierService
 from binocular.services.version_compare import compare_versions
-
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -142,12 +139,8 @@ class TestDedupGateLogic:
         assert result.is_newer is True  # initial comparison says newer
         # Dedup: last_notified is None → should_notify = True
         last_notified = None
-        should_notify = last_notified is None or compare_versions(
-            last_notified or "0", "2.0"
-        ).is_newer
-        # Simplified: NULL always notifies
+        # NULL last_notified → should notify (pass-through)
         assert last_notified is None
-        # The actual gate logic handles NULL → notify
 
     def test_known_version_redetected_suppressed(self) -> None:
         """last_notified_version="2.0", latest_version="2.0" → suppress."""
@@ -254,7 +247,6 @@ class TestRecordNotificationDispatched:
 @pytest.mark.asyncio
 async def test_first_check_notifies_and_sets_last_notified(tmp_path: Path) -> None:
     """First check on a device with NULL last_notified_version dispatches."""
-    from unittest.mock import AsyncMock
 
     inventory, modules = await open_repositories(tmp_path)
     module_path = write_module(
@@ -290,7 +282,6 @@ async def check_firmware(input, scrape_client):
 @pytest.mark.asyncio
 async def test_recheck_same_version_suppresses_notification(tmp_path: Path) -> None:
     """Re-checking the same version suppresses duplicate notification."""
-    from unittest.mock import AsyncMock
 
     inventory, modules = await open_repositories(tmp_path)
     module_path = write_module(
@@ -333,7 +324,6 @@ async def check_firmware(input, scrape_client):
 @pytest.mark.asyncio
 async def test_newer_version_notifies_after_previous_notification(tmp_path: Path) -> None:
     """Detecting a newer version after a previous notification dispatches."""
-    from unittest.mock import AsyncMock
 
     inventory, modules = await open_repositories(tmp_path)
     mock_notifier = AsyncMock()
@@ -405,7 +395,6 @@ class TestEdgeCases:
         self, tmp_path: Path
     ) -> None:
         """FR-005: When all channels fail, last_notified_version is unchanged."""
-        from unittest.mock import AsyncMock
 
         inventory, modules = await open_repositories(tmp_path)
         module_path = write_module(
@@ -444,7 +433,6 @@ async def check_firmware(input, scrape_client):
         self, tmp_path: Path
     ) -> None:
         """After all channels fail, retry dispatches notification."""
-        from unittest.mock import AsyncMock
 
         inventory, modules = await open_repositories(tmp_path)
         module_path = write_module(
@@ -490,7 +478,6 @@ async def check_firmware(input, scrape_client):
     @pytest.mark.asyncio
     async def test_partial_success_updates_last_notified(self, tmp_path: Path) -> None:
         """FR-004: At least one channel succeeds → last_notified_version updated."""
-        from unittest.mock import AsyncMock
 
         inventory, modules = await open_repositories(tmp_path)
         module_path = write_module(
@@ -527,7 +514,6 @@ async def check_firmware(input, scrape_client):
         self, tmp_path: Path
     ) -> None:
         """Zero channels → skip dispatch, leave last_notified_version unchanged."""
-        from unittest.mock import AsyncMock
 
         inventory, modules = await open_repositories(tmp_path)
         module_path = write_module(
@@ -564,7 +550,6 @@ async def check_firmware(input, scrape_client):
         self, tmp_path: Path
     ) -> None:
         """FR-008: Two concurrent checks for same device — only one notifies."""
-        from unittest.mock import AsyncMock
 
         inventory, modules = await open_repositories(tmp_path)
         module_path = write_module(
@@ -606,7 +591,6 @@ async def check_firmware(input, scrape_client):
         self, tmp_path: Path
     ) -> None:
         """Exception during dispatch leaves last_notified_version unchanged."""
-        from unittest.mock import AsyncMock
 
         inventory, modules = await open_repositories(tmp_path)
         module_path = write_module(
