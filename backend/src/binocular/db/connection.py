@@ -17,7 +17,7 @@ class ConnectionManager:
         """Open a configured SQLite connection."""
 
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        connection = await aiosqlite.connect(self.database_path)
+        connection = await aiosqlite.connect(self.database_path, isolation_level=None)
         connection.row_factory = sqlite3.Row
         await connection.execute(f"PRAGMA busy_timeout = {self.busy_timeout_ms}")
         await connection.execute("PRAGMA foreign_keys = ON")
