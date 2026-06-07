@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 27 (P1: 15 · P2: 11 · P3: 1) | **Waves**: 11
+**Total Epics**: 28 (P1: 16 · P2: 11 · P3: 1) | **Waves**: 12
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -97,6 +97,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E027 [P2] [PRODUCT] {PRD:CAP-007} HTML Email Notification Design — responsive HTML email, light-themed, mobile-friendly
 
+### Wave 12 — Notification Deduplication
+
+> Depends on E012. Adds last-notified-version tracking to suppress duplicate notifications for the same firmware version; re-notifies only when an even newer version appears.
+
+- [ ] E028 [P1] [PRODUCT] {PRD:CAP-007}{SAD:ADR-0007} Notification Deduplication — track last-notified version per device, gate repeat alerts
+
 ## Dependency Diagram
 
 Activity-on-arrow style: nodes are milestones, arrows are epics. `<br>` denotes parallel epics released into the same milestone.
@@ -135,6 +141,9 @@ graph LR
 
     M6 --> M11["Notification<br>polish"]
     M11 -->|"E027"| M11
+
+    M11 --> M12["Notification<br>dedup"]
+    M12 -->|"E028"| M12
 ```
 
 ## Execution Wave Summary
@@ -152,6 +161,7 @@ graph LR
 | 9 | E025 | N/A (single) | PUID/PGID entrypoint for configurable container user permissions. |
 | 10 | E026 | N/A (single) | Per-module check frequency editing on the Modules page. |
 | 11 | E027 | N/A (single) | Responsive HTML email notification template with light-themed design. |
+| 12 | E028 | N/A (single) | Notification deduplication: track last-notified version per device, gate repeat alerts. |
 
 ## Parallel Execution Guidance
 
@@ -825,6 +835,30 @@ graph LR
   - **Depends on artifacts**: E012 notifier service (Apprise Email/SMTP), E009 detection events
   - **Constraints**: Inline CSS for email compatibility; light theme match; mobile + desktop rendering; Gotify unchanged
 
+### E028 — Notification Deduplication
+
+- **Category**: PRODUCT | **Priority**: P1
+- **Source**: {PRD:CAP-007}{SAD:ADR-0007}
+- **Scope**: Track the last-notified firmware version per device in the database. When a check detects a version that has already triggered a notification, suppress the duplicate. Dispatch a new notification only when the detected version is newer than the last-notified version for that device. This prevents alert fatigue from repeated checks finding the same version.
+- **Actors**: Operator, system
+- **Key entities**: Device (last_notified_version), detection event
+- **Depends on**: E012
+- **Dependency contracts**: Extends the notifier service from E012; adds `last_notified_version` field to the device entity from E005/E022; consumes detection events from E009.
+- **Depended on by**: —
+- **Produces (shared)**: Updated Device entity with `last_notified_version`; notification deduplication gate logic
+- **Constraints**: Must not break existing notification flow; version comparison must correctly determine "newer than last-notified"; existing devices without a recorded last-notified version should notify on the first newer-version detection.
+- **Acceptance criteria**:
+  - [ ] When a version is detected that matches the last-notified version, no duplicate notification is sent.
+  - [ ] When a version newer than the last-notified version is detected, a notification is dispatched and `last_notified_version` is updated.
+  - [ ] Devices with no recorded last-notified version notify on the first newer-version detection.
+  - [ ] Manual on-demand checks respect the deduplication gate.
+- **Specify input**:
+  - **Description**: Track last-notified firmware version per device; suppress duplicate notifications for the same version; re-notify only when an even newer version appears.
+  - **Actors**: Operator, system
+  - **Key entities**: Device (last_notified_version), detection event
+  - **Depends on artifacts**: E012 notifier service, E009 detection events, E005/E022 device entity
+  - **Constraints**: Backward compatible; first detection after feature deployment must not miss notifications
+
 ## Coverage Validation
 
 ### PRD Capability Coverage
@@ -837,7 +871,7 @@ graph LR
 | CAP-004 Automated Scheduled Checking | P1 | E011, E026 |
 | CAP-005 Manual On-Demand Checking | P1 | E010 |
 | CAP-006 Update Detection & Comparison | P1 | E009 |
-| CAP-007 Notification & Alerting | P1 | E012, E027 |
+| CAP-007 Notification & Alerting | P1 | E012, E027, E028 |
 | CAP-008 Responsible Scraping Enforcement | P1 | E007 |
 | CAP-009 Self-Hosted Operability | P1 | E013 |
 | CAP-010 Activity Logging & Visibility | P2 | E014 |
@@ -855,7 +889,7 @@ graph LR
 | ADR-0004 SQLite + aiosqlite + raw SQL | accepted | E004 |
 | ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E006, E021, E023 |
 | ADR-0006 Centralized responsible-scraping client | accepted | E007, E023 |
-| ADR-0007 APScheduler + Apprise | accepted | E011 (scheduling), E012 (notifications) |
+| ADR-0007 APScheduler + Apprise | accepted | E011 (scheduling), E012 (notifications), E028 (deduplication) |
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E013, E025 |
 | ADR-0009 Module-derived device type | accepted | E022 |
 
@@ -874,6 +908,7 @@ graph LR
 - Note: E022 (Device-Module Linking & Refactor) is a new P1 epic that supersedes the standalone DeviceType approach in E005. ADR-0009 documents this decision.
 - Note: E025 (PUID/PGID Entrypoint) is a new P1 operational epic that implements the linuxserver-style PUID/PGID entrypoint pattern, resolving the open question in {DOD:DDR-004}.
 - Note: E027 (HTML Email Notification Design) is a new P2 product epic that enhances email notifications from plain text to responsive HTML with the light color scheme, extending the notifier from E012.
+- Note: E028 (Notification Deduplication) is a new P1 product epic that tracks last-notified version per device to suppress duplicate notifications; re-notification occurs only when a version newer than the last-notified version appears. Amends ADR-0007.
 
 ## Shared Artifact Surface
 
@@ -883,6 +918,7 @@ graph LR
 |--------|---------------|-------------|
 | Device, DeviceType | E005 | E009, E010, E016 |
 | Device (module_id FK) | E022 | E009, E010, E016 |
+| Device (last_notified_version) | E028 | E009, E012 |
 | Module, ModuleValidationResult | E006 | E008, E009, E015, E020, E017 |
 | CheckResult / detection event | E009 | E010, E011, E012, E014 |
 | NotificationChannel | E012 | E012 |
@@ -909,7 +945,7 @@ graph LR
 | ScrapeClient | E007 | E006, E015, E020, E017, E023, E024 |
 | Module engine + authoring contract | E006 | E008, E009, E015, E020, E017, E021, E023, E024 |
 | Scheduler service | E011 | E012, E014, E019, E026 |
-| Notifier service | E012 | E027 |
+| Notifier service | E012 | E027, E028 |
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |
 
 ## Wave Transition Protocol

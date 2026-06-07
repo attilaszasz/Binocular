@@ -82,7 +82,7 @@ The v1 product scope equals the full product brief: a complete detect → compar
 - Device inventory and lifecycle management, with each device linked to an extension module that determines its device type, stored current versions, and one-click update confirmation.
 - A pluggable extension-module engine with a strict authoring contract, plus full module lifecycle management (upload, update, delete) through the UI.
 - Automated scheduled checking with per-device-type frequency, plus manual on-demand checks (single and bulk) with side-by-side version comparison.
-- Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify.
+- Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify. Only one notification is sent per detected version; a follow-up notification is dispatched only when an even newer version than the last-notified version is found.
 - Responsible-scraping enforcement (robots.txt, identifiable User-Agent, rate limiting, backoff) provided centrally by the host.
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
 - Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, and Godox Flashes that are automatically seeded and registered in the database on startup as working examples and templates.
@@ -111,7 +111,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-004 | Automated Scheduled Checking | P1 | The system checks sources unattended on a per-device-type frequency. |
 | CAP-005 | Manual On-Demand Checking | P1 | Users trigger immediate single or bulk checks and compare stored vs. latest versions side by side. |
 | CAP-006 | Update Detection & Comparison | P1 | The system reliably determines whether a newer version exists than the user's recorded version. |
-| CAP-007 | Notification & Alerting | P1 | Newer-version detections dispatch notifications via configurable responsive HTML Email/SMTP (light-themed, mobile-friendly) and Gotify channels. |
+| CAP-007 | Notification & Alerting | P1 | Newer-version detections dispatch notifications once per version via configurable responsive HTML Email/SMTP (light-themed, mobile-friendly) and Gotify channels, with re-notification only when a version newer than the last-notified version appears. |
 | CAP-008 | Responsible Scraping Enforcement | P1 | All outbound checks honor robots.txt, identifiable User-Agent, rate limits, and backoff by default. |
 | CAP-009 | Self-Hosted Operability | P1 | Single-container, single-volume, zero-config, non-root deployment that survives restarts and upgrades with no data loss. |
 | CAP-010 | Activity Logging & Visibility | P2 | All check activity and errors are recorded in a size-bounded, in-UI viewable log. |

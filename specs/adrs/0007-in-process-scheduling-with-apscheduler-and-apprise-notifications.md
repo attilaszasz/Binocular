@@ -1,14 +1,14 @@
 ---
 adr_id: ADR-0007
 status: accepted
-date: 2026-05-31
+date: 2026-06-07
 tags: [scheduling, notifications, dependencies]
 supersedes: []
 superseded_by: ""
 related_artifacts: [specs/prd.md#CAP-004, specs/prd.md#CAP-007]
 ---
 
-# ADR-0007: In-process scheduling with APScheduler and Apprise notifications
+# ADR-0007: In-process scheduling with APScheduler and Apprise notifications with notification deduplication
 
 ## Status
 
@@ -18,6 +18,8 @@ Accepted.
 
 Binocular must run firmware checks automatically on a per-device-type frequency (CAP-004) and dispatch notifications when a newer version is detected, supporting Email/SMTP and Gotify at launch (CAP-007). Both capabilities must work inside the single-container monolith (ADR-0001) with no external broker, queue, or extra services. Choices are needed for the scheduling mechanism and the notification dispatch mechanism.
 
+Additionally, notification deduplication is required to prevent alert fatigue. When the same firmware version is detected on repeated scheduled checks, redundant notifications must be suppressed. A device should only be re-notified when an even newer version appears than the one it was last notified about.
+
 ## Decision Drivers
 
 - Run scheduling and notifications fully in-process (no Redis/Celery/broker)
@@ -25,6 +27,7 @@ Binocular must run firmware checks automatically on a per-device-type frequency 
 - Support Email (SMTP) and Gotify now, with room to add channels cheaply
 - Minimal dependencies and operational footprint
 - Async-compatible with the FastAPI/Uvicorn runtime
+- Notifications must not repeat for the same firmware version; re-notification only when a newer version appears
 
 ## Considered Options
 
@@ -64,11 +67,13 @@ Chosen option: **APScheduler for in-process scheduling** and **Apprise for notif
 - Scheduling and notifications need zero external infrastructure.
 - Per-device-type jobs are managed dynamically.
 - New notification channels are essentially free via Apprise.
+- Notification deduplication prevents alert fatigue; a device is re-notified only when a version newer than the last-notified version appears.
 
 ### Negative
 
 - The scheduler shares the app process lifecycle (restart pauses jobs until next start).
 - A missed window is retried on the next interval, not catch-up-replayed.
+- A `last_notified_version` field must be tracked per device in the database; this adds state management to the notification path (re-notification occurs only when `latest > last_notified_version`).
 
 ### Neutral
 

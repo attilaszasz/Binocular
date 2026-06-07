@@ -114,8 +114,9 @@ sequenceDiagram
     HTTP-->>Eng: Response
     Eng-->>Svc: latest_version
     Svc->>DB: Record result + log
-    alt latest > current
+    alt latest > current AND (no prior notification OR latest > last_notified_version)
         Svc->>Notify: Dispatch alert
+        Svc->>DB: Record last_notified_version
     end
 ```
 
@@ -125,6 +126,7 @@ sequenceDiagram
 - Vendor page changed / unparseable → module returns no version or errors → surfaced as a visible "scrape failed" status with last-success timestamp; never a silent miss.
 - Vendor returns 429/5xx → scrape client applies exponential backoff and per-domain rate limiting; persistent failure logged. See {SAD:ADR-0006}.
 - Notification channel (SMTP/Gotify) failure → dispatch error logged in the activity log for operator visibility; check result still persisted.
+- Already-notified version detected → no duplicate notification; last-notified version tracked per device; a new alert dispatches only when a version newer than the last-notified version appears.
 - SQLite lock contention → `busy_timeout` (5s) wait; WAL allows concurrent reads during scheduler writes. See {SAD:ADR-0004}.
 - Malformed module upload → rejected pre-save by two-phase validation (static AST + optional runtime proof) with structured per-phase results; never enters the modules directory.
 
@@ -199,7 +201,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 | ADR-0004 | SQLite file storage with aiosqlite and raw SQL (no ORM) | accepted | 2026-05-31 | — | [0004-sqlite-file-storage-with-aiosqlite-and-raw-sql-no-orm.md](adrs/0004-sqlite-file-storage-with-aiosqlite-and-raw-sql-no-orm.md) |
 | ADR-0005 | Unsandboxed extension module engine with two-phase validation | accepted | 2026-05-31 | — | [0005-unsandboxed-extension-module-engine-with-two-phase-validation.md](adrs/0005-unsandboxed-extension-module-engine-with-two-phase-validation.md) |
 | ADR-0006 | Centralized responsible-scraping HTTP client provided to modules | accepted | 2026-05-31 | — | [0006-centralized-responsible-scraping-http-client-provided-to-modules.md](adrs/0006-centralized-responsible-scraping-http-client-provided-to-modules.md) |
-| ADR-0007 | In-process scheduling with APScheduler and Apprise notifications | accepted | 2026-05-31 | — | [0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md](adrs/0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md) |
+| ADR-0007 | In-process scheduling with APScheduler and Apprise notifications with notification deduplication | accepted | 2026-06-07 | — | [0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md](adrs/0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md) |
 | ADR-0008 | Trusted-LAN single-user security model with optional basic auth | accepted | 2026-05-31 | — | [0008-trusted-lan-single-user-security-model-with-optional-basic-auth.md](adrs/0008-trusted-lan-single-user-security-model-with-optional-basic-auth.md) |
 | ADR-0009 | Module-Derived Device Type — Remove Standalone Device Type Field, Derive from Linked Module | accepted | 2026-06-04 | — | [0009-module-derived-device-type-remove-standalone-device-type-field.md](adrs/0009-module-derived-device-type-remove-standalone-device-type-field.md) |
 
