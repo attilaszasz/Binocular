@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 26 (P1: 15 · P2: 10 · P3: 1) | **Waves**: 10
+**Total Epics**: 27 (P1: 15 · P2: 11 · P3: 1) | **Waves**: 11
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -91,6 +91,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E026 [P2] [PRODUCT] {PRD:CAP-004} Per-Module Frequency on Modules Page — make per-module automatic check frequency editable from the Modules management page
 
+### Wave 11 — Notification Polish
+
+> Depends on E012. Enhances email notification format from plain text to responsive HTML with the application's light color scheme and mobile-friendly layout.
+
+- [ ] E027 [P2] [PRODUCT] {PRD:CAP-007} HTML Email Notification Design — responsive HTML email, light-themed, mobile-friendly
+
 ## Dependency Diagram
 
 Activity-on-arrow style: nodes are milestones, arrows are epics. `<br>` denotes parallel epics released into the same milestone.
@@ -126,6 +132,9 @@ graph LR
 
     M5 --> M10["UX refinement"]
     M10 -->|"E026"| M10
+
+    M6 --> M11["Notification<br>polish"]
+    M11 -->|"E027"| M11
 ```
 
 ## Execution Wave Summary
@@ -142,6 +151,7 @@ graph LR
 | 8 | E023, E024 | Yes | Panasonic Lumix Lenses and Godox Flashes modules with fixtures and golden tests. |
 | 9 | E025 | N/A (single) | PUID/PGID entrypoint for configurable container user permissions. |
 | 10 | E026 | N/A (single) | Per-module check frequency editing on the Modules page. |
+| 11 | E027 | N/A (single) | Responsive HTML email notification template with light-themed design. |
 
 ## Parallel Execution Guidance
 
@@ -790,6 +800,31 @@ graph LR
   - **Depends on artifacts**: E008 Modules page, E011 scheduler configuration
   - **Constraints**: Same backend as E011; inline editing; restart-persistent
 
+### E027 — HTML Email Notification Design
+
+- **Category**: PRODUCT | **Priority**: P2
+- **Source**: {PRD:CAP-007}
+- **Scope**: Replace plain-text email notifications with responsive HTML email templates. Emails adopt the application's light color scheme and use a simple, mobile-friendly single-column layout that renders correctly on desktop and mobile email clients. The HTML email includes the detected firmware update details (device name, current version → new version, module source) in a clean, readable format.
+- **Actors**: Operator, system
+- **Key entities**: EmailTemplate, Notification
+- **Depends on**: E012
+- **Dependency contracts**: Extends the notifier service from E012 (Apprise Email/SMTP channel); formats detection events from E009 into HTML email bodies.
+- **Depended on by**: —
+- **Produces (shared)**: HTML email template; updated notifier service with HTML formatting support
+- **Constraints**: Must render correctly in major email clients (Gmail, Outlook, Apple Mail) on both desktop and mobile; must match the application's light color scheme (Tailwind-based); must not break Gotify notification format; must use inline CSS for email client compatibility
+- **Acceptance criteria**:
+  - [ ] Email notifications are sent as HTML with a responsive single-column layout.
+  - [ ] The HTML email adopts the application's light color scheme (background, text, accent colors).
+  - [ ] The email renders correctly on desktop and mobile email clients (Gmail, Outlook, Apple Mail).
+  - [ ] Gotify notifications are unchanged and continue to work as before.
+  - [ ] The email body includes device name, current version, new version, and module source.
+- **Specify input**:
+  - **Description**: Responsive HTML email notification template with simple design, light-themed, mobile-friendly layout. Replaces plain-text email body for firmware update alerts.
+  - **Actors**: Operator, system
+  - **Key entities**: EmailTemplate, Notification
+  - **Depends on artifacts**: E012 notifier service (Apprise Email/SMTP), E009 detection events
+  - **Constraints**: Inline CSS for email compatibility; light theme match; mobile + desktop rendering; Gotify unchanged
+
 ## Coverage Validation
 
 ### PRD Capability Coverage
@@ -802,7 +837,7 @@ graph LR
 | CAP-004 Automated Scheduled Checking | P1 | E011, E026 |
 | CAP-005 Manual On-Demand Checking | P1 | E010 |
 | CAP-006 Update Detection & Comparison | P1 | E009 |
-| CAP-007 Notification & Alerting | P1 | E012 |
+| CAP-007 Notification & Alerting | P1 | E012, E027 |
 | CAP-008 Responsible Scraping Enforcement | P1 | E007 |
 | CAP-009 Self-Hosted Operability | P1 | E013 |
 | CAP-010 Activity Logging & Visibility | P2 | E014 |
@@ -838,6 +873,7 @@ graph LR
 - None. Every PRD capability, every `accepted` ADR, and every DDR maps to at least one epic.
 - Note: E022 (Device-Module Linking & Refactor) is a new P1 epic that supersedes the standalone DeviceType approach in E005. ADR-0009 documents this decision.
 - Note: E025 (PUID/PGID Entrypoint) is a new P1 operational epic that implements the linuxserver-style PUID/PGID entrypoint pattern, resolving the open question in {DOD:DDR-004}.
+- Note: E027 (HTML Email Notification Design) is a new P2 product epic that enhances email notifications from plain text to responsive HTML with the light color scheme, extending the notifier from E012.
 
 ## Shared Artifact Surface
 
@@ -873,7 +909,7 @@ graph LR
 | ScrapeClient | E007 | E006, E015, E020, E017, E023, E024 |
 | Module engine + authoring contract | E006 | E008, E009, E015, E020, E017, E021, E023, E024 |
 | Scheduler service | E011 | E012, E014, E019, E026 |
-| Notifier service | E012 | — |
+| Notifier service | E012 | E027 |
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |
 
 ## Wave Transition Protocol

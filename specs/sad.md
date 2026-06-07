@@ -170,7 +170,7 @@ All state in SQLite (`binocular.db`) on the `/app/data` volume; backup = copy th
 
 ### Integration Strategy
 
-Outbound only: manufacturer firmware pages are scraped through the host-provided polite HTTP client (the single enforcement point for robots.txt, identifiable User-Agent, per-domain rate limiting, and backoff); notifications dispatch through Apprise (Email/SMTP and Gotify at launch, extensible to other channels). No inbound integrations or third-party APIs. See {SAD:ADR-0006}, {SAD:ADR-0007}.
+Outbound only: manufacturer firmware pages are scraped through the host-provided polite HTTP client (the single enforcement point for robots.txt, identifiable User-Agent, per-domain rate limiting, and backoff); notifications dispatch through Apprise — Email/SMTP (as responsive, light-themed HTML with mobile-friendly layout) and Gotify at launch, extensible to other channels. No inbound integrations or third-party APIs. See {SAD:ADR-0006}, {SAD:ADR-0007}.
 
 ### Operations
 

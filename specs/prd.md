@@ -4,7 +4,7 @@
 
 ## Product Overview
 
-Binocular is a self-hosted, single-user web application that automates the discovery of firmware updates for high-value **offline** devices — cameras, lenses, and homelab hardware that manufacturers never auto-update. Users maintain a digital inventory of their devices, each explicitly linked to an extension module, and Binocular periodically checks manufacturer firmware pages using those modules. When a newer version than the user's recorded version is found, Binocular notifies them through configurable channels (Email/SMTP, Gotify).
+Binocular is a self-hosted, single-user web application that automates the discovery of firmware updates for high-value **offline** devices — cameras, lenses, and homelab hardware that manufacturers never auto-update. Users maintain a digital inventory of their devices, each explicitly linked to an extension module, and Binocular periodically checks manufacturer firmware pages using those modules. When a newer version than the user's recorded version is found, Binocular notifies them through configurable channels (responsive HTML Email/SMTP matching the application light color scheme, and Gotify).
 
 It runs on a private, trusted LAN with no login, stores all data self-contained (no external database server), and is distributed primarily as a Docker container. The value: replace a manual, easy-to-forget, fragmented chore with reliable, unattended monitoring that surfaces only when action is needed.
 
@@ -82,7 +82,7 @@ The v1 product scope equals the full product brief: a complete detect → compar
 - Device inventory and lifecycle management, with each device linked to an extension module that determines its device type, stored current versions, and one-click update confirmation.
 - A pluggable extension-module engine with a strict authoring contract, plus full module lifecycle management (upload, update, delete) through the UI.
 - Automated scheduled checking with per-device-type frequency, plus manual on-demand checks (single and bulk) with side-by-side version comparison.
-- Update detection, version comparison, and notification dispatch via Email/SMTP and Gotify.
+- Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify.
 - Responsible-scraping enforcement (robots.txt, identifiable User-Agent, rate limiting, backoff) provided centrally by the host.
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
 - Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, and Godox Flashes that are automatically seeded and registered in the database on startup as working examples and templates.
@@ -111,7 +111,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-004 | Automated Scheduled Checking | P1 | The system checks sources unattended on a per-device-type frequency. |
 | CAP-005 | Manual On-Demand Checking | P1 | Users trigger immediate single or bulk checks and compare stored vs. latest versions side by side. |
 | CAP-006 | Update Detection & Comparison | P1 | The system reliably determines whether a newer version exists than the user's recorded version. |
-| CAP-007 | Notification & Alerting | P1 | Newer-version detections dispatch notifications via configurable Email/SMTP and Gotify channels. |
+| CAP-007 | Notification & Alerting | P1 | Newer-version detections dispatch notifications via configurable responsive HTML Email/SMTP (light-themed, mobile-friendly) and Gotify channels. |
 | CAP-008 | Responsible Scraping Enforcement | P1 | All outbound checks honor robots.txt, identifiable User-Agent, rate limits, and backoff by default. |
 | CAP-009 | Self-Hosted Operability | P1 | Single-container, single-volume, zero-config, non-root deployment that survives restarts and upgrades with no data loss. |
 | CAP-010 | Activity Logging & Visibility | P2 | All check activity and errors are recorded in a size-bounded, in-UI viewable log. |
@@ -129,7 +129,7 @@ Success is defined by **reliability and correctness**, validated before release 
 | Missed-update rate (false negatives) | Zero for supported device types | A silently missed update is the most damaging failure. | Per release, fixture + regression validation |
 | False-alert rate (false positives) | Zero for supported device types | False alerts erode set-and-forget trust. | Per release, fixture + regression validation |
 | Scraper resilience to source changes | Source changes produce a visible "scrape failed" status, never a silent miss | Manufacturer pages change; honest failure is the safeguard. | Per release + when a source breaks |
-| Notification delivery success | Detected update reliably produces a delivered Email and Gotify notification | The alert is the entire point of an unattended tool. | Per release, end-to-end alert-path test |
+| Notification delivery success | Detected update reliably produces a delivered Email (responsive HTML, light-themed) and Gotify notification | The alert is the entire point of an unattended tool. | Per release, end-to-end alert-path test |
 | Unattended reliability | Runs across restarts/upgrades with no data loss | "Set and forget" is the operability promise. | Per release, restart/upgrade smoke test |
 
 ## Assumptions
