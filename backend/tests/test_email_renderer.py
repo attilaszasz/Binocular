@@ -379,7 +379,7 @@ class TestUrlValidation:
 
     def test_validate_url_rejects_none_input(self) -> None:
         """None (missing source URL) returns None."""
-        result = EmailRenderer._validate_url(None)  # type: ignore[arg-type]
+        result = EmailRenderer._validate_url(None)
         assert result is None
 
     def test_validate_url_rejects_empty_string(self) -> None:
@@ -460,9 +460,9 @@ class TestCoercion:
         ):
             renderer = EmailRenderer()
             result = renderer.render(
-                device_name=42,  # type: ignore[arg-type]
+                device_name=42,
                 device_type="camera",
-                current_version=1.0,  # type: ignore[arg-type]
+                current_version=1.0,
                 latest_version="2.0",
                 source_url="https://example.com",
                 timestamp="2026",
@@ -481,7 +481,7 @@ class TestCoercion:
             renderer = EmailRenderer()
             result = renderer.render(
                 device_name="Device",
-                device_type=None,  # type: ignore[arg-type]
+                device_type=None,
                 current_version="1.0",
                 latest_version="2.0",
                 source_url="https://example.com",
@@ -502,7 +502,7 @@ class TestCoercion:
             result = renderer.render(
                 device_name="Device",
                 device_type="camera",
-                current_version=[1, 0],  # type: ignore[arg-type]
+                current_version=[1, 0],
                 latest_version="2.0",
                 source_url="https://example.com",
                 timestamp="2026",
@@ -521,12 +521,12 @@ class TestCoercion:
         ):
             renderer = EmailRenderer()
             result = renderer.render(
-                device_name=123,  # type: ignore[arg-type]
-                device_type=True,  # type: ignore[arg-type]
-                current_version=None,  # type: ignore[arg-type]
-                latest_version=2.5,  # type: ignore[arg-type]
-                source_url={"key": "val"},  # type: ignore[arg-type]
-                timestamp=20260101,  # type: ignore[arg-type]
+                device_name=123,
+                device_type=True,
+                current_version=None,
+                latest_version=2.5,
+                source_url={"key": "val"},
+                timestamp=20260101,
             )
             assert isinstance(result, str)
             assert len(result) > 0
