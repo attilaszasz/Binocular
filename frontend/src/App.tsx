@@ -890,11 +890,11 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
         status: statusFilter === 'all' ? undefined : statusFilter,
       });
       if (!Array.isArray(data)) {
-        throw new TypeError('API response is not an array of activity logs');
+        throw new TypeError('API response is not an array of audit logs');
       }
       setActivities(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load activity logs';
+      const message = err instanceof Error ? err.message : 'Failed to load audit logs';
       setError(message);
       if (fallbackLogs.length > 0) {
         const mapped = fallbackLogs.map((log) => ({
@@ -1024,13 +1024,13 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
               {isLoading && activities.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center text-muted">
-                    Loading activity history...
+                    Loading audit history...
                   </td>
                 </tr>
               ) : activities.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center text-muted">
-                    No activity logs match the selected filters.
+                    No audit logs match the selected filters.
                   </td>
                 </tr>
               ) : (

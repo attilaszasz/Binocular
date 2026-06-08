@@ -26,7 +26,7 @@ describe('activity API', () => {
 
     const result = await listActivity();
     expect(result).toEqual(mockActivities);
-    expect(apiClient.get).toHaveBeenCalledWith('/activity');
+    expect(apiClient.get).toHaveBeenCalledWith('/audit-log');
   });
 
   it('lists activities with params', async () => {
@@ -51,6 +51,6 @@ describe('activity API', () => {
       status: 'failed',
     });
     expect(result).toEqual(mockActivities);
-    expect(apiClient.get).toHaveBeenCalledWith('/activity?limit=10&offset=5&type=notification&status=failed');
+    expect(apiClient.get).toHaveBeenCalledWith('/audit-log?limit=10&offset=5&type=notification&status=failed');
   });
 });

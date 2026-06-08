@@ -10,7 +10,7 @@ from binocular.config import Settings
 from binocular.db.connection import ConnectionManager
 from binocular.repositories.activity import ActivityLogRecord, ActivityLogRepository
 
-router = APIRouter(prefix="/activity", tags=["activity"])
+router = APIRouter(prefix="/audit-log", tags=["audit-log"])
 
 
 class ActivityLogResponse(BaseModel):

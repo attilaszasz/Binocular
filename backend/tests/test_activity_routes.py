@@ -31,7 +31,7 @@ def client(test_app: FastAPI) -> Iterator[TestClient]:
 @pytest.mark.asyncio
 async def test_list_activity_logs_endpoint(test_app: FastAPI, client: TestClient) -> None:
     # 1. Fetch initially empty activity list
-    resp = client.get("/api/v1/activity")
+    resp = client.get("/api/v1/audit-log")
     assert resp.status_code == 200
     assert resp.json() == []
 
@@ -58,7 +58,7 @@ async def test_list_activity_logs_endpoint(test_app: FastAPI, client: TestClient
         await conn.close()
 
     # 3. Retrieve activities list
-    resp = client.get("/api/v1/activity")
+    resp = client.get("/api/v1/audit-log")
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 2
@@ -73,14 +73,14 @@ async def test_list_activity_logs_endpoint(test_app: FastAPI, client: TestClient
     assert data[1]["deviceName"] == "Alpha IV"
 
     # 4. Filter by type
-    resp_filtered = client.get("/api/v1/activity?type=check")
+    resp_filtered = client.get("/api/v1/audit-log?type=check")
     assert resp_filtered.status_code == 200
     filtered_data = resp_filtered.json()
     assert len(filtered_data) == 1
     assert filtered_data[0]["eventType"] == "check"
 
     # 5. Filter by status
-    resp_status = client.get("/api/v1/activity?status=failed")
+    resp_status = client.get("/api/v1/audit-log?status=failed")
     assert resp_status.status_code == 200
     status_data = resp_status.json()
     assert len(status_data) == 1

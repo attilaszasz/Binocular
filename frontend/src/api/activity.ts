@@ -35,6 +35,6 @@ export function listActivity(params?: GetActivityParams) {
     }
   }
   const queryString = queryParams.toString();
-  const path = queryString ? `/activity?${queryString}` : '/activity';
+  const path = queryString ? `/audit-log?${queryString}` : '/audit-log';
   return apiClient.get<ActivityLog[]>(path);
 }

@@ -103,7 +103,7 @@ function mockInventoryFetch() {
     if (url === '/api/v1/checks/all' && method === 'POST') {
       return new Response(JSON.stringify({ results: [checkResult], total: 1, succeeded: 1, failed: 0 }), { status: 200 });
     }
-    if (url === '/api/v1/activity' && method === 'GET') {
+    if (url === '/api/v1/audit-log' && method === 'GET') {
       return new Response(JSON.stringify([]), { status: 200 });
     }
     return new Response(JSON.stringify(inventoryResponse.groups[0].devices[0]), {
@@ -182,7 +182,7 @@ describe('App shell', () => {
     await user.click(screen.getAllByRole('link', { name: 'Activity Logs' })[0]);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Activity Logs' })).toBeInTheDocument();
-    expect(screen.getByText('No activity logs match the selected filters.')).toBeInTheDocument();
+    expect(screen.getByText('No audit logs match the selected filters.')).toBeInTheDocument();
   });
 
   it('renders inventory stats and confirms latest versions', async () => {
