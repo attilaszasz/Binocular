@@ -347,8 +347,8 @@ export function App() {
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'md:w-16' : 'md:w-64'}`}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-inherit px-6">
-          <Brand />
+        <div className={`flex h-16 shrink-0 items-center border-b border-inherit ${isCollapsed ? 'justify-center' : 'justify-between px-6'}`}>
+          <Brand isCollapsed={isCollapsed} />
           <button
             type="button"
             className="rounded-lg p-2 text-muted hover:text-ink-hover md:hidden"
@@ -358,7 +358,7 @@ export function App() {
             <X size={20} />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto space-y-1.5 p-4" aria-label="Primary navigation">
+        <nav className={`flex-1 overflow-y-auto space-y-1.5 ${isCollapsed ? 'p-2' : 'p-4'}`} aria-label="Primary navigation">
           {navItems.map((item) => (
             <NavItem key={item.to} item={item} onNavigate={closeMobileMenu} isCollapsed={isCollapsed} />
           ))}
@@ -473,13 +473,13 @@ export function App() {
   );
 }
 
-function Brand() {
+function Brand({ isCollapsed }: { isCollapsed: boolean }) {
   return (
     <div className="flex items-center gap-2">
       <div className="rounded-lg bg-accent/10 p-1.5 text-accent">
         <Binoculars size={24} />
       </div>
-      <span className="text-xl font-bold tracking-tight">Binocular</span>
+      {!isCollapsed && <span className="text-xl font-bold tracking-tight">Binocular</span>}
     </div>
   );
 }
@@ -503,7 +503,7 @@ function NavItem({
       aria-label={isCollapsed ? item.label : undefined}
       aria-describedby={isCollapsed ? tooltipId : undefined}
       className={({ isActive }) =>
-        `group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium motion-safe:transition-all motion-safe:duration-200 focus-visible:ring-2 focus-visible:ring-accent-focus/40 ${
+        `group relative flex w-full items-center rounded-xl py-3 text-sm font-medium motion-safe:transition-all motion-safe:duration-200 focus-visible:ring-2 focus-visible:ring-accent-focus/40 ${isCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} ${
           isActive
             ? 'bg-accent/10 text-accent'
             : 'text-muted hover:bg-panel-hover hover:text-ink-hover'
@@ -521,7 +521,7 @@ function NavItem({
       }}
     >
       <Icon size={20} />
-      <span className={isCollapsed ? 'invisible' : 'visible'}>{item.label}</span>
+      <span className={isCollapsed ? 'hidden' : ''}>{item.label}</span>
       {isCollapsed && (
         <div
           id={tooltipId}
