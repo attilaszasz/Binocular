@@ -317,7 +317,7 @@ async def check_firmware(input, scrape_client):
     finally:
         await inventory.connection.close()
 
-    assert result2.status == "up_to_date"  # dedup suppressed → up_to_date
+    assert result2.status == "update_available"  # still has an update, just suppressed notification
     assert mock_notifier.send_notification.call_count == 1  # still only 1
 
 

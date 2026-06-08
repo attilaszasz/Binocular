@@ -63,13 +63,6 @@ type LogEntry = {
   message: string;
 };
 
-const initialLogs: LogEntry[] = [
-  { id: 1, time: '10:42 AM', level: 'INFO', message: 'Manual check started for Sony A7IV' },
-  { id: 2, time: '10:42 AM', level: 'WARN', message: 'New firmware v3.00 found for Sony A7IV (Local: v2.00)' },
-  { id: 3, time: '09:00 AM', level: 'INFO', message: 'Scheduled check completed. 15 devices scanned.' },
-  { id: 4, time: '08:59 AM', level: 'ERROR', message: 'Failed to scrape Panasonic URL: HTTP 429 Too Many Requests' },
-];
-
 const navItems = [
   { to: '/inventory', label: 'Inventory', icon: Server },
   { to: '/logs', label: 'Activity Logs', icon: TerminalSquare },
@@ -108,7 +101,7 @@ export function App() {
   const [formValues, setFormValues] = useState<DeviceInput>(emptyDeviceInput);
   const [editingDevice, setEditingDevice] = useState<InventoryDevice | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [logs, setLogs] = useState<LogEntry[]>(initialLogs);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { mode, toggleMode } = useTheme();
@@ -906,8 +899,8 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
         id: log.id,
         eventType: log.message.toLowerCase().includes('notification') ? ('notification' as const) : ('check' as const),
         status: log.level === 'ERROR' ? ('failed' as const) : ('success' as const),
-        deviceName: log.message.includes('Sony') ? 'Sony A7IV' : null,
-        moduleName: log.message.includes('Sony') ? 'sony-alpha' : null,
+        deviceName: null,
+        moduleName: null,
         message: log.message,
         traceback: log.level === 'ERROR' ? 'Traceback (mock):\n  File "scraper.py", line 42, in scrape\n    raise HTTPError("429 Too Many Requests")' : null,
         createdAt: new Date().toISOString(),

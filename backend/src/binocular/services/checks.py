@@ -212,7 +212,6 @@ class CheckService:
         should_notify = False
         dedup_decision: Literal["dispatched", "suppressed"] = "suppressed"
         previous_last_notified: str | None = device.last_notified_version
-        dedup_suppressed = False  # True when version is not strictly newer
 
         if status == "update_available":
             last_notified = device.last_notified_version
@@ -233,8 +232,6 @@ class CheckService:
                     if dedup_comparison.is_newer:
                         should_notify = True
                         dedup_decision = "dispatched"
-                    else:
-                        dedup_suppressed = True
                 except VersionComparisonError:
                     # FR-002 / plan.md Error Handling:
                     # Unparseable last_notified_version → treat as NULL (never notified)
@@ -264,12 +261,6 @@ class CheckService:
             trigger=trigger,
         )
 
-        # Adjust status: only dedup suppression downgrades to up_to_date.
-        # Cap suppression keeps update_available (the version is still newer).
-        persisted_status: Literal["up_to_date", "update_available"] = status
-        if dedup_suppressed:
-            persisted_status = "up_to_date"
-
         # ── BEGIN IMMEDIATE transaction for serialized writes ─────────
         updated: DeviceRecord | None = None
         async with self._transaction_lock:
@@ -289,7 +280,7 @@ class CheckService:
                 updated = await self.inventory_repository.record_check_success(
                     device.id,
                     latest_version=module_result.latest_version,
-                    status=persisted_status,
+                    status=status,
                 )
 
                 # FR-004: Preemptively update last_notified_version inside
@@ -448,7 +439,7 @@ class CheckService:
         return CheckResult(
             device_id=record.id,
             module_id=module_id,
-            status=persisted_status,
+            status=status,
             current_version=record.current_version,
             latest_version=record.latest_version,
             last_checked_at=record.last_checked_at,
