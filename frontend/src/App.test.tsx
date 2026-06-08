@@ -430,8 +430,8 @@ describe('App shell', () => {
 
       // Hover over the nav link to show the tooltip
       await user.hover(navLink);
-      // shadcn Tooltip renders content in a portal with role="tooltip"
-      const tooltip = await screen.findByRole('tooltip');
+      // The monolithic sidebar uses CSS tooltips with role="tooltip"
+      const tooltip = await screen.findByRole('tooltip', { name: 'Inventory' });
       expect(tooltip).toBeInTheDocument();
       expect(tooltip.textContent).toBe('Inventory');
     });
@@ -447,9 +447,9 @@ describe('App shell', () => {
       const navLink = screen.getByRole('link', { name: 'Inventory' });
       expect(navLink.getAttribute('aria-label')).toBe('Inventory');
 
-      // shadcn Tooltip: hover to trigger tooltip
+      // Hover to show tooltip
       await user.hover(navLink);
-      const tooltip = await screen.findByRole('tooltip');
+      const tooltip = await screen.findByRole('tooltip', { name: 'Inventory' });
       expect(tooltip).toBeInTheDocument();
       expect(tooltip.getAttribute('role')).toBe('tooltip');
     });
@@ -467,15 +467,15 @@ describe('App shell', () => {
 
       // Hover to show tooltip
       await user.hover(navLink);
-      const tooltip = await screen.findByRole('tooltip');
+      const tooltip = await screen.findByRole('tooltip', { name: 'Inventory' });
       expect(tooltip).toBeInTheDocument();
 
-      // Press Escape to dismiss (Radix Tooltip dismisses on Escape when trigger is focused)
+      // Press Escape to hide (monolithic CSS tooltip hides via class toggle)
       await user.keyboard('{Escape}');
 
-      // After escape, the tooltip should be removed from DOM or hidden
-      // Radix removes the tooltip content from the DOM when dismissed
-      expect(screen.queryByRole('tooltip')).toBeNull();
+      // After escape, the tooltip should still be in DOM but invisible
+      const tooltipAfter = screen.getByRole('tooltip', { name: 'Inventory' });
+      expect(tooltipAfter.classList.contains('invisible')).toBe(true);
     });
 
     it('labels remain visible in expanded state', () => {

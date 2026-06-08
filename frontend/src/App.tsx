@@ -57,6 +57,7 @@ import {
 import { updateSchedule } from './api/schedules';
 import { FrequencyEditor } from './components/FrequencyEditor';
 import { VersionDisplay } from './components/layout/VersionDisplay';
+import { TooltipProvider } from './components/ui/tooltip';
 import { useTheme } from './theme/useTheme';
 
 type LogEntry = {
@@ -393,7 +394,9 @@ export function App() {
             {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
           </button>
         </div>
-        <VersionDisplay isCollapsed={isCollapsed} />
+        <TooltipProvider>
+          <VersionDisplay isCollapsed={isCollapsed} />
+        </TooltipProvider>
       </aside>
 
       <main className={`min-h-screen motion-safe:transition-[margin-left] motion-safe:duration-300 motion-safe:ease-in-out ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
@@ -643,6 +646,7 @@ function InventoryPage({
           <span>Module</span>
           {modules.length > 0 ? (
             <select
+              data-testid="inventory-module-select"
               value={formValues.moduleId}
               onChange={(event) => onFormChange('moduleId', event.target.value)}
               className="mt-1 h-10 w-full rounded-xl border border-muted bg-panel px-3 text-sm text-ink outline-none motion-safe:transition focus:border-accent focus:ring-2 focus:ring-accent-focus/20"
