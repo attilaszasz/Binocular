@@ -51,6 +51,7 @@ jobs:
           platforms: linux/amd64
           load: true
           tags: ${{ env.CANDIDATE_IMAGE }}
+          build-args: VITE_APP_VERSION=${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -95,6 +96,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: VITE_APP_VERSION=${{ github.ref_name }}
           annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

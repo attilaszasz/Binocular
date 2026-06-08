@@ -9,6 +9,8 @@ import {
   Menu,
   Moon,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Server,
   Settings,
@@ -54,6 +56,7 @@ import {
 } from './api';
 import { updateSchedule } from './api/schedules';
 import { FrequencyEditor } from './components/FrequencyEditor';
+import { VersionDisplay } from './components/VersionDisplay';
 import { useTheme } from './theme/useTheme';
 
 type LogEntry = {
@@ -103,6 +106,15 @@ export function App() {
   const [showForm, setShowForm] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem('binocular-nav-collapsed');
+    } catch {
+      // localStorage unavailable — default to expanded
+    }
+    return stored === 'true';
+  });
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { mode, toggleMode } = useTheme();
   const location = useLocation();
@@ -329,12 +341,14 @@ export function App() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 transform flex-col border-r border-panel bg-panel motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-in-out md:translate-x-0 ${
+        role="complementary"
+        aria-label="Sidebar"
+        className={`fixed inset-y-0 left-0 z-50 flex transform flex-col border-r border-panel bg-panel motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-in-out md:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${isCollapsed ? 'md:w-16' : 'md:w-64'}`}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-inherit px-6">
-          <Brand />
+        <div className={`flex h-16 shrink-0 items-center border-b border-inherit ${isCollapsed ? 'justify-center' : 'justify-between px-6'}`}>
+          <Brand isCollapsed={isCollapsed} />
           <button
             type="button"
             className="rounded-lg p-2 text-muted hover:text-ink-hover md:hidden"
@@ -344,14 +358,39 @@ export function App() {
             <X size={20} />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto space-y-1.5 p-4" aria-label="Primary navigation">
+        <nav className={`flex-1 overflow-y-auto space-y-1.5 ${isCollapsed ? 'p-2' : 'p-4'}`} aria-label="Primary navigation">
           {navItems.map((item) => (
-            <NavItem key={item.to} item={item} onNavigate={closeMobileMenu} />
+            <NavItem key={item.to} item={item} onNavigate={closeMobileMenu} isCollapsed={isCollapsed} />
           ))}
         </nav>
+        {/* Spacer pushes toggle and version to the bottom */}
+        <div className="mt-auto" />
+        {/* Toggle button */}
+        <div className={`${isCollapsed ? 'flex justify-center' : 'px-4'}`}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsCollapsed((prev) => {
+                const next = !prev;
+                try {
+                  localStorage.setItem('binocular-nav-collapsed', String(next));
+                } catch {
+                  // localStorage unavailable — state kept in-memory
+                }
+                return next;
+              });
+            }}
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!isCollapsed}
+            className="flex w-full items-center justify-center rounded-lg p-2 text-muted hover:bg-panel-hover hover:text-ink-hover focus-visible:ring-2 focus-visible:ring-accent-focus/40 motion-safe:transition-colors motion-safe:duration-200"
+          >
+            {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          </button>
+        </div>
+        <VersionDisplay isCollapsed={isCollapsed} />
       </aside>
 
-      <main className="min-h-screen motion-safe:transition-all motion-safe:duration-300 motion-safe:ease-in-out md:ml-64">
+      <main className={`min-h-screen motion-safe:transition-[margin-left] motion-safe:duration-300 motion-safe:ease-in-out ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-panel bg-panel/85 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
           <div className="flex items-center">
             <button
@@ -434,33 +473,64 @@ export function App() {
   );
 }
 
-function Brand() {
+function Brand({ isCollapsed }: { isCollapsed: boolean }) {
   return (
     <div className="flex items-center gap-2">
       <div className="rounded-lg bg-accent/10 p-1.5 text-accent">
         <Binoculars size={24} />
       </div>
-      <span className="text-xl font-bold tracking-tight">Binocular</span>
+      {!isCollapsed && <span className="text-xl font-bold tracking-tight">Binocular</span>}
     </div>
   );
 }
 
-function NavItem({ item, onNavigate }: { item: (typeof navItems)[number]; onNavigate: () => void }) {
+function NavItem({
+  item,
+  onNavigate,
+  isCollapsed,
+}: {
+  item: (typeof navItems)[number];
+  onNavigate: () => void;
+  isCollapsed: boolean;
+}) {
   const Icon = item.icon;
+  const tooltipId = `tooltip-${item.to.replace(/\//g, '')}`;
+
   return (
     <NavLink
       to={item.to}
       onClick={onNavigate}
+      aria-label={isCollapsed ? item.label : undefined}
+      aria-describedby={isCollapsed ? tooltipId : undefined}
       className={({ isActive }) =>
-        `flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium motion-safe:transition-all motion-safe:duration-200 ${
+        `group relative flex w-full items-center rounded-xl py-3 text-sm font-medium motion-safe:transition-all motion-safe:duration-200 focus-visible:ring-2 focus-visible:ring-accent-focus/40 ${isCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} ${
           isActive
             ? 'bg-accent/10 text-accent'
             : 'text-muted hover:bg-panel-hover hover:text-ink-hover'
         }`
       }
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          const tooltip = document.getElementById(tooltipId);
+          if (tooltip) {
+            tooltip.classList.add('invisible');
+            tooltip.classList.remove('visible');
+          }
+          e.currentTarget.focus();
+        }
+      }}
     >
       <Icon size={20} />
-      <span>{item.label}</span>
+      <span className={isCollapsed ? 'hidden' : ''}>{item.label}</span>
+      {isCollapsed && (
+        <div
+          id={tooltipId}
+          role="tooltip"
+          className="invisible absolute left-full ml-2 whitespace-nowrap rounded-lg border border-panel bg-panel px-3 py-1.5 text-xs text-ink shadow-lg opacity-0 transition-opacity delay-200 duration-150 group-hover:visible group-hover:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100 group-focus-visible:delay-0"
+        >
+          {item.label}
+        </div>
+      )}
     </NavLink>
   );
 }
