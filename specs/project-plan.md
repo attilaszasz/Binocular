@@ -107,7 +107,7 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 > Depends on E003 (Frontend SPA Shell). Enhances the left-side navigation with collapsible behavior (icon-only collapsed state) and displays the application version at the bottom of the menu, injected from the latest git tag at Docker build time.
 
-- [ ] E029 [P2] [PRODUCT] {PRD:CAP-012} Collapsible Menu & Version Display — collapsible left-side nav with icon-only collapsed state; Binocular version at menu bottom injected from git tag at build time
+- [X] E029 [P2] [PRODUCT] {PRD:CAP-012} Collapsible Menu & Version Display — collapsible left-side nav with icon-only collapsed state; Binocular version at menu bottom injected from git tag at build time
 
 ## Dependency Diagram
 

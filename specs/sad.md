@@ -247,4 +247,5 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Extension modules use a trusted in-process Python contract with importlib path loading, host ScrapeClient injection, per-invocation timeout/error boundaries, and two-phase static/runtime validation; validation is not a sandbox.
 - Bundled official starter modules are automatically discovered, validated, and seeded/upserted into the SQLite database on application startup, enabling out-of-the-box tracking of devices without manual upload.
 - Device type is derived from the linked extension module; the standalone DeviceType entity is removed from the domain model. Devices reference modules directly via `module_id` FK; device type grouping is computed at query time. See {SAD:ADR-0009}.
+- The application version is injected into the frontend bundle at Docker build time via a compile-time env var (populated from the latest git tag), enabling version display in the UI without runtime lookups. Uses the multi-stage build pattern from ADR-0003.
 

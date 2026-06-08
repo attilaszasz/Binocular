@@ -4,6 +4,8 @@ WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+ARG VITE_APP_VERSION
+ENV VITE_APP_VERSION=$VITE_APP_VERSION
 RUN npm run build
 
 FROM python:3.13-slim AS builder

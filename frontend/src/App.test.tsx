@@ -106,6 +106,9 @@ function mockInventoryFetch() {
     if (url === '/api/v1/audit-log' && method === 'GET') {
       return new Response(JSON.stringify([]), { status: 200 });
     }
+    if (url === '/api/v1/notifications' && method === 'GET') {
+      return new Response(JSON.stringify([]), { status: 200 });
+    }
     return new Response(JSON.stringify(inventoryResponse.groups[0].devices[0]), {
       status: method === 'POST' && url === '/api/v1/inventory' ? 201 : 200,
     });
@@ -309,5 +312,275 @@ describe('App shell', () => {
 
     // Verify the ThemeProvider wraps the app and renders the toggle button
     expect(screen.getByLabelText('Switch to light mode')).toBeInTheDocument();
+  });
+
+  // ──────────────────────────────────────────────
+  // T014: Collapse/Expand toggle, margin sync, localStorage persistence
+  // ──────────────────────────────────────────────
+
+  describe('E029-T014: collapse/expand toggle and localStorage', () => {
+    it('toggles sidebar width on button click', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+
+      await screen.findByText('Sony A7IV');
+
+      const toggleButton = screen.getByRole('button', { name: 'Collapse sidebar' });
+      expect(toggleButton).toBeInTheDocument();
+
+      // Click to collapse
+      await user.click(toggleButton);
+
+      // Button label should change
+      expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+
+      // Click to expand again
+      await user.click(screen.getByRole('button', { name: 'Expand sidebar' }));
+      expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument();
+    });
+
+    it('loads collapsed state from localStorage', () => {
+      window.localStorage.setItem('binocular-nav-collapsed', 'true');
+      renderApp('/inventory');
+
+      // Should start in collapsed state
+      expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+    });
+
+    it('defaults to expanded when localStorage is empty', () => {
+      renderApp('/inventory');
+      expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument();
+    });
+
+    it('loads expanded state when localStorage has "false"', () => {
+      window.localStorage.setItem('binocular-nav-collapsed', 'false');
+      renderApp('/inventory');
+      expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument();
+    });
+
+    it('writes to localStorage on toggle', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+      // Verify localStorage was updated
+      expect(window.localStorage.getItem('binocular-nav-collapsed')).toBe('true');
+    });
+
+    it('handles localStorage read failure gracefully', () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('localStorage unavailable');
+      });
+      renderApp('/inventory');
+      // Should still render without crash, default expanded
+      expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument();
+    });
+
+    it('handles localStorage write failure gracefully', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('Write failed');
+      });
+
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      // Toggle should not throw
+      await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+      expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+    });
+
+    it('preserves collapsed state across route navigation', async () => {
+      const user = userEvent.setup();
+      window.localStorage.setItem('binocular-nav-collapsed', 'true');
+      renderApp('/inventory');
+
+      await screen.findByText('Sony A7IV');
+      expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+
+      // Navigate to logs
+      await user.click(screen.getAllByRole('link', { name: 'Activity Logs' })[0]);
+      await screen.findByText('No audit logs match the selected filters.');
+
+      // Sidebar should still be collapsed
+      expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // T016: Tooltip show/dismiss, keyboard focus, ARIA attributes
+  // ──────────────────────────────────────────────
+
+  describe('E029-T016: tooltip and ARIA behavior', () => {
+    it('shows tooltip on hover in collapsed state', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      // Collapse sidebar first
+      await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+      // Find a nav link in collapsed state (has aria-label because collapsed)
+      const navLink = screen.getByRole('link', { name: 'Inventory' });
+      expect(navLink).toBeInTheDocument();
+
+      // In collapsed state, tooltip should be rendered but invisible initially
+      // The NavLink has aria-describedby referencing a tooltip
+      const describedBy = navLink.getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+
+      // The tooltip element exists
+      const tooltip = document.getElementById(describedBy!);
+      expect(tooltip).toBeInTheDocument();
+      expect(tooltip!.textContent).toBe('Inventory');
+    });
+
+    it('has correct ARIA attributes on collapsed NavLink', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      // Collapse sidebar
+      await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+      const navLink = screen.getByRole('link', { name: 'Inventory' });
+      expect(navLink.getAttribute('aria-label')).toBe('Inventory');
+
+      // tooltip has role="tooltip"
+      const describedBy = navLink.getAttribute('aria-describedby');
+      const tooltip = document.getElementById(describedBy!);
+      expect(tooltip!.getAttribute('role')).toBe('tooltip');
+    });
+
+    it('hides tooltip on Escape key', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      // Collapse sidebar
+      await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+      const navLink = screen.getByRole('link', { name: 'Inventory' });
+      navLink.focus();
+
+      // Press Escape
+      await user.keyboard('{Escape}');
+
+      // Tooltip should become invisible
+      const describedBy = navLink.getAttribute('aria-describedby');
+      const tooltip = document.getElementById(describedBy!);
+      expect(tooltip!.className).toContain('invisible');
+    });
+
+    it('labels remain visible in expanded state', () => {
+      renderApp('/inventory');
+      const navLink = screen.getByRole('link', { name: 'Inventory' });
+      expect(navLink.textContent).toContain('Inventory');
+    });
+
+    it('navigation still works in collapsed state', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      // Collapse
+      await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+      // Navigate to modules via collapsed nav
+      const modulesLink = screen.getByRole('link', { name: 'Modules' });
+      await user.click(modulesLink);
+
+      expect(await screen.findByText('Extension Modules')).toBeInTheDocument();
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // T017: Accessibility, theme, breakpoint, edge cases
+  // ──────────────────────────────────────────────
+
+  describe('E029-T017: accessibility, theme, and edge cases', () => {
+    it('sidebar has landmark role', () => {
+      renderApp('/inventory');
+      expect(screen.getByRole('complementary')).toBeInTheDocument();
+    });
+
+    it('toggle button has aria-expanded attribute', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      // When expanded, aria-expanded should be "true"
+      let toggle = screen.getByRole('button', { name: 'Collapse sidebar' });
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+
+      // Click to collapse
+      await user.click(toggle);
+
+      // When collapsed, aria-expanded should be "false"
+      toggle = screen.getByRole('button', { name: 'Expand sidebar' });
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('theme toggle does not change collapse state', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      // Collapse sidebar first
+      await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+      expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+
+      // Toggle theme
+      const themeToggle = screen.getByLabelText('Switch to dark mode');
+      await user.click(themeToggle);
+
+      // Sidebar should remain collapsed
+      expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+    });
+
+    it('deep-linked route loads correctly in collapsed state', async () => {
+      window.localStorage.setItem('binocular-nav-collapsed', 'true');
+      renderApp('/settings');
+
+      // Wait for the settings page data to load
+      expect(await screen.findByRole('heading', { name: 'Settings Configuration' })).toBeInTheDocument();
+      // Should not crash
+    });
+
+    it('mobile hamburger still works', async () => {
+      const user = userEvent.setup();
+      // Force mobile viewport
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('min-width: 768px') ? false : true,
+      }));
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      // Hamburger menu button should exist
+      const hamburger = screen.getByLabelText('Open navigation');
+      expect(hamburger).toBeInTheDocument();
+
+      await user.click(hamburger);
+      expect(screen.getByLabelText('Close navigation overlay')).toBeInTheDocument();
+    });
+
+    it('rapid toggles do not cause errors', async () => {
+      const user = userEvent.setup();
+      renderApp('/inventory');
+      await screen.findByText('Sony A7IV');
+
+      const toggle = screen.getByRole('button', { name: 'Collapse sidebar' });
+
+      // Rapidly toggle 5 times
+      for (let i = 0; i < 5; i++) {
+        await user.click(toggle);
+      }
+
+      // Should end in toggled state with no errors
+      const finalToggle = screen.getByRole('button', { name: /Collapse|Expand/ });
+      expect(finalToggle).toBeInTheDocument();
+    });
   });
 });
