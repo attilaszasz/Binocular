@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 28 (P1: 16 · P2: 11 · P3: 1) | **Waves**: 12
+**Total Epics**: 29 (P1: 16 · P2: 12 · P3: 1) | **Waves**: 13
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -103,6 +103,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E028 [P1] [PRODUCT] {PRD:CAP-007}{SAD:ADR-0007} Notification Deduplication — track last-notified version per device, gate repeat alerts
 
+### Wave 13 — Navigation & Version UX
+
+> Depends on E003 (Frontend SPA Shell). Enhances the left-side navigation with collapsible behavior (icon-only collapsed state) and displays the application version at the bottom of the menu, injected from the latest git tag at Docker build time.
+
+- [ ] E029 [P2] [PRODUCT] {PRD:CAP-012} Collapsible Menu & Version Display — collapsible left-side nav with icon-only collapsed state; Binocular version at menu bottom injected from git tag at build time
+
 ## Dependency Diagram
 
 Activity-on-arrow style: nodes are milestones, arrows are epics. `<br>` denotes parallel epics released into the same milestone.
@@ -144,6 +150,9 @@ graph LR
 
     M11 --> M12["Notification<br>dedup"]
     M12 -->|"E028"| M12
+
+    M2 --> M13["Collapsible<br>menu + version"]
+    M13 -->|"E029"| M13
 ```
 
 ## Execution Wave Summary
@@ -162,6 +171,7 @@ graph LR
 | 10 | E026 | N/A (single) | Per-module check frequency editing on the Modules page. |
 | 11 | E027 | N/A (single) | Responsive HTML email notification template with light-themed design. |
 | 12 | E028 | N/A (single) | Notification deduplication: track last-notified version per device, gate repeat alerts. |
+| 13 | E029 | N/A (single) | Collapsible left-side navigation menu with icon-only collapsed mode; version display from git tag at build time. |
 
 ## Parallel Execution Guidance
 
@@ -857,7 +867,33 @@ graph LR
   - **Actors**: Operator, system
   - **Key entities**: Device (last_notified_version), detection event
   - **Depends on artifacts**: E012 notifier service, E009 detection events, E005/E022 device entity
-  - **Constraints**: Backward compatible; first detection after feature deployment must not miss notifications
+   - **Constraints**: Backward compatible; first detection after feature deployment must not miss notifications
+
+### E029 — Collapsible Menu & Version Display
+
+- **Category**: PRODUCT | **Priority**: P2
+- **Source**: {PRD:CAP-012}
+- **Scope**: Add a collapsible left-side navigation menu to the SPA shell. In expanded state, show menu labels alongside icons. In collapsed state, show only icons (tooltip on hover for accessible identification). Display the current Binocular version at the bottom of the menu in both states, derived from the latest git tag and injected via Vite build-time environment variable during the Docker multi-stage build. The collapsed/expanded preference is persisted locally (localStorage) so state survives page navigation.
+- **Actors**: Operator
+- **Key entities**: Navigation component, version env var
+- **Depends on**: E003
+- **Dependency contracts**: Extends the navigation/layout component from the E003 SPA shell; version injection aligns with the SemVer tagging established in E018.
+- **Depended on by**: —
+- **Produces (shared)**: Collapsible navigation component with toggle; version display component; `VITE_APP_VERSION` build-time injection in Vite config
+- **Constraints**: Collapsed state must show only icons with no visible labels (hover tooltip permitted); version must be derived automatically from the latest git tag at Docker build time (not hardcoded); must not break existing routing, deep links, or theme toggle; must be functional in both light and dark modes provided by E003/E016.
+- **Acceptance criteria**:
+  - [ ] The left-side navigation menu collapses to an icon-only state when the toggle is clicked, and re-expands when clicked again.
+  - [ ] Menu items display labels in expanded state and only icons (with hover tooltip) in collapsed state.
+  - [ ] The application version is displayed at the bottom of the menu in both collapsed and expanded states.
+  - [ ] Version is automatically injected from the latest git tag during the Docker multi-stage build and available via Vite env var.
+  - [ ] Collapsed/expanded preference persists across page navigation (survives in-memory route changes).
+- **Specify input**:
+  - **Description**: Collapsible left-side navigation with icon-only collapsed mode and application version display at menu bottom, injected from the latest git tag at Docker build time.
+  - **Actors**: Operator
+  - **Key entities**: Navigation component, version env var
+  - **Depends on artifacts**: E003 SPA shell navigation/layout
+  - **Constraints**: Icon-only when collapsed; version from git tag at build time; persistent toggle state; must not break routing or theme
+- **Pipeline hints**: lightweight
 
 ## Coverage Validation
 
@@ -876,7 +912,7 @@ graph LR
 | CAP-009 Self-Hosted Operability | P1 | E013 |
 | CAP-010 Activity Logging & Visibility | P2 | E014 |
 | CAP-011 | Official Starter Modules | P2 | E015, E020, E021, E023, E024 |
-| CAP-012 | Responsive UI & Dark Mode | P2 | E016 |
+| CAP-012 | Responsive UI & Dark Mode | P2 | E016, E029 |
 | CAP-013 | Module Authoring Guidance & Dev Kit | P3 | E017 |
 
 ### SAD ADR Coverage
@@ -909,6 +945,7 @@ graph LR
 - Note: E025 (PUID/PGID Entrypoint) is a new P1 operational epic that implements the linuxserver-style PUID/PGID entrypoint pattern, resolving the open question in {DOD:DDR-004}.
 - Note: E027 (HTML Email Notification Design) is a new P2 product epic that enhances email notifications from plain text to responsive HTML with the light color scheme, extending the notifier from E012.
 - Note: E028 (Notification Deduplication) is a new P1 product epic that tracks last-notified version per device to suppress duplicate notifications; re-notification occurs only when a version newer than the last-notified version appears. Amends ADR-0007.
+- Note: E029 (Collapsible Menu & Version Display) is a new P2 product epic adding a collapsible left-side navigation menu (icon-only collapsed state) and displaying the Binocular version at the bottom of the menu. Tagged to {PRD:CAP-012} as the closest PRD capability match; the version display aspect has no direct PRD capability but aligns with the build-time SemVer injection from E018.
 
 ## Shared Artifact Surface
 
@@ -947,6 +984,8 @@ graph LR
 | Scheduler service | E011 | E012, E014, E019, E026 |
 | Notifier service | E012 | E027, E028 |
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |
+| Collapsible navigation component + version display | E029 | — |
+| `VITE_APP_VERSION` build-time env var | E029 | Collapsible navigation component |
 
 ## Wave Transition Protocol
 
