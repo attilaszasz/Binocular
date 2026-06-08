@@ -894,18 +894,21 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
       }
       setActivities(data);
     } catch (err) {
-      console.warn('API logs fetch failed, using fallback logs', err);
-      const mapped = fallbackLogs.map((log) => ({
-        id: log.id,
-        eventType: log.message.toLowerCase().includes('notification') ? ('notification' as const) : ('check' as const),
-        status: log.level === 'ERROR' ? ('failed' as const) : ('success' as const),
-        deviceName: null,
-        moduleName: null,
-        message: log.message,
-        traceback: log.level === 'ERROR' ? 'Traceback (mock):\n  File "scraper.py", line 42, in scrape\n    raise HTTPError("429 Too Many Requests")' : null,
-        createdAt: new Date().toISOString(),
-      }));
-      setActivities(mapped);
+      const message = err instanceof Error ? err.message : 'Failed to load activity logs';
+      setError(message);
+      if (fallbackLogs.length > 0) {
+        const mapped = fallbackLogs.map((log) => ({
+          id: log.id,
+          eventType: log.message.toLowerCase().includes('notification') ? ('notification' as const) : ('check' as const),
+          status: log.level === 'ERROR' ? ('failed' as const) : ('success' as const),
+          deviceName: null,
+          moduleName: null,
+          message: log.message,
+          traceback: log.level === 'ERROR' ? 'Traceback (mock):\n  File "scraper.py", line 42, in scrape\n    raise HTTPError("429 Too Many Requests")' : null,
+          createdAt: new Date().toISOString(),
+        }));
+        setActivities(mapped);
+      }
     } finally {
       setIsLoading(false);
     }
