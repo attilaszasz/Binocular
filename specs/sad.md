@@ -10,8 +10,8 @@ The system boundary is a single deployable application running on a private, tru
 
 ## Technical Context
 
-**Language/Version**: Python 3.13+ (backend); TypeScript 5.x / React 18 (frontend)  
-**Primary Dependencies**: FastAPI, Uvicorn, aiosqlite, Pydantic, APScheduler, Apprise, httpx, structlog (backend); React, Vite, Tailwind CSS, React Router, TanStack Query, React Hook Form (frontend)<br>
+**Language/Version**: Python 3.13+ (backend); TypeScript 5.x / React 19 (frontend)  
+**Primary Dependencies**: FastAPI, Uvicorn, aiosqlite, Pydantic, APScheduler, Apprise, httpx, structlog (backend); React, Vite, Tailwind CSS 4.x (CSS-first config via `@tailwindcss/vite`), shadcn/ui, Radix UI primitives, React Router, TanStack Query, React Hook Form, class-variance-authority, clsx, tailwind-merge, tw-animate-css (frontend)<br>
 **Storage**: SQLite single file (`binocular.db`) via aiosqlite with raw SQL and a numbered-migration runner; no ORM, no external DB server  
 **Testing**: pytest + pytest-asyncio, httpx.AsyncClient (backend); Vitest + React Testing Library, one Playwright smoke test (frontend); golden/fixture-based module correctness tests<br>
 **Target Platform**: Linux Docker container (`python:3.13-slim`), single port 8000; also runnable directly on a host with Python/Node runtimes  
@@ -88,7 +88,7 @@ C4Component
 
 ## Solution Strategy and Architecture Style
 
-- **Architecture Style**: Single-process modular monolith. Internally layered (API routes → services → repositories) with an explicit Core/Extension seam; runtime concerns (scheduler, module engine, scrape client, notifier) are in-process collaborators. See {SAD:ADR-0001}.
+- **Frontend component library strategy**: The SPA uses **shadcn/ui** (New York style, Zinc-based neutral palette with blue primary accent) as the canonical component library. shadcn/ui provides composable, accessible primitives (Button, Card, Select, Badge, Table, Switch, Tooltip, etc.) built on Radix UI, replacing ad-hoc hand-rolled Tailwind class patterns. Styling uses Tailwind CSS v4's CSS-first configuration model (`@tailwindcss/vite` plugin, `@import "tailwindcss"` in CSS, no PostCSS/autoprefixer, no `tailwind.config.ts`). Dark mode uses `@custom-variant dark (&:is(.dark *))` which integrates with the existing ThemeProvider's `.dark` class toggling on `<html>`. Utility composition is centralized via the `cn()` helper (clsx + tailwind-merge). Components are organized as: `components/ui/` (shadcn primitives), `components/inventory/`, `components/logs/`, `components/modules/`, `components/settings/`, `components/layout/`. See {SAD:ADR-0003}.
 - **Source Code Location**: All project source code resides under `/src` within each application root — backend code under `backend/src/` and frontend code under `frontend/src/`.
 - **Why this style fits**: It is the only style that satisfies the self-hosted, zero-infrastructure, single-volume, set-and-forget constraints while keeping the user-extensibility seam explicit. No inter-service networking, single port, trivial backup.
 - **Alternatives considered**: Microservices/multi-container (rejected — disproportionate operational overhead for one user) and serverless/cloud (rejected — violates self-hosted, offline-LAN, data-ownership constraints). Captured in {SAD:ADR-0001}.
@@ -197,7 +197,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 |--------|-------|--------|------|------------|------|
 | ADR-0001 | Self-hosted single-container monolith with core/extension separation | accepted | 2026-05-31 | — | [0001-self-hosted-single-container-monolith-with-core-extension-separation.md](adrs/0001-self-hosted-single-container-monolith-with-core-extension-separation.md) |
 | ADR-0002 | Python 3.13 and FastAPI for the backend | accepted | 2026-05-31 | — | [0002-python-311-and-fastapi-for-the-backend.md](adrs/0002-python-311-and-fastapi-for-the-backend.md) |
-| ADR-0003 | React + Vite + Tailwind SPA served by FastAPI as static files | accepted | 2026-05-31 | — | [0003-react-vite-tailwind-spa-served-by-fastapi-as-static-files.md](adrs/0003-react-vite-tailwind-spa-served-by-fastapi-as-static-files.md) |
+| ADR-0003 | React + Vite + Tailwind SPA with shadcn/ui Component Library, served by FastAPI as static files | accepted | 2026-06-08 | — | [0003-react-vite-tailwind-spa-served-by-fastapi-as-static-files.md](adrs/0003-react-vite-tailwind-spa-served-by-fastapi-as-static-files.md) |
 | ADR-0004 | SQLite file storage with aiosqlite and raw SQL (no ORM) | accepted | 2026-05-31 | — | [0004-sqlite-file-storage-with-aiosqlite-and-raw-sql-no-orm.md](adrs/0004-sqlite-file-storage-with-aiosqlite-and-raw-sql-no-orm.md) |
 | ADR-0005 | Unsandboxed extension module engine with two-phase validation | accepted | 2026-05-31 | — | [0005-unsandboxed-extension-module-engine-with-two-phase-validation.md](adrs/0005-unsandboxed-extension-module-engine-with-two-phase-validation.md) |
 | ADR-0006 | Centralized responsible-scraping HTTP client provided to modules | accepted | 2026-05-31 | — | [0006-centralized-responsible-scraping-http-client-provided-to-modules.md](adrs/0006-centralized-responsible-scraping-http-client-provided-to-modules.md) |

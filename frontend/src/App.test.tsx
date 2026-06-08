@@ -280,7 +280,8 @@ describe('App shell', () => {
     await user.click(screen.getByRole('button', { name: 'Add Device' }));
     await user.type(screen.getByLabelText('Name'), 'Lumix GH6');
     await user.type(screen.getByLabelText('Model'), 'DC-GH6');
-    await user.selectOptions(screen.getByLabelText('Module'), 'sony-alpha');
+    // Use hidden native select for test compatibility (shadcn Select uses portals)
+    await user.selectOptions(screen.getByTestId('inventory-module-select'), 'sony-alpha');
     await user.type(screen.getByLabelText('Current version'), '2.3');
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -422,19 +423,17 @@ describe('App shell', () => {
       // Collapse sidebar first
       await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
 
-      // Find a nav link in collapsed state (has aria-label because collapsed)
+      // Find a nav item in collapsed state (shadcn Tooltip wraps the NavLink)
       const navLink = screen.getByRole('link', { name: 'Inventory' });
       expect(navLink).toBeInTheDocument();
+      expect(navLink.getAttribute('aria-label')).toBe('Inventory');
 
-      // In collapsed state, tooltip should be rendered but invisible initially
-      // The NavLink has aria-describedby referencing a tooltip
-      const describedBy = navLink.getAttribute('aria-describedby');
-      expect(describedBy).toBeTruthy();
-
-      // The tooltip element exists
-      const tooltip = document.getElementById(describedBy!);
+      // Hover over the nav link to show the tooltip
+      await user.hover(navLink);
+      // shadcn Tooltip renders content in a portal with role="tooltip"
+      const tooltip = await screen.findByRole('tooltip');
       expect(tooltip).toBeInTheDocument();
-      expect(tooltip!.textContent).toBe('Inventory');
+      expect(tooltip.textContent).toBe('Inventory');
     });
 
     it('has correct ARIA attributes on collapsed NavLink', async () => {
@@ -448,10 +447,11 @@ describe('App shell', () => {
       const navLink = screen.getByRole('link', { name: 'Inventory' });
       expect(navLink.getAttribute('aria-label')).toBe('Inventory');
 
-      // tooltip has role="tooltip"
-      const describedBy = navLink.getAttribute('aria-describedby');
-      const tooltip = document.getElementById(describedBy!);
-      expect(tooltip!.getAttribute('role')).toBe('tooltip');
+      // shadcn Tooltip: hover to trigger tooltip
+      await user.hover(navLink);
+      const tooltip = await screen.findByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+      expect(tooltip.getAttribute('role')).toBe('tooltip');
     });
 
     it('hides tooltip on Escape key', async () => {
@@ -465,13 +465,17 @@ describe('App shell', () => {
       const navLink = screen.getByRole('link', { name: 'Inventory' });
       navLink.focus();
 
-      // Press Escape
+      // Hover to show tooltip
+      await user.hover(navLink);
+      const tooltip = await screen.findByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+
+      // Press Escape to dismiss (Radix Tooltip dismisses on Escape when trigger is focused)
       await user.keyboard('{Escape}');
 
-      // Tooltip should become invisible
-      const describedBy = navLink.getAttribute('aria-describedby');
-      const tooltip = document.getElementById(describedBy!);
-      expect(tooltip!.className).toContain('invisible');
+      // After escape, the tooltip should be removed from DOM or hidden
+      // Radix removes the tooltip content from the DOM when dismissed
+      expect(screen.queryByRole('tooltip')).toBeNull();
     });
 
     it('labels remain visible in expanded state', () => {

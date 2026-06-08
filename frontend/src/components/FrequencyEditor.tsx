@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 type PresetValue = '1h' | '6h' | '12h' | '24h' | 'custom';
 
@@ -39,7 +42,6 @@ export function FrequencyEditor({
   const [customError, setCustomError] = useState<string | null>(null);
 
   const firstPresetRef = useRef<HTMLButtonElement>(null);
-  const toggleRef = useRef<HTMLButtonElement>(null);
 
   const resolvedMinutes = useMemo(() => {
     if (selectedPreset === 'custom') {
@@ -103,7 +105,7 @@ export function FrequencyEditor({
 
   return (
     <div
-      className="space-y-3 rounded-xl border border-panel bg-surface p-3"
+      className="space-y-3 rounded-xl border bg-background p-3"
       onKeyDown={handleKeyDown}
       role="presentation"
     >
@@ -112,7 +114,7 @@ export function FrequencyEditor({
         {PRESETS.map((preset) => {
           const isSelected = selectedPreset === preset.value;
           return (
-            <button
+            <Button
               key={preset.value}
               id={presetButtonId(preset.value)}
               ref={preset.value === '1h' ? firstPresetRef : undefined}
@@ -120,6 +122,9 @@ export function FrequencyEditor({
               role="radio"
               aria-checked={isSelected}
               tabIndex={isSelected ? 0 : -1}
+              variant={isSelected ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs font-semibold"
               onClick={() => setSelectedPreset(preset.value)}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
@@ -141,14 +146,9 @@ export function FrequencyEditor({
                   handleSave();
                 }
               }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold motion-safe:transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-focus/40 ${
-                isSelected
-                  ? 'bg-accent text-white'
-                  : 'border border-muted bg-panel text-muted hover:border-muted-hover hover:text-ink-hover'
-              }`}
             >
               {preset.label}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -156,9 +156,9 @@ export function FrequencyEditor({
       {/* Custom input */}
       {selectedPreset === 'custom' && (
         <div>
-          <label htmlFor="freq-custom-input" className="block text-xs font-medium text-muted">
+          <Label htmlFor="freq-custom-input" className="text-xs font-medium text-muted-foreground">
             Custom interval in minutes
-          </label>
+          </Label>
           <input
             id="freq-custom-input"
             type="number"
@@ -168,11 +168,11 @@ export function FrequencyEditor({
             value={customMinutes}
             onChange={(e) => handleCustomChange(e.target.value)}
             aria-describedby={`${customHelpId}${customError !== null ? ` ${customErrorId}` : ''}`}
-            className={`mt-1 h-9 w-full rounded-lg border bg-panel px-3 text-sm text-ink outline-none motion-safe:transition focus:ring-2 focus:ring-accent-focus/20 ${
-              customError !== null ? 'border-error-border' : 'border-muted focus:border-accent'
+            className={`mt-1 h-9 w-full rounded-lg border bg-card px-3 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-ring/20 ${
+              customError !== null ? 'border-destructive/30' : 'border focus:border-primary'
             }`}
           />
-          <p id={customHelpId} className="mt-1 text-xs text-muted">
+          <p id={customHelpId} className="mt-1 text-xs text-muted-foreground">
             {selectedPreset === 'custom' ? 'Enter a whole number between 1 and 10,080' : ''}
           </p>
           {customError !== null && (
@@ -184,53 +184,25 @@ export function FrequencyEditor({
       )}
 
       {/* Enabled toggle */}
-      <div className="flex items-center justify-between border-t border-panel pt-2">
-        <label htmlFor="freq-toggle" className="text-xs font-medium text-muted">
+      <div className="flex items-center justify-between border-t pt-2">
+        <Label htmlFor="freq-toggle" className="text-xs font-medium text-muted-foreground">
           Automatic checking
-        </label>
-        <button
-          ref={toggleRef}
-          id="freq-toggle"
-          type="button"
-          role="switch"
-          aria-checked={isEnabled}
-          aria-label={`Automatic checking: ${isEnabled ? 'on' : 'off'}`}
-          onClick={() => setIsEnabled((prev) => !prev)}
-          onKeyDown={(e) => {
-            if (e.key === ' ') {
-              e.preventDefault();
-              setIsEnabled((prev) => !prev);
-            }
-          }}
-          className={`relative inline-flex h-6 w-10 shrink-0 cursor-pointer items-center rounded-full motion-safe:transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-focus/40 ${
-            isEnabled ? 'bg-accent' : 'bg-muted'
-          }`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm motion-safe:transition-transform ${
-              isEnabled ? 'translate-x-5' : 'translate-x-1'
-            }`}
-          />
-        </button>
+        </Label>
+        <Switch checked={isEnabled} onCheckedChange={setIsEnabled} id="freq-toggle" />
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center justify-end gap-2 border-t border-panel pt-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg border border-muted bg-panel px-3 py-1.5 text-xs font-medium text-muted hover:bg-panel-hover hover:text-ink-hover motion-safe:transition-colors"
-        >
+      <div className="flex items-center justify-end gap-2 border-t pt-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={handleSave}
           disabled={selectedPreset === 'custom' && customError !== null}
-          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-hover motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-60"
         >
           Save
-        </button>
+        </Button>
       </div>
     </div>
   );

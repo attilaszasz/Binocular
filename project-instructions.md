@@ -42,8 +42,8 @@ All agent output MUST be concise and outcome-oriented. This principle supersedes
 
 <!-- Downstream phases (Plan, QC, Autopilot) read this section as the authoritative tech-stack reference. -->
 
-- **Language/Runtime**: Python 3.13 (backend); TypeScript 5.x / React 18 on Node (frontend)
-- **Frameworks**: FastAPI, Uvicorn, Pydantic, APScheduler, Apprise, httpx, structlog (backend); React, Vite, Tailwind CSS, React Router, TanStack Query, React Hook Form (frontend)
+- **Language/Runtime**: Python 3.13 (backend); TypeScript 5.x / React 19 on Node (frontend)
+- **Frameworks**: FastAPI, Uvicorn, Pydantic, APScheduler, Apprise, httpx, structlog (backend); React, Vite, Tailwind CSS 4.x (CSS-first config via `@tailwindcss/vite`), shadcn/ui, Radix UI primitives, React Router, TanStack Query, React Hook Form, class-variance-authority, clsx, tailwind-merge, tw-animate-css (frontend)
 - **Storage**: SQLite single file via aiosqlite, raw parameterized SQL with a numbered-migration runner — no ORM, no external database server
 - **Infrastructure**: Single non-root Docker container (`python:3.13-slim`), one port, two volumes (`/app/data`, `/app/modules`); GitHub Actions CI/CD publishing multi-arch images to GHCR
 
@@ -59,7 +59,7 @@ All agent output MUST be concise and outcome-oriented. This principle supersedes
 ## Source Code Layout
 
 - **Policy**: ENFORCE_SRC_ROOT
-- **Convention**: Project source code MUST live under a `/src` root within each application root — backend code under `backend/src/`, frontend code under `frontend/src/`. Tests live alongside their application; numbered SQL migrations under `backend/src/db/migrations/`; config at repo root.
+- **Convention**: Project source code MUST live under a `/src` root within each application root — backend code under `backend/src/`, frontend code under `frontend/src/`. Frontend components follow a feature-based layout with shadcn/ui primitives under `frontend/src/components/ui/`. Tests live alongside their application; numbered SQL migrations under `backend/src/db/migrations/`; config at repo root.
 
 ## Development Workflow
 
@@ -75,4 +75,4 @@ All agent output MUST be concise and outcome-oriented. This principle supersedes
 - Complexity beyond these principles MUST be justified and documented.
 - The trusted-LAN single-user threat model is assumed; exposing the application to untrusted networks is outside the supported security posture and MUST be documented as such wherever relevant.
 
-**Version**: 1.0.0 | **Last Amended**: 2026-05-31
+**Version**: 1.1.0 | **Last Amended**: 2026-06-08

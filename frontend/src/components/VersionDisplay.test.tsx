@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { VersionDisplay } from './VersionDisplay';
+import { VersionDisplay } from './layout/VersionDisplay';
+import { TooltipProvider } from '@/components/ui/tooltip';
+
+function renderWithProviders(ui: React.ReactElement) {
+  return render(<TooltipProvider>{ui}</TooltipProvider>);
+}
 
 describe('VersionDisplay', () => {
   beforeEach(() => {
@@ -12,12 +17,13 @@ describe('VersionDisplay', () => {
   });
 
   it('renders SemVer tag in expanded state', () => {
-    render(<VersionDisplay isCollapsed={false} />);
+    renderWithProviders(<VersionDisplay isCollapsed={false} />);
     expect(screen.getByText('v1.2.3')).toBeInTheDocument();
   });
 
   it('renders with truncate class in collapsed state for SemVer', () => {
-    render(<VersionDisplay isCollapsed={true} />);
+    renderWithProviders(<VersionDisplay isCollapsed={true} />);
+    // In collapsed state, the version is in a span inside the tooltip trigger
     const el = screen.getByText(/^v1\.2\.3/);
     expect(el).toBeInTheDocument();
     expect(el.className).toContain('truncate');
@@ -26,48 +32,44 @@ describe('VersionDisplay', () => {
   it('renders truncated SHA fallback in collapsed state', () => {
     vi.unstubAllEnvs();
     vi.stubEnv('VITE_APP_VERSION', 'abc1234');
-    render(<VersionDisplay isCollapsed={true} />);
+    renderWithProviders(<VersionDisplay isCollapsed={true} />);
     expect(screen.getByText('abc1234')).toBeInTheDocument();
   });
 
   it('renders "dev" untruncated in both states', () => {
     vi.unstubAllEnvs();
     vi.stubEnv('VITE_APP_VERSION', 'dev');
-    const { rerender } = render(<VersionDisplay isCollapsed={false} />);
+    const { rerender } = renderWithProviders(<VersionDisplay isCollapsed={false} />);
     expect(screen.getByText('dev')).toBeInTheDocument();
 
-    rerender(<VersionDisplay isCollapsed={true} />);
+    rerender(<TooltipProvider><VersionDisplay isCollapsed={true} /></TooltipProvider>);
     expect(screen.getByText('dev')).toBeInTheDocument();
   });
 
   it('shows dev fallback when env var is undefined', () => {
     vi.unstubAllEnvs();
-    // Don't stub any env — should fall back to "dev"
-    render(<VersionDisplay isCollapsed={false} />);
+    renderWithProviders(<VersionDisplay isCollapsed={false} />);
     expect(screen.getByText('dev')).toBeInTheDocument();
   });
 
-  it('has text-muted class on parent for color tokens', () => {
-    const { container } = render(<VersionDisplay isCollapsed={false} />);
-    // The text-muted class is on the outer div, not the inner span
-    const versionParent = container.querySelector('.text-muted');
+  it('has text-muted-foreground class on parent for color tokens', () => {
+    const { container } = renderWithProviders(<VersionDisplay isCollapsed={false} />);
+    const versionParent = container.querySelector('.text-muted-foreground');
     expect(versionParent).toBeTruthy();
   });
 
-  it('renders tooltip container in collapsed state', () => {
-    render(<VersionDisplay isCollapsed={true} />);
-    // In collapsed state, an element with role="button" wraps the version text
-    const versionButton = screen.getByRole('button');
-    expect(versionButton).toBeInTheDocument();
-    expect(versionButton.getAttribute('aria-describedby')).toBe('version-tooltip');
+  it('renders tooltip wrapper in collapsed state', () => {
+    renderWithProviders(<VersionDisplay isCollapsed={true} />);
+    // In collapsed state, VersionDisplay renders a button-like trigger for the tooltip
+    const trigger = screen.getByRole('button');
+    expect(trigger).toBeInTheDocument();
   });
 
   it('does not re-render when isCollapsed changes with same version string', () => {
-    // React.memo should prevent re-render for same props
-    const { rerender } = render(<VersionDisplay isCollapsed={false} />);
+    const { rerender } = renderWithProviders(<VersionDisplay isCollapsed={false} />);
     expect(screen.getByText('v1.2.3')).toBeInTheDocument();
 
-    rerender(<VersionDisplay isCollapsed={true} />);
+    rerender(<TooltipProvider><VersionDisplay isCollapsed={true} /></TooltipProvider>);
     expect(screen.getByText(/^v1\.2\.3/)).toBeInTheDocument();
   });
 });

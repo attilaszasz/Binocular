@@ -1,0 +1,13 @@
+{
+  "date": "2026-06-08",
+  "build": {
+    "js_bytes": 271013,
+    "css_bytes": 28009,
+    "total_bytes": 299022,
+    "files": [
+      "dist/assets/index-DQFGMNw3.js",
+      "dist/assets/index-BeB0ec0I.css"
+    ]
+  },
+  "notes": "Pre-migration baseline. React 18, Tailwind v3.4, no shadcn/ui."
+}

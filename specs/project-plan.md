@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 29 (P1: 16 · P2: 12 · P3: 1) | **Waves**: 13
+**Total Epics**: 30 (P1: 16 · P2: 13 · P3: 1) | **Waves**: 14
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -109,6 +109,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E029 [P2] [PRODUCT] {PRD:CAP-012} Collapsible Menu & Version Display — collapsible left-side nav with icon-only collapsed state; Binocular version at menu bottom injected from git tag at build time
 
+### Wave 14 — Component Library Migration
+
+> Depends on E003 and E016. Migrates the frontend from ad-hoc Tailwind components to shadcn/ui with upgraded toolchain.
+
+- [X] E030 [P2] [TECHNICAL] {SAD:ADR-0003} Shadcn UI Component Library Migration — upgrade frontend toolchain (React 19, Vite 6, Tailwind CSS 4), bootstrap shadcn/ui with blue+Zinc theme, replace ad-hoc patterns with standard components, decompose App.tsx into feature modules, remove custom token system
+
 ## Dependency Diagram
 
 Activity-on-arrow style: nodes are milestones, arrows are epics. `<br>` denotes parallel epics released into the same milestone.
@@ -153,6 +159,9 @@ graph LR
 
     M2 --> M13["Collapsible<br>menu + version"]
     M13 -->|"E029"| M13
+
+    M7 --> M14["Component<br>library migration"]
+    M14 -->|"E030"| M14
 ```
 
 ## Execution Wave Summary
@@ -172,6 +181,7 @@ graph LR
 | 11 | E027 | N/A (single) | Responsive HTML email notification template with light-themed design. |
 | 12 | E028 | N/A (single) | Notification deduplication: track last-notified version per device, gate repeat alerts. |
 | 13 | E029 | N/A (single) | Collapsible left-side navigation menu with icon-only collapsed mode; version display from git tag at build time. |
+| 14 | E030 | N/A (single) | Shadcn UI Component Library Migration: upgrade toolchain, bootstrap shadcn, replace ad-hoc patterns, decompose App.tsx. |
 
 ## Parallel Execution Guidance
 
@@ -895,7 +905,36 @@ graph LR
   - **Constraints**: Icon-only when collapsed; version from git tag at build time; persistent toggle state; must not break routing or theme
 - **Pipeline hints**: lightweight
 
-## Coverage Validation
+### E030 — Shadcn UI Component Library Migration
+
+- **Category**: TECHNICAL | **Priority**: P2
+- **Source**: {SAD:ADR-0003}
+- **Scope**: Migrate the Binocular React SPA from ad-hoc hand-rolled Tailwind components to shadcn/ui as the standard component library. Upgrade the entire frontend toolchain to latest stable versions: React 18.3 → 19.x, Vite → 6.x, Tailwind CSS 3.4 → 4.x (CSS-first config via `@tailwindcss/vite`, dropping PostCSS/autoprefixer). Bootstrap shadcn/ui (New York style, Zinc base + blue primary) and add Radix UI primitives, `class-variance-authority`, `clsx`, `tailwind-merge`, `tw-animate-css`. Generate shadcn components (Button, Input, Select, Card, Badge, Table, Switch, Tooltip) and replace all ad-hoc Tailwind class patterns. Remove custom CSS color tokens in favor of shadcn's standard CSS variables. Decompose App.tsx into feature modules (components/ui/, components/inventory/, components/logs/, components/modules/, components/settings/, components/layout/). Run `@tailwindcss/upgrade` codemod for renamed utilities. Verify all tests pass (vitest, Playwright, tsc, eslint).
+- **Actors**: Operator (browser user), maintainer
+- **Key entities**: shadcn component primitives, Tailwind v4 CSS config, feature component modules, cn() utility
+- **Depends on**: E003, E016
+- **Dependency contracts**: Extends the SPA shell from E003 and the responsive/dark-mode polish from E016; shadcn's `@custom-variant dark (&:is(.dark *))` integrates with the existing ThemeProvider's `.dark` class toggling. All existing routes, API client, and TanStack Query hooks from E003/E005/E008/E010/E014 must continue to function identically.
+- **Depended on by**: —
+- **Produces (shared)**: `frontend/src/components/ui/` (shadcn primitives: Button, Input, Select, Card, Badge, Table, Switch, Tooltip); `frontend/src/components/inventory/`, `components/logs/`, `components/modules/`, `components/settings/`, `components/layout/` (decomposed feature modules); updated `vite.config.ts` with `@tailwindcss/vite`; CSS-first `index.css` with shadcn CSS variables and `@custom-variant dark`; removed `tailwind.config.ts`, `postcss.config.js`; `cn()` utility (clsx + tailwind-merge)
+- **Constraints**: No product capability changes; all existing routes, theme toggle, collapsible sidebar with tooltips, mobile hamburger menu, inventory CRUD, manual single/bulk device checks, module upload/delete, per-module schedule editing, activity log filtering, settings channel configuration, and brand/version display must work identically after migration; shadcn components must render correctly in React Testing Library tests (selectors/roles updated as needed); Playwright E2E smoke tests pass (visual baselines may need updates); `tsc` strict with zero type errors including shadcn/Radix third-party types; `eslint` clean; Vite dev server starts and all routes render
+- **Acceptance criteria**:
+  - [ ] Frontend dependencies bumped: React 19, Vite 6, Tailwind CSS 4 (via `@tailwindcss/vite`), latest React Router, TanStack Query, lucide-react, vitest, Playwright, testing libraries
+  - [ ] Tailwind v4 CSS-first config replaces `tailwind.config.ts` and `postcss.config.js`; `@import "tailwindcss"` replaces `@tailwind` directives
+  - [ ] shadcn/ui initialized with New York style, Zinc base, blue primary; `cn()` utility added
+  - [ ] All ad-hoc Tailwind class patterns replaced with shadcn components (Button, Input, Select, Card, Badge, Table, Switch, Tooltip)
+  - [ ] Custom color tokens removed; all class mappings updated to standard shadcn colors (bg-surface→bg-background, text-ink→text-foreground, etc.)
+  - [ ] Header/sidebar use shadcn `<Button variant="ghost" size="icon">` for theme toggle and nav items; tooltips added to collapsed sidebar items
+  - [ ] App.tsx decomposed into feature modules under `frontend/src/components/{inventory,logs,modules,settings,layout}/`
+  - [ ] All vitest unit/component tests pass with updated selectors/roles for shadcn primitives
+  - [ ] Playwright E2E smoke tests pass (visual baseline updates acceptable)
+  - [ ] `tsc` strict: zero type errors; `eslint`: clean
+  - [ ] Vite dev server starts and all routes render correctly
+- **Specify input**:
+  - **Description**: Migrate the Binocular React SPA from ad-hoc hand-rolled Tailwind components to shadcn/ui as the standard component library. Upgrade the entire frontend toolchain to latest stable versions (React 19, Vite 6, Tailwind CSS 4 CSS-first config, `@tailwindcss/vite`). Bootstrap shadcn/ui (New York style, Zinc base + blue primary theme) with Radix primitives, cva, clsx, tailwind-merge, tw-animate-css. Replace all ad-hoc Tailwind patterns with standard shadcn components (Button, Card, Select, Badge, Table, Switch, Tooltip). Remove custom CSS color token system. Decompose App.tsx into feature modules. All tests pass, all functionality preserved.
+  - **Actors**: Operator, maintainer
+  - **Key entities**: shadcn component primitives, CSS variables, feature modules, cn() utility
+  - **Depends on artifacts**: E003 SPA shell, E016 responsive/dark-mode polish
+  - **Constraints**: No product capability regression; all shadcn/Radix types must pass tsc strict; tests updated for new component selectors/roles
 
 ### PRD Capability Coverage
 
@@ -921,7 +960,7 @@ graph LR
 |-----|--------|---------|
 | ADR-0001 Single-container monolith, core/extension separation | accepted | E001 |
 | ADR-0002 Python 3.13 + FastAPI backend | accepted | E001 |
-| ADR-0003 React/Vite/Tailwind SPA as static files | accepted | E003 |
+| ADR-0003 React/Vite/Tailwind SPA as static files | accepted | E003, E030 |
 | ADR-0004 SQLite + aiosqlite + raw SQL | accepted | E004 |
 | ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E006, E021, E023 |
 | ADR-0006 Centralized responsible-scraping client | accepted | E007, E023 |
@@ -986,6 +1025,9 @@ graph LR
 | Secret/`_FILE` loader + basic-auth middleware | E013 | E012, E019 |
 | Collapsible navigation component + version display | E029 | — |
 | `VITE_APP_VERSION` build-time env var | E029 | Collapsible navigation component |
+| shadcn/ui primitives (Button, Input, Select, Card, Badge, Table, Switch, Tooltip) | E030 | Feature modules (inventory, logs, modules, settings) |
+| `cn()` utility (clsx + tailwind-merge) | E030 | All frontend components |
+| Feature component modules (inventory/, logs/, modules/, settings/, layout/) | E030 | App.tsx router |
 
 ## Wave Transition Protocol
 

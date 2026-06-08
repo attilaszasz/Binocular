@@ -1,112 +1,101 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Nunito+Sans:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Nunito+Sans:wght@400;600;700;800&display=swap')
+layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-/* ── Theme Token System ─────────────────────────────────────────────
- * All color values are RGB triplets (space-separated, no commas).
- * They are consumed by Tailwind via `rgb(var(--color-*) / <alpha-value>)`.
- * The `:root.dark` variant overrides every token for dark mode.
- *
- * Token families:
- *   surface  – page/app background, low-elevation surfaces
- *   panel    – cards, containers, elevated surfaces
- *   ink      – primary / high-contrast text
- *   muted    – secondary text, borders, disabled text
- *   accent   – interactive elements, links, primary actions
- *
- * States: default, hover, focus, disabled, active
- * ────────────────────────────────────────────────────────────────── */
+@custom-variant dark (&:is(.dark *));
 
-/* ── Light (default) ────────────────────────────────────────────── */
-:root {
-  /* Surface */
-  --color-surface: 244 241 234;
-  --color-surface-hover: 235 230 220;
-
-  /* Panel */
-  --color-panel: 255 255 255;
-  --color-panel-hover: 245 245 245;
-
-  /* Ink */
-  --color-ink: 31 41 55;
-  --color-ink-hover: 15 23 42;
-  --color-ink-disabled: 156 163 175;
-
-  /* Muted */
-  --color-muted: 91 104 117;
-  --color-muted-hover: 71 85 99;
-
-  /* Accent */
-  --color-accent: 10 132 120;
-  --color-accent-hover: 8 115 105;
-  --color-accent-focus: 10 132 120;        /* used with opacity modifier for rings */
-  --color-accent-disabled: 209 213 219;
-  --color-accent-active: 6 95 87;
-
-  /* Error (rose) */
-  --color-error: 190 18 60;            /* rose-700 */
-  --color-error-bg: 255 241 242;       /* rose-50 */
-  --color-error-border: 254 205 211;   /* rose-200 */
-
-  /* Success (emerald) */
-  --color-success: 4 120 87;           /* emerald-700 */
-  --color-success-bg: 236 253 245;     /* emerald-50 */
-  --color-success-border: 167 243 208; /* emerald-200 */
-
-  /* Warning (amber) */
-  --color-warning: 180 83 9;           /* amber-700 */
-  --color-warning-bg: 255 251 235;     /* amber-50 */
-  --color-warning-border: 253 230 138; /* amber-200 */
-
-  /* Gradient edge */
-  --color-gradient-edge: 226 232 240;  /* slate-200 */
+@theme {
+  --font-sans: 'Nunito Sans', ui-sans-serif, system-ui;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular;
+  --shadow-quiet: 0 18px 50px rgb(15 23 42 / 0.12);
 }
 
-/* ── Dark ───────────────────────────────────────────────────────── */
-:root.dark {
-  /* Surface */
-  --color-surface: 18 24 31;
-  --color-surface-hover: 24 32 40;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
 
-  /* Panel */
-  --color-panel: 28 36 46;
-  --color-panel-hover: 36 44 55;
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 30% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 30% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 30% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 217.2 91.2% 59.8%;
+  --radius: 0.5rem;
+  --chart-1: 217.2 91.2% 59.8%;
+  --chart-2: 173 58% 39%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+}
 
-  /* Ink */
-  --color-ink: 236 241 245;
-  --color-ink-hover: 255 255 255;
-  --color-ink-disabled: 75 85 99;
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 217.2 32.6% 12%;
+  --card-foreground: 210 40% 98%;
+  --popover: 217.2 32.6% 12%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 217.2 91.2% 59.8%;
+  --chart-1: 217.2 91.2% 59.8%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
+}
 
-  /* Muted */
-  --color-muted: 159 173 185;
-  --color-muted-hover: 131 148 163;
-
-  /* Accent */
-  --color-accent: 69 192 172;
-  --color-accent-hover: 86 207 188;
-  --color-accent-focus: 69 192 172;
-  --color-accent-disabled: 55 65 81;
-  --color-accent-active: 56 174 156;
-
-  /* Error — effective colors blended against dark surface/panel */
-  --color-error: 253 164 175;          /* rose-300 */
-  --color-error-bg: 41 28 37;          /* rose-500 / 10% on dark surface */
-  --color-error-border: 114 47 65;     /* rose-500 / 40% on dark panel */
-
-  /* Success */
-  --color-success: 52 211 153;         /* emerald-400 */
-  --color-success-bg: 18 40 41;        /* emerald-500 / 10% on dark surface */
-  --color-success-border: 24 81 71;    /* emerald-500 / 30% on dark panel */
-
-  /* Warning */
-  --color-warning: 251 191 36;         /* amber-400 */
-  --color-warning-bg: 41 37 29;        /* amber-500 / 10% on dark surface */
-  --color-warning-border: 93 73 36;    /* amber-500 / 30% on dark panel */
-
-  /* Gradient edge */
-  --color-gradient-edge: 30 41 59;     /* slate-800 */
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
 }
 
 /* ── Base Styles ────────────────────────────────────────────────── */
@@ -115,25 +104,13 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: rgb(var(--color-surface));
-  color: rgb(var(--color-ink));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 button,
 a {
   -webkit-tap-highlight-color: transparent;
-}
-
-/* ── Motion Reduction ────────────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }
 
 /* ── Mobile Touch Targets ────────────────────────────────────────── */

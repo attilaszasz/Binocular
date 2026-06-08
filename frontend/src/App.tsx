@@ -56,7 +56,7 @@ import {
 } from './api';
 import { updateSchedule } from './api/schedules';
 import { FrequencyEditor } from './components/FrequencyEditor';
-import { VersionDisplay } from './components/VersionDisplay';
+import { VersionDisplay } from './components/layout/VersionDisplay';
 import { useTheme } from './theme/useTheme';
 
 type LogEntry = {
@@ -79,6 +79,12 @@ const pageTitles: Record<string, string> = {
   '/modules': 'Modules',
   '/settings': 'Settings',
 };
+
+const primaryButtonClass =
+  'inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm cursor-pointer motion-safe:transition-all motion-safe:duration-200 hover:bg-sky-700 hover:shadow-md focus-visible:ring-2 focus-visible:ring-accent-focus/40 disabled:cursor-not-allowed disabled:opacity-60';
+
+const compactPrimaryButtonClass =
+  'inline-flex items-center justify-center rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm cursor-pointer motion-safe:transition-all motion-safe:duration-200 hover:bg-sky-700 hover:shadow-md focus-visible:ring-2 focus-visible:ring-accent-focus/40 disabled:cursor-not-allowed disabled:opacity-60';
 
 const emptyDeviceInput: DeviceInput = {
   name: '',
@@ -343,7 +349,7 @@ export function App() {
       <aside
         role="complementary"
         aria-label="Sidebar"
-        className={`fixed inset-y-0 left-0 z-50 flex transform flex-col border-r border-panel bg-panel motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-in-out md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex transform flex-col border-r border-sky-200/70 bg-gradient-to-b from-sky-50 via-white to-violet-50/70 motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-in-out dark:border-sky-400/15 dark:from-slate-950 dark:via-slate-950 dark:to-violet-950/40 md:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'md:w-16' : 'md:w-64'}`}
       >
@@ -382,7 +388,7 @@ export function App() {
             }}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-expanded={!isCollapsed}
-            className="flex w-full items-center justify-center rounded-lg p-2 text-muted hover:bg-panel-hover hover:text-ink-hover focus-visible:ring-2 focus-visible:ring-accent-focus/40 motion-safe:transition-colors motion-safe:duration-200"
+            className="flex w-full items-center justify-center rounded-lg bg-white/60 p-2 text-muted hover:bg-white/80 hover:text-ink-hover focus-visible:ring-2 focus-visible:ring-accent-focus/40 motion-safe:transition-colors motion-safe:duration-200 dark:bg-white/5 dark:hover:bg-white/10"
           >
             {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
           </button>
@@ -391,7 +397,7 @@ export function App() {
       </aside>
 
       <main className={`min-h-screen motion-safe:transition-[margin-left] motion-safe:duration-300 motion-safe:ease-in-out ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-panel bg-panel/85 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-sky-200/70 bg-gradient-to-r from-white/95 via-sky-50/90 to-violet-50/80 px-4 backdrop-blur-sm dark:border-sky-400/15 dark:from-slate-950/95 dark:via-slate-900/90 dark:to-violet-950/40 sm:px-6 lg:px-8">
           <div className="flex items-center">
             <button
               type="button"
@@ -476,7 +482,7 @@ export function App() {
 function Brand({ isCollapsed }: { isCollapsed: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="rounded-lg bg-accent/10 p-1.5 text-accent">
+      <div className="rounded-lg bg-gradient-to-br from-sky-500/20 to-violet-500/20 p-1.5 text-sky-600 dark:from-sky-500/25 dark:to-violet-500/25 dark:text-sky-300">
         <Binoculars size={24} />
       </div>
       {!isCollapsed && <span className="text-xl font-bold tracking-tight">Binocular</span>}
@@ -505,8 +511,8 @@ function NavItem({
       className={({ isActive }) =>
         `group relative flex w-full items-center rounded-xl py-3 text-sm font-medium motion-safe:transition-all motion-safe:duration-200 focus-visible:ring-2 focus-visible:ring-accent-focus/40 ${isCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} ${
           isActive
-            ? 'bg-accent/10 text-accent'
-            : 'text-muted hover:bg-panel-hover hover:text-ink-hover'
+            ? 'bg-gradient-to-r from-sky-500/15 to-violet-500/15 text-sky-700 shadow-sm dark:text-sky-300'
+            : 'text-muted hover:bg-sky-500/10 hover:text-sky-700 dark:hover:text-sky-300'
         }`
       }
       onKeyDown={(e) => {
@@ -609,7 +615,7 @@ function InventoryPage({
             type="button"
             onClick={onRunAllChecks}
             disabled={!canCheckAll || isBulkChecking}
-            className="inline-flex h-10 items-center rounded-xl border border-muted bg-panel px-4 text-sm font-medium text-ink shadow-sm motion-safe:transition hover:bg-panel-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className={`${primaryButtonClass} h-10`}
           >
             <Binoculars size={16} className="mr-2" />
             {isBulkChecking ? 'Checking...' : 'Check All'}
@@ -617,7 +623,7 @@ function InventoryPage({
           <button
             type="button"
             onClick={() => onShowForm(true)}
-            className="inline-flex items-center rounded-xl border border-muted bg-panel px-4 py-2 text-sm font-medium text-ink shadow-sm motion-safe:transition hover:bg-panel-hover"
+            className={primaryButtonClass}
           >
             <Plus size={16} className="mr-2" />
             Add Device
@@ -669,7 +675,7 @@ function InventoryPage({
         <div className="flex items-end gap-2">
           <button
             type="submit"
-            className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-white shadow-sm motion-safe:transition hover:bg-accent-hover"
+            className={`${primaryButtonClass} h-10 flex-1`}
           >
             {editingDevice === null ? 'Add' : 'Save'}
           </button>
@@ -677,7 +683,7 @@ function InventoryPage({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="h-10 rounded-xl border border-muted px-3 text-sm text-ink"
+               className={`${primaryButtonClass} h-10 px-3`}
             >
               Cancel
             </button>
@@ -685,7 +691,7 @@ function InventoryPage({
             <button
               type="button"
               onClick={() => onShowForm(false)}
-              className="h-10 rounded-xl border border-muted px-3 text-sm text-ink"
+               className={`${primaryButtonClass} h-10 px-3`}
             >
               Cancel
             </button>
@@ -779,13 +785,25 @@ function StatCard({
   tone: 'indigo' | 'rose' | 'emerald';
 }) {
   const toneClass = {
-    indigo: 'bg-accent/10 text-accent',
-    rose: 'bg-error-bg text-error',
-    emerald: 'bg-success-bg text-success',
+    indigo:
+      'bg-sky-100 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-500/15 dark:text-sky-300 dark:ring-sky-400/20',
+    rose:
+      'bg-rose-100 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:ring-rose-400/20',
+    emerald:
+      'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/20',
+  }[tone];
+
+  const cardClass = {
+    indigo:
+      'border-sky-200/80 bg-sky-50 dark:border-sky-400/20 dark:bg-slate-900',
+    rose:
+      'border-rose-200/80 bg-rose-50 dark:border-rose-400/20 dark:bg-slate-900',
+    emerald:
+      'border-emerald-200/80 bg-emerald-50 dark:border-emerald-400/20 dark:bg-slate-900',
   }[tone];
 
   return (
-    <div className="rounded-2xl border border-panel bg-panel p-5 shadow-sm">
+    <div className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-muted">{label}</p>
@@ -823,10 +841,10 @@ function DeviceCard({
   const resultStatus = manualResult?.status.replaceAll('_', ' ');
   return (
     <article
-      className={`rounded-2xl border bg-panel p-5 shadow-sm motion-safe:transition-all motion-safe:duration-200 ${
+      className={`rounded-2xl border p-5 shadow-sm motion-safe:transition-all motion-safe:duration-200 ${
         hasUpdate
-          ? 'border-error-border ring-1 ring-error-border dark:ring-0 dark:shadow-[0_0_15px_rgb(var(--color-error-border)/0.12)]'
-          : 'border-panel'
+          ? 'border-rose-300/80 bg-rose-50 ring-1 ring-rose-200/80 dark:border-rose-400/25 dark:bg-slate-900 dark:ring-0 dark:shadow-[0_0_15px_rgb(var(--color-error-border)/0.12)]'
+          : 'border-sky-200/70 bg-white dark:border-sky-400/15 dark:bg-slate-900'
       }`}
     >
       <div className="mb-4 flex items-start justify-between gap-4">
@@ -849,21 +867,21 @@ function DeviceCard({
             type="button"
             onClick={() => onRunCheck(device)}
             disabled={!canCheck || isChecking}
-            className="rounded-lg bg-accent/10 px-3 py-2 text-xs font-medium text-accent motion-safe:transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className={compactPrimaryButtonClass}
           >
             {isChecking ? 'Checking...' : 'Check Now'}
           </button>
           <button
             type="button"
             onClick={() => onEdit(device)}
-            className="rounded-lg bg-panel-hover px-3 py-2 text-xs font-medium text-muted motion-safe:transition-colors hover:bg-surface-hover"
+            className={compactPrimaryButtonClass}
           >
             Edit
           </button>
           <button
             type="button"
             onClick={() => onArchive(device)}
-            className="rounded-lg bg-panel-hover px-3 py-2 text-xs font-medium text-muted motion-safe:transition-colors hover:bg-surface-hover"
+            className={compactPrimaryButtonClass}
           >
             Archive
           </button>
@@ -872,7 +890,9 @@ function DeviceCard({
 
       <div
         className={`flex items-center justify-between rounded-xl p-4 ${
-          hasUpdate ? 'bg-error-bg' : 'bg-surface'
+          hasUpdate
+            ? 'bg-rose-100/80 dark:bg-rose-500/10'
+            : 'bg-white/75 ring-1 ring-sky-100 dark:bg-slate-950/40 dark:ring-sky-400/10'
         }`}
       >
         <div className="flex flex-1 items-center gap-4">
@@ -886,7 +906,7 @@ function DeviceCard({
             <button
               type="button"
               onClick={() => onMarkUpdated(device)}
-              className="inline-flex items-center rounded-lg border border-success-border bg-success-bg px-3 py-2 text-sm font-medium text-success motion-safe:transition-colors hover:bg-success-border"
+              className={compactPrimaryButtonClass}
             >
               <Check size={16} className="mr-1.5" />
               Sync Local
@@ -896,7 +916,7 @@ function DeviceCard({
       </div>
 
       {manualResult !== undefined && (
-        <div className="mt-3 rounded-xl border border-muted bg-panel px-4 py-3 text-sm">
+        <div className="mt-3 rounded-xl border border-sky-100 bg-white/80 px-4 py-3 text-sm shadow-sm dark:border-sky-400/10 dark:bg-slate-950/40">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-medium capitalize text-ink">Manual result: {resultStatus}</span>
             <span className="text-xs text-muted">
@@ -1026,7 +1046,7 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
           type="button"
           onClick={() => void fetchLogs()}
           disabled={isLoading}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-muted bg-panel px-4 text-sm font-medium text-ink shadow-sm motion-safe:transition hover:bg-panel-hover disabled:opacity-60"
+          className={`${primaryButtonClass} h-10`}
         >
           <RefreshCw size={16} className={`mr-2 ${isLoading ? 'motion-safe:animate-spin' : ''}`} />
           Refresh
@@ -1169,7 +1189,7 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
                           {showChevron ? (
                             <button
                               type="button"
-                              className="rounded-lg p-1 hover:bg-panel-hover text-muted"
+                              className={`${compactPrimaryButtonClass} h-7 px-2`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleExpand(log.id);
@@ -1197,7 +1217,7 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
                                     e.stopPropagation();
                                     void handleCopyTraceback(log.id, log.traceback || '');
                                   }}
-                                  className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 px-3 text-xs font-medium motion-safe:transition motion-safe:active:scale-95"
+                                  className={`${compactPrimaryButtonClass} h-7 px-3`}
                                 >
                                   <Copy size={12} className="mr-1.5" />
                                   {copiedId === log.id ? 'Copied!' : 'Copy'}
@@ -1362,7 +1382,7 @@ function ModulesPage({
           {selectedFile !== null && <span className="text-xs text-muted">{selectedFile.name}</span>}
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-xl border border-muted bg-panel px-4 py-2 text-sm font-medium text-ink shadow-sm motion-safe:transition hover:bg-panel-hover"
+            className={primaryButtonClass}
           >
             <Plus size={16} className="mr-2" />
             Upload
@@ -1402,7 +1422,7 @@ function ModulesPage({
                   <button
                     type="button"
                     onClick={onRetry}
-                    className="inline-flex items-center rounded-lg border border-error-border px-2 py-0.5 text-xs font-medium text-error hover:bg-error-bg"
+                    className={`${compactPrimaryButtonClass} px-2 py-0.5`}
                   >
                     <RefreshCw size={12} className="mr-1" />
                     Retry
@@ -1525,7 +1545,7 @@ function ModulesPage({
                   <button
                     type="button"
                     onClick={() => onDelete(module)}
-                    className="text-sm font-medium text-error hover:text-error"
+                    className={`${compactPrimaryButtonClass} px-3 py-1.5`}
                   >
                     Delete
                   </button>
@@ -1742,7 +1762,7 @@ function SettingsPage() {
           }`}
         >
           <span>{statusMsg.message}</span>
-          <button type="button" onClick={() => setStatusMsg(null)} className="ml-3 font-bold hover:opacity-85">
+          <button type="button" onClick={() => setStatusMsg(null)} className={`${compactPrimaryButtonClass} ml-3 h-7 px-2`}>
             ✕
           </button>
         </div>
@@ -1867,7 +1887,7 @@ function SettingsPage() {
               type="button"
               onClick={handleTestSmtp}
               disabled={isSmtpTesting || isSmtpSaving}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-muted bg-panel px-4 text-xs font-medium text-ink shadow-sm motion-safe:transition hover:bg-panel-hover disabled:opacity-60"
+               className={`${compactPrimaryButtonClass} h-9 px-4`}
             >
               {isSmtpTesting ? 'Sending Test...' : 'Send Test'}
             </button>
@@ -1875,7 +1895,7 @@ function SettingsPage() {
               type="button"
               onClick={handleSaveSmtp}
               disabled={isSmtpTesting || isSmtpSaving}
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-accent px-4 text-xs font-medium text-white shadow-sm motion-safe:transition hover:bg-accent-hover disabled:opacity-60"
+               className={`${compactPrimaryButtonClass} h-9 px-4`}
             >
               {isSmtpSaving ? 'Saving...' : 'Save Settings'}
             </button>
@@ -1933,7 +1953,7 @@ function SettingsPage() {
               type="button"
               onClick={handleTestGotify}
               disabled={isGotifyTesting || isGotifySaving}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-muted bg-panel px-4 text-xs font-medium text-ink shadow-sm motion-safe:transition hover:bg-panel-hover disabled:opacity-60"
+               className={`${compactPrimaryButtonClass} h-9 px-4`}
             >
               {isGotifyTesting ? 'Sending Test...' : 'Send Test'}
             </button>
@@ -1941,7 +1961,7 @@ function SettingsPage() {
               type="button"
               onClick={handleSaveGotify}
               disabled={isGotifyTesting || isGotifySaving}
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-accent px-4 text-xs font-medium text-white shadow-sm motion-safe:transition hover:bg-accent-hover disabled:opacity-60"
+               className={`${compactPrimaryButtonClass} h-9 px-4`}
             >
               {isGotifySaving ? 'Saving...' : 'Save Settings'}
             </button>
