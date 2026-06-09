@@ -128,7 +128,7 @@ sequenceDiagram
 - Notification channel (SMTP/Gotify) failure → dispatch error logged in the activity log for operator visibility; check result still persisted.
 - Already-notified version detected → no duplicate notification; last-notified version tracked per device; a new alert dispatches only when a version newer than the last-notified version appears.
 - SQLite lock contention → `busy_timeout` (5s) wait; WAL allows concurrent reads during scheduler writes. See {SAD:ADR-0004}.
-- Malformed module upload → rejected pre-save by two-phase validation (static AST + optional runtime proof) with structured per-phase results; never enters the modules directory.
+- Malformed module upload → rejected pre-save by two-phase validation (static AST + optional runtime proof) with structured per-phase results; never enters the modules directory. Validation errors are formatted for AI-friendly copy-paste, enabling users to iterate with AI coding assistants.
 
 ## Deployment and Infrastructure View
 
@@ -176,7 +176,7 @@ Outbound only: manufacturer firmware pages are scraped through the host-provided
 
 ### Operations
 
-Distributed primarily as a Docker image (single port, two volumes, non-root with PUID/PGID configurable user via entrypoint, healthcheck), with a host-runtime fallback. Zero-config startup with sensible defaults; `BINOCULAR_DB_PATH` configurable. Dependencies pinned (lock file with hashes). A standalone module dev/test kit lets authors validate modules locally against the same polite HTTP client.
+Distributed primarily as a Docker image (single port, two volumes, non-root with PUID/PGID configurable user via entrypoint, healthcheck), with a host-runtime fallback. Zero-config startup with sensible defaults; `BINOCULAR_DB_PATH` configurable. Dependencies pinned (lock file with hashes). A standalone module dev/test kit lets authors validate modules locally against the same polite HTTP client. A downloadable AI Module Kit (contract reference, starter template, working example, structured AI prompt) is served as static files by the backend, enabling AI-assisted module authoring without prior codebase knowledge.
 
 ## Quality Attributes
 
@@ -245,6 +245,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Domain repositories use a shared raw-SQL repository base with parameter binding and allowlisted dynamic identifiers; no ORM abstraction is introduced.
 - Responsible scraping uses a host-owned async `httpx` client wrapper with robots.txt checks, identifiable User-Agent defaults, per-origin pacing, bounded retry/backoff, and typed diagnostics for visible failures.
 - Extension modules use a trusted in-process Python contract with importlib path loading, host ScrapeClient injection, per-invocation timeout/error boundaries, and two-phase static/runtime validation; validation is not a sandbox.
+- The Modules page serves as the primary self-service onboarding path for module creation, with a "Create a Module" guidance section and a downloadable AI Module Kit (contract reference, starter template, working example, structured AI instructions) served as static backend assets. Validation error output includes an AI-friendly copy-paste feature for iterative debugging with AI coding assistants.
 - Bundled official starter modules are automatically discovered, validated, and seeded/upserted into the SQLite database on application startup, enabling out-of-the-box tracking of devices without manual upload.
 - Device type is derived from the linked extension module; the standalone DeviceType entity is removed from the domain model. Devices reference modules directly via `module_id` FK; device type grouping is computed at query time. See {SAD:ADR-0009}.
 - The application version is injected into the frontend bundle at Docker build time via a compile-time env var (populated from the latest git tag), enabling version display in the UI without runtime lookups. Uses the multi-stage build pattern from ADR-0003.

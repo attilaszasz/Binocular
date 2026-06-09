@@ -60,6 +60,8 @@ Evidence is observational and domain-driven rather than formal market research, 
 - When I physically update a device, I want to confirm the new version in one click so alerts reset cleanly.
 - When I'm unsure, I want to trigger an immediate check for one device or all devices and compare stored vs. latest side by side.
 - When my gear isn't yet supported, I want to add support myself by writing/importing a module against a documented contract.
+- When I want to create a module but don't know the codebase, I want to hand a ready-made prompt kit to my AI coding assistant and get back a valid module with zero prior knowledge.
+- When a module I upload fails validation, I want to copy the errors in a format my AI tool can understand so I can iterate to a fix without manual translation.
 - When something goes wrong (a page changed, a network error), I want to see honest status and a log rather than silent failure.
 - When I deploy this, I want it to start with sane defaults, persist everything in one place, and survive restarts and upgrades with no data loss.
 
@@ -70,7 +72,7 @@ Evidence is observational and domain-driven rather than formal market research, 
 - **Polite by default**: Identifiable User-Agent, robots.txt respect, and conservative per-source rate limits/backoff are built in, not optional add-ons.
 - **Least-privilege & explicit trust boundary**: Non-root container; user-supplied/imported modules are explicitly the user's responsibility to vet — the product does not pretend they are sandboxed.
 - **Set-and-forget reliability**: Zero-config start, survives restarts and upgrades; correctness is valued over feature breadth.
-- **Local extensibility without a marketplace**: A clear authoring contract plus import/export enables sharing; an in-app registry/marketplace is intentionally out of scope.
+- **Local extensibility without a marketplace**: A clear authoring contract plus import/export enables sharing; an in-app registry/marketplace is intentionally out of scope. An AI-assisted authoring path (downloadable prompt kit) lowers the barrier to creating valid modules.
 - **Responsive & accessible**: Fully usable on mobile and desktop; dark mode is a first-class requirement for this audience.
 
 ## Scope Summary
@@ -87,7 +89,7 @@ The v1 product scope equals the full product brief: a complete detect → compar
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
 - Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, and Godox Flashes that are automatically seeded and registered in the database on startup as working examples and templates.
 - Self-hosted operability: Docker distribution, single data volume, zero-config startup, non-root execution, responsive UI with dark mode.
-- Local module sharing enablement: an authoring contract and import/export, plus authoring guidance for module creators.
+- Local module sharing enablement: an authoring contract and import/export, plus authoring guidance for module creators — including a downloadable AI Module Kit and AI-friendly validation error output for assisted module creation.
 
 ### Out-of-Scope Items
 
@@ -117,7 +119,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-010 | Activity Logging & Visibility | P2 | All check activity and errors are recorded in a size-bounded, in-UI viewable log. |
 | CAP-011 | Official Starter Modules | P2 | Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, and Godox Flashes modules are automatically registered and seeded in the database on startup, serving as immediate value and templates. |
 | CAP-012 | Responsive UI & Dark Mode | P2 | The interface is fully usable on mobile and desktop with first-class dark mode. |
-| CAP-013 | Module Authoring Guidance & Dev Kit | P3 | Authoring docs and a standalone test path help users create and verify valid modules locally. |
+| CAP-013 | Module Authoring Guidance & AI-Assisted Dev Kit | P2 | Authoring docs, a downloadable AI Module Kit (prompt instructions, contract reference, templates, examples), an in-UI "Create a Module" guidance section, and AI-friendly validation error copy-paste empower users — especially those working with AI coding assistants — to create and iterate on valid modules with zero prior codebase knowledge. |
 
 ## Success Metrics / KPIs / Desired Outcomes
 

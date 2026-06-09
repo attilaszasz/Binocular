@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-05-31 | **Status**: Draft
-**Total Epics**: 30 (P1: 16 · P2: 13 · P3: 1) | **Waves**: 14
+**Total Epics**: 31 (P1: 16 · P2: 14 · P3: 1) | **Waves**: 15
 
 A continuous-validation strategy is applied: an automated build-and-test pipeline lands in Wave 2 — immediately after the application skeleton — so every later increment is validated from the start. The full multi-architecture release/publish pipeline is deliberately split out and delivered later, once there is a stable image to publish.
 
@@ -115,6 +115,12 @@ A continuous-validation strategy is applied: an automated build-and-test pipelin
 
 - [X] E030 [P2] [TECHNICAL] {SAD:ADR-0003} Shadcn UI Component Library Migration — upgrade frontend toolchain (React 19, Vite 6, Tailwind CSS 4), bootstrap shadcn/ui with blue+Zinc theme, replace ad-hoc patterns with standard components, decompose App.tsx into feature modules, remove custom token system
 
+### Wave 15 — AI-Assisted Module Authoring
+
+> Depends on E008, E017, and E030. Enhances the Modules page with an AI-assisted authoring workflow, a downloadable AI Module Kit, and AI-friendly validation error copy-paste.
+
+- [ ] E031 [P2] [PRODUCT] {PRD:CAP-013}{PRD:CAP-003} AI-Assisted Module Authoring UX — guidance section, downloadable AI kit, AI-friendly error copy
+
 ## Dependency Diagram
 
 Activity-on-arrow style: nodes are milestones, arrows are epics. `<br>` denotes parallel epics released into the same milestone.
@@ -162,6 +168,10 @@ graph LR
 
     M7 --> M14["Component<br>library migration"]
     M14 -->|"E030"| M14
+
+    M14 --> M15["AI-assisted<br>authoring"]
+    M5 --> M15
+    M15 -->|"E031"| M15
 ```
 
 ## Execution Wave Summary
@@ -182,6 +192,7 @@ graph LR
 | 12 | E028 | N/A (single) | Notification deduplication: track last-notified version per device, gate repeat alerts. |
 | 13 | E029 | N/A (single) | Collapsible left-side navigation menu with icon-only collapsed mode; version display from git tag at build time. |
 | 14 | E030 | N/A (single) | Shadcn UI Component Library Migration: upgrade toolchain, bootstrap shadcn, replace ad-hoc patterns, decompose App.tsx. |
+| 15 | E031 | N/A (single) | AI-Assisted Module Authoring UX: guidance section on Modules page, downloadable AI Module Kit, AI-friendly validation error copy-paste. |
 
 ## Parallel Execution Guidance
 
@@ -936,6 +947,32 @@ graph LR
   - **Depends on artifacts**: E003 SPA shell, E016 responsive/dark-mode polish
   - **Constraints**: No product capability regression; all shadcn/Radix types must pass tsc strict; tests updated for new component selectors/roles
 
+### E031 — AI-Assisted Module Authoring UX
+
+- **Category**: PRODUCT | **Priority**: P2
+- **Source**: {PRD:CAP-013}, {PRD:CAP-003}
+- **Scope**: Enhance the Modules page to serve as the primary self-service onboarding path for module creation. Add a prominent "Create a Module" guidance section explaining what modules are and how to create one with AI assistance. Provide a downloadable AI Module Kit (served as static files by the backend) containing the authoring contract reference, a starter template, a working example module, and structured AI instructions — individually downloadable and as a single .zip bundle. Improve the ValidationSummary component with a "Copy errors for AI" button that copies a pre-formatted, AI-friendly error block (error codes, messages, phase, fix instruction preamble) to the clipboard for direct paste into any AI coding tool.
+- **Actors**: Operator, module author
+- **Key entities**: AI Module Kit (static files), ValidationSummary component, Modules page
+- **Depends on**: E008, E017, E030
+- **Dependency contracts**: Extends the Modules page UI from E008; reuses the authoring contract documentation from E017; renders using shadcn/ui components from E030.
+- **Depended on by**: —
+- **Produces (shared)**: AI Module Kit static files served at `/api/v1/module-kit/`; "Create a Module" guidance UI section; "Copy errors for AI" clipboard feature on ValidationSummary
+- **Constraints**: Kit files must be self-contained (usable without the full app context); AI instructions file must work with any AI tool (ChatGPT, Claude, Gemini, Cursor, etc.); backend serves static kit files without additional dependencies; validation error copy format must be tool-agnostic
+- **Acceptance criteria**:
+  - [ ] The Modules page includes a prominent "Create a Module" guidance section explaining what modules are, how to create one with AI, and a brief "how it works" flow.
+  - [ ] A downloadable AI Module Kit is available as individual files and a single .zip bundle, served by the backend.
+  - [ ] The kit contains: authoring contract reference, starter template, at least one working example module, and a structured AI instructions/prompt file.
+  - [ ] The kit is self-contained — handing it (or just the instructions file) to any AI tool produces a valid .py module.
+  - [ ] When module validation fails, a "Copy errors for AI" button copies a pre-formatted error block to the clipboard.
+  - [ ] The copied error text includes error codes, messages, failed phase (static/runtime), and an instruction preamble for the AI tool.
+- **Specify input**:
+  - **Description**: AI-assisted module authoring UX: in-UI guidance section, downloadable AI Module Kit with contract reference/template/example/AI prompt, and AI-friendly validation error copy-paste on upload failure.
+  - **Actors**: Operator, module author
+  - **Key entities**: AI Module Kit (static files), ValidationSummary, Modules page
+  - **Depends on artifacts**: E008 Modules page, E017 authoring docs, E030 shadcn components
+  - **Constraints**: Self-contained kit; tool-agnostic AI instructions; static file serving; no new backend dependencies
+
 ### PRD Capability Coverage
 
 | Capability | Priority | Epic(s) |
@@ -952,7 +989,7 @@ graph LR
 | CAP-010 Activity Logging & Visibility | P2 | E014 |
 | CAP-011 | Official Starter Modules | P2 | E015, E020, E021, E023, E024 |
 | CAP-012 | Responsive UI & Dark Mode | P2 | E016, E029 |
-| CAP-013 | Module Authoring Guidance & Dev Kit | P3 | E017 |
+| CAP-013 | Module Authoring Guidance & AI-Assisted Dev Kit | P2 | E017, E031 |
 
 ### SAD ADR Coverage
 
@@ -985,6 +1022,7 @@ graph LR
 - Note: E027 (HTML Email Notification Design) is a new P2 product epic that enhances email notifications from plain text to responsive HTML with the light color scheme, extending the notifier from E012.
 - Note: E028 (Notification Deduplication) is a new P1 product epic that tracks last-notified version per device to suppress duplicate notifications; re-notification occurs only when a version newer than the last-notified version appears. Amends ADR-0007.
 - Note: E029 (Collapsible Menu & Version Display) is a new P2 product epic adding a collapsible left-side navigation menu (icon-only collapsed state) and displaying the Binocular version at the bottom of the menu. Tagged to {PRD:CAP-012} as the closest PRD capability match; the version display aspect has no direct PRD capability but aligns with the build-time SemVer injection from E018.
+- Note: E031 (AI-Assisted Module Authoring UX) is a new P2 product epic that enhances the Modules page with an AI-assisted authoring workflow. Adds a "Create a Module" guidance section, a downloadable AI Module Kit (contract reference, template, example, AI instructions) served as static backend files, and a "Copy errors for AI" button on validation error output. CAP-013 was promoted from P3 to P2 to reflect its expanded scope.
 
 ## Shared Artifact Surface
 
@@ -1011,6 +1049,7 @@ graph LR
 | `/api/v1/checks` | E010 | E016 |
 | `/api/v1/notifications` | E012 | UI config |
 | `/api/v1/activity` | E014 | E016 |
+| `/api/v1/module-kit/` | E031 | Modules page UI |
 
 ### Libraries / Modules
 
@@ -1028,6 +1067,8 @@ graph LR
 | shadcn/ui primitives (Button, Input, Select, Card, Badge, Table, Switch, Tooltip) | E030 | Feature modules (inventory, logs, modules, settings) |
 | `cn()` utility (clsx + tailwind-merge) | E030 | All frontend components |
 | Feature component modules (inventory/, logs/, modules/, settings/, layout/) | E030 | App.tsx router |
+| AI Module Kit static files | E031 | Modules page UI |
+| "Copy errors for AI" clipboard feature | E031 | ValidationSummary component |
 
 ## Wave Transition Protocol
 
