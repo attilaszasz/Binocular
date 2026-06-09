@@ -365,7 +365,7 @@ export function App() {
             <X size={20} />
           </button>
         </div>
-        <nav className={`flex-1 overflow-y-auto space-y-1.5 ${isCollapsed ? 'p-2' : 'p-4'}`} aria-label="Primary navigation">
+        <nav className={`flex-1 overflow-y-auto overflow-x-hidden space-y-1.5 ${isCollapsed ? 'p-2' : 'p-4'}`} aria-label="Primary navigation">
           {navItems.map((item) => (
             <NavItem key={item.to} item={item} onNavigate={closeMobileMenu} isCollapsed={isCollapsed} />
           ))}
@@ -1058,7 +1058,7 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-panel bg-panel p-4 shadow-sm">
+      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-sky-200/70 bg-sky-50/80 p-4 shadow-sm dark:border-sky-400/15 dark:bg-slate-900">
         <div className="flex items-center gap-2">
           <Filter size={16} className="text-muted" />
           <span className="text-sm font-medium text-muted">Filters</span>
@@ -1101,7 +1101,7 @@ function LogsPage({ logs: fallbackLogs }: { logs: LogEntry[] }) {
         </div>
       )}
 
-      <div className="relative overflow-hidden rounded-2xl border border-panel bg-panel shadow-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-sky-200/70 bg-white shadow-sm dark:border-sky-400/15 dark:bg-slate-900">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-muted">
             <thead className="bg-surface">
@@ -1381,7 +1381,7 @@ function ModulesPage({
             type="file"
             accept=".py,text/x-python"
             onChange={(event) => onFileSelect(event.currentTarget.files?.[0] ?? null)}
-            className="block w-full rounded-xl border border-muted bg-panel px-3 py-2 text-sm text-ink shadow-sm file:mr-3 file:rounded-lg file:border-0 file:bg-surface file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink sm:w-72"
+            className="block w-full rounded-xl border border-sky-200/70 bg-white px-3 py-2 text-sm text-ink shadow-sm file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-sky-600 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white file:transition-colors file:hover:bg-sky-700 dark:border-sky-400/15 dark:bg-slate-900 dark:file:bg-sky-600 dark:file:hover:bg-sky-700 sm:w-72"
           />
           {selectedFile !== null && <span className="text-xs text-muted">{selectedFile.name}</span>}
           <button
@@ -1461,10 +1461,10 @@ function ModulesPage({
             return (
               <article
                 key={module.moduleId}
-                className="rounded-2xl border border-panel bg-panel p-6 shadow-sm"
+                className="rounded-2xl border border-sky-200/70 bg-white p-6 shadow-sm dark:border-sky-400/15 dark:bg-slate-900"
               >
                 <div className="mb-4 flex items-start justify-between">
-                  <div className="rounded-xl bg-accent/10 p-3 text-accent">
+                  <div className="rounded-xl bg-gradient-to-br from-sky-500/20 to-violet-500/20 p-3 text-sky-600 dark:from-sky-500/25 dark:to-violet-500/25 dark:text-sky-300">
                     <TerminalSquare size={24} />
                   </div>
                   <ModuleStatus status={module.validationStatus} />
@@ -1539,7 +1539,7 @@ function ModulesPage({
                   </div>
                 )}
 
-                <div className="flex items-center justify-between border-t border-panel pt-4">
+                <div className="flex items-center justify-between border-t border-sky-100 pt-4 dark:border-sky-400/10">
                   <span className="flex items-center text-sm font-medium text-muted">
                     <Server size={14} className="mr-1.5" />
                     {module.lastValidatedAt === null
@@ -1774,11 +1774,11 @@ function SettingsPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Email/SMTP Config */}
-        <section className="rounded-2xl border border-panel bg-panel p-6 shadow-sm flex flex-col justify-between">
+        <section className="rounded-2xl border border-sky-200/70 bg-white p-6 shadow-sm flex flex-col justify-between dark:border-sky-400/15 dark:bg-slate-900">
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-panel pb-3">
+            <div className="flex items-center justify-between border-b border-sky-100 pb-3 dark:border-sky-400/10">
               <h3 className="flex items-center text-md font-bold text-ink">
-                <Mail className="mr-2 text-indigo-500" size={18} />
+                <Mail className="mr-2 text-sky-500" size={18} />
                 Email / SMTP Channel
               </h3>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1886,7 +1886,7 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center justify-end gap-2 border-t border-panel pt-4">
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-sky-100 pt-4 dark:border-sky-400/10">
             <button
               type="button"
               onClick={handleTestSmtp}
@@ -1907,11 +1907,11 @@ function SettingsPage() {
         </section>
 
         {/* Gotify Config */}
-        <section className="rounded-2xl border border-panel bg-panel p-6 shadow-sm flex flex-col justify-between">
+        <section className="rounded-2xl border border-sky-200/70 bg-white p-6 shadow-sm flex flex-col justify-between dark:border-sky-400/15 dark:bg-slate-900">
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-panel pb-3">
+            <div className="flex items-center justify-between border-b border-sky-100 pb-3 dark:border-sky-400/10">
               <h3 className="flex items-center text-md font-bold text-ink">
-                <Send className="mr-2 text-indigo-500" size={18} />
+                <Send className="mr-2 text-sky-500" size={18} />
                 Gotify Push Channel
               </h3>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1952,7 +1952,7 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center justify-end gap-2 border-t border-panel pt-4">
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-sky-100 pt-4 dark:border-sky-400/10">
             <button
               type="button"
               onClick={handleTestGotify}
