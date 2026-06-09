@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw } from 'lucide-react';
+import { Check, ClipboardCopy, RefreshCw } from 'lucide-react';
 import type { InstalledModule, ModuleValidationSummary } from '@/api';
 import { updateSchedule } from '@/api/schedules';
 import { Button } from '@/components/ui/button';
 import { ModuleUploadForm } from './ModuleUploadForm';
 import { ModuleCard } from './ModuleCard';
+import { ModuleGuidanceSection } from './ModuleGuidanceSection';
+import { copyErrorsToClipboard, hasFindings } from './copyErrorsForAI';
 
 function PageHeader({ title, description }: { title: string; description: string }) {
   return (
@@ -17,9 +19,42 @@ function PageHeader({ title, description }: { title: string; description: string
 }
 
 function ValidationSummary({ summary }: { summary: ModuleValidationSummary }) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+
+  const handleCopy = useCallback(async () => {
+    const ok = await copyErrorsToClipboard(summary);
+    setCopyState(ok ? 'copied' : 'failed');
+    setTimeout(() => setCopyState('idle'), 2000);
+  }, [summary]);
+
   return (
     <div className="rounded-2xl border border-destructive/30 bg-card p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-destructive">Validation feedback</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-destructive">Validation feedback</h3>
+        {hasFindings(summary) && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {copyState === 'copied' ? (
+              <>
+                <Check size={14} />
+                Copied!
+              </>
+            ) : copyState === 'failed' ? (
+              'Copy failed'
+            ) : (
+              <>
+                <ClipboardCopy size={14} />
+                Copy errors for AI
+              </>
+            )}
+          </Button>
+        )}
+      </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {[summary.static_phase, summary.runtime_phase].map((phase) => (
           <div key={phase.phase} className="rounded-xl bg-background p-3 text-sm">
@@ -170,6 +205,8 @@ export function ModulesPage({
       <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
         Modules are trusted Python code and run unsandboxed with application privileges.
       </div>
+
+      <ModuleGuidanceSection />
 
       {frequencyError !== null && (
         <div
