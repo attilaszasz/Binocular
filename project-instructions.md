@@ -75,4 +75,4 @@ All agent output MUST be concise and outcome-oriented. This principle supersedes
 - Complexity beyond these principles MUST be justified and documented.
 - The trusted-LAN single-user threat model is assumed; exposing the application to untrusted networks is outside the supported security posture and MUST be documented as such wherever relevant.
 
-**Version**: 1.1.0 | **Last Amended**: 2026-06-08
+**Version**: 1.1.1 | **Last Amended**: 2026-06-10
