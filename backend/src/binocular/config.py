@@ -58,3 +58,6 @@ class Settings(BaseSettings):
     data_dir: Path = Path("/app/data")
     modules_dir: Path = Path("/app/modules")
 
+    # Module engine
+    module_timeout: float = 30.0
+
