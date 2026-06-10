@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-settings>=2.6",
     "structlog>=24.4",
     "aiosqlite>=0.20",
+    "python-multipart>=0.0.32",
 ]
 
 [project.scripts]
