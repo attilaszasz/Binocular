@@ -1,6 +1,6 @@
 # Software Architecture Document: Binocular
 
-> Date: 2026-06-10 | Status: Draft
+> Date: 2026-05-31 | Status: Draft
 
 ## Purpose and Scope
 
@@ -11,11 +11,11 @@ The system boundary is a single deployable application running on a private, tru
 ## Technical Context
 
 **Language/Version**: Python 3.13+ (backend); TypeScript 5.x / React 19 (frontend)  
-**Primary Dependencies**: FastAPI, Uvicorn, aiosqlite, Pydantic, APScheduler, Apprise, httpx, structlog, Jinja2, BeautifulSoup4 (backend); React, Vite, Tailwind CSS 4.x (CSS-first config via `@tailwindcss/vite`), shadcn/ui, Radix UI primitives, React Router, TanStack Query, React Hook Form, class-variance-authority, clsx, tailwind-merge, tw-animate-css, lucide-react (frontend)  
+**Primary Dependencies**: FastAPI, Uvicorn, aiosqlite, Pydantic, APScheduler, Apprise, httpx, structlog (backend); React, Vite, Tailwind CSS 4.x (CSS-first config via `@tailwindcss/vite`), shadcn/ui, Radix UI primitives, React Router, TanStack Query, React Hook Form, class-variance-authority, clsx, tailwind-merge, tw-animate-css (frontend)<br>
 **Storage**: SQLite single file (`binocular.db`) via aiosqlite with raw SQL and a numbered-migration runner; no ORM, no external DB server  
-**Testing**: pytest + pytest-asyncio, httpx.AsyncClient (backend); Vitest + React Testing Library, one Playwright smoke test (frontend); golden/fixture-based module correctness tests  
+**Testing**: pytest + pytest-asyncio, httpx.AsyncClient (backend); Vitest + React Testing Library, one Playwright smoke test (frontend); golden/fixture-based module correctness tests<br>
 **Target Platform**: Linux Docker container (`python:3.13-slim`), single port 8000; also runnable directly on a host with Python/Node runtimes  
-**Project Type**: Web application — Python/FastAPI backend + React SPA, single-process monolith  
+**Project Type**: Web application — Python/FastAPI backend + React SPA, single-process monolith<br>
 **Performance Goals**: Responsive UI on mobile and desktop; concurrent multi-site checks via async I/O without blocking the UI; modest homelab hardware footprint  
 **Constraints**: Self-contained storage (no external DB), single-container/single-volume/zero-config/non-root operability, trusted-LAN single-user, no telemetry, polite-scraping mandatory, unsandboxed extension execution  
 **Scale/Scope**: Single user, single instance; inventory of roughly 5–50+ devices; one background scheduler concurrent with UI reads
@@ -47,7 +47,7 @@ C4Container
     title Container View
     Person(user, "Operator")
     System_Boundary(binocular, "Binocular") {
-        Container(spa, "Web UI", "React/Vite/shadcn", "Responsive SPA")
+        Container(spa, "Web UI", "React/Vite/Tailwind", "Responsive SPA")
         Container(api, "App Server", "Python/FastAPI", "API + static + scheduler")
         ContainerDb(db, "SQLite", "aiosqlite file", "Inventory and logs")
         Container(modules, "Modules Dir", "Volume of .py files", "Extension scripts")
@@ -75,8 +75,6 @@ C4Component
         Component(engine, "Module Engine", "importlib", "Load + run")
         Component(httpcli, "Scrape Client", "httpx", "Polite HTTP")
         Component(notifier, "Notifier", "Apprise", "Dispatch")
-        Component(seeder, "Module Seeder", "Python", "Auto-register bundled modules")
-        Component(emailrender, "Email Renderer", "Jinja2", "HTML email")
     }
     ComponentDb(db, "SQLite", "file", "Inventory and logs")
     Rel(routes, services, "Calls")
@@ -86,17 +84,13 @@ C4Component
     Rel(services, engine, "Runs modules")
     Rel(engine, httpcli, "Provides client")
     Rel(services, notifier, "Sends alerts")
-    Rel(notifier, emailrender, "Renders HTML")
-    Rel(seeder, engine, "Validates modules")
 ```
 
 ## Solution Strategy and Architecture Style
 
-- **Single-container monolith**: FastAPI backend serves the React SPA as static files, runs the scheduler in-process, and persists to a single SQLite file. One port, one image, trivial backup.
-- **Core/Extension separation**: The module engine provides a documented authoring contract for pluggable firmware-checking intelligence. Modules execute unsandboxed, in-process, with the host-provided scraping client.
-- **Frontend component library strategy**: The SPA uses **shadcn/ui** (New York style, Zinc-based neutral palette with blue primary accent) as the canonical component library from day one. shadcn/ui provides composable, accessible primitives built on Radix UI. Styling uses Tailwind CSS v4's CSS-first configuration model (`@tailwindcss/vite` plugin). Dark mode uses `@custom-variant dark (&:is(.dark *))`. Utility composition via `cn()` helper (clsx + tailwind-merge). Components organized as: `components/ui/` (shadcn primitives), `components/inventory/`, `components/logs/`, `components/modules/`, `components/settings/`, `components/layout/`.
+- **Frontend component library strategy**: The SPA uses **shadcn/ui** (New York style, Zinc-based neutral palette with blue primary accent) as the canonical component library. shadcn/ui provides composable, accessible primitives (Button, Card, Select, Badge, Table, Switch, Tooltip, etc.) built on Radix UI, replacing ad-hoc hand-rolled Tailwind class patterns. Styling uses Tailwind CSS v4's CSS-first configuration model (`@tailwindcss/vite` plugin, `@import "tailwindcss"` in CSS, no PostCSS/autoprefixer, no `tailwind.config.ts`). Dark mode uses `@custom-variant dark (&:is(.dark *))` which integrates with the existing ThemeProvider's `.dark` class toggling on `<html>`. Utility composition is centralized via the `cn()` helper (clsx + tailwind-merge). Components are organized as: `components/ui/` (shadcn primitives), `components/inventory/`, `components/logs/`, `components/modules/`, `components/settings/`, `components/layout/`. See {SAD:ADR-0003}.
 - **Source Code Location**: All project source code resides under `/src` within each application root — backend code under `backend/src/` and frontend code under `frontend/src/`.
-- **Why this style fits**: It is the only style that satisfies the self-hosted, zero-infrastructure, single-volume, set-and-forget constraints while keeping the user-extensibility seam explicit.
+- **Why this style fits**: It is the only style that satisfies the self-hosted, zero-infrastructure, single-volume, set-and-forget constraints while keeping the user-extensibility seam explicit. No inter-service networking, single port, trivial backup.
 - **Alternatives considered**: Microservices/multi-container (rejected — disproportionate operational overhead for one user) and serverless/cloud (rejected — violates self-hosted, offline-LAN, data-ownership constraints). Captured in {SAD:ADR-0001}.
 
 ## Key Runtime Flows and Failure Paths
@@ -134,8 +128,7 @@ sequenceDiagram
 - Notification channel (SMTP/Gotify) failure → dispatch error logged in the activity log for operator visibility; check result still persisted.
 - Already-notified version detected → no duplicate notification; last-notified version tracked per device; a new alert dispatches only when a version newer than the last-notified version appears.
 - SQLite lock contention → `busy_timeout` (5s) wait; WAL allows concurrent reads during scheduler writes. See {SAD:ADR-0004}.
-- Malformed module upload → rejected pre-save by two-phase validation (static AST + optional runtime proof) with structured per-phase results; never enters the modules directory. Validation errors are formatted for AI-friendly copy-paste.
-- Official module consistently failing → in-app notification alerts the operator to check for a project update (CAP-014).
+- Malformed module upload → rejected pre-save by two-phase validation (static AST + optional runtime proof) with structured per-phase results; never enters the modules directory. Validation errors are formatted for AI-friendly copy-paste, enabling users to iterate with AI coding assistants.
 
 ## Deployment and Infrastructure View
 
@@ -157,7 +150,7 @@ flowchart TB
     Uvicorn --> Notify["Email / Gotify"]
 ```
 
-A multi-stage Docker build compiles the Vite frontend in a Node stage and copies `dist/` into the Python image, which serves it via FastAPI `StaticFiles` with an SPA catch-all — single port, single image. Two volumes (`/app/data`, `/app/modules`) hold all mutable state. The container runs as a non-root user with configurable UID/GID via `PUID`/`PGID` entrypoint; a `HEALTHCHECK` validates liveness. See {SAD:ADR-0001}, {SAD:ADR-0003}.
+A multi-stage Docker build compiles the Vite frontend in a Node stage and copies `dist/` into the Python image, which serves it via FastAPI `StaticFiles` with an SPA catch-all — single port, single image. Two volumes (`/app/data`, `/app/modules`) hold all mutable state. The container runs as a non-root user; a `HEALTHCHECK` validates liveness. See {SAD:ADR-0001}, {SAD:ADR-0003}.
 
 ## Cross-Cutting Concerns
 
@@ -175,15 +168,15 @@ Structured logging via `structlog` across migration runner, connection lifecycle
 
 ### Data Management
 
-All state in SQLite (`binocular.db`) on the `/app/data` volume; backup = copy the file. Schema evolves via numbered SQL migrations tracked by a `schema_version` table, auto-applied on startup. WAL journaling, `foreign_keys=ON`, and `busy_timeout` set per connection. The activity log is rolling/size-bounded to prevent unbounded growth. Schema should be consolidated from the start to avoid fix migrations (prototype learning). See {SAD:ADR-0004}.
+All state in SQLite (`binocular.db`) on the `/app/data` volume; backup = copy the file. Schema evolves via numbered SQL migrations (`001_initial.sql`, …) tracked by a `schema_version` table, auto-applied on startup. WAL journaling, `foreign_keys=ON`, and `busy_timeout` set per connection. The activity log is rolling/size-bounded to prevent unbounded growth. See {SAD:ADR-0004}.
 
 ### Integration Strategy
 
-Outbound only: manufacturer firmware pages are scraped through the host-provided polite HTTP client (the single enforcement point for robots.txt, identifiable User-Agent, per-domain rate limiting, and backoff); notifications dispatch through Apprise — Email/SMTP (as responsive, light-themed HTML via Jinja2 templates with mobile-friendly layout) and Gotify at launch. No inbound integrations or third-party APIs. See {SAD:ADR-0006}, {SAD:ADR-0007}.
+Outbound only: manufacturer firmware pages are scraped through the host-provided polite HTTP client (the single enforcement point for robots.txt, identifiable User-Agent, per-domain rate limiting, and backoff); notifications dispatch through Apprise — Email/SMTP (as responsive, light-themed HTML with mobile-friendly layout) and Gotify at launch, extensible to other channels. No inbound integrations or third-party APIs. See {SAD:ADR-0006}, {SAD:ADR-0007}.
 
 ### Operations
 
-Distributed primarily as a Docker image (single port, two volumes, non-root with PUID/PGID configurable user via entrypoint, healthcheck), with a host-runtime fallback. Zero-config startup with sensible defaults; `BINOCULAR_DB_PATH` configurable. Dependencies pinned (lock file with hashes). A standalone module dev/test kit lets authors validate modules locally against the same polite HTTP client. A downloadable AI Module Kit (contract reference, starter template, working example, structured AI prompt) is served as static files by the backend.
+Distributed primarily as a Docker image (single port, two volumes, non-root with PUID/PGID configurable user via entrypoint, healthcheck), with a host-runtime fallback. Zero-config startup with sensible defaults; `BINOCULAR_DB_PATH` configurable. Dependencies pinned (lock file with hashes). A standalone module dev/test kit lets authors validate modules locally against the same polite HTTP client. A downloadable AI Module Kit (contract reference, starter template, working example, structured AI prompt) is served as static files by the backend, enabling AI-assisted module authoring without prior codebase knowledge.
 
 ## Quality Attributes
 
@@ -240,7 +233,9 @@ Project-level architectural decisions are maintained as standalone MADR files un
 
 ### Open Questions
 
-- None. All prototype-era open questions have been resolved.
+- Should optional basic auth be encouraged (or defaulted on) for users who reverse-proxy the UI beyond a trusted LAN?
+- What default check frequency best balances timeliness against polite-scraping load?
+- How should the product signal and recover when a shipped official module breaks due to a manufacturer page change?
 
 ## Project Context Baseline Updates
 
@@ -250,9 +245,8 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Domain repositories use a shared raw-SQL repository base with parameter binding and allowlisted dynamic identifiers; no ORM abstraction is introduced.
 - Responsible scraping uses a host-owned async `httpx` client wrapper with robots.txt checks, identifiable User-Agent defaults, per-origin pacing, bounded retry/backoff, and typed diagnostics for visible failures.
 - Extension modules use a trusted in-process Python contract with importlib path loading, host ScrapeClient injection, per-invocation timeout/error boundaries, and two-phase static/runtime validation; validation is not a sandbox.
-- The Modules page serves as the primary self-service onboarding path for module creation, with a "Create a Module" guidance section and a downloadable AI Module Kit (contract reference, starter template, working example, structured AI instructions) served as static backend assets. Validation error output includes an AI-friendly copy-paste feature.
-- Bundled official starter modules are automatically discovered, validated, and seeded/upserted into the SQLite database on application startup.
-- Device type is derived from the linked extension module; no standalone DeviceType entity. Devices reference modules directly via `module_id` FK; device type grouping is computed at query time. See {SAD:ADR-0009}.
-- The application version is injected into the frontend bundle at Docker build time via a compile-time env var (populated from the latest git tag).
-- Email notifications render as responsive HTML via Jinja2 templates with the application light color scheme.
-- Notification deduplication tracks `last_notified_version` per device to suppress duplicate alerts.
+- The Modules page serves as the primary self-service onboarding path for module creation, with a "Create a Module" guidance section and a downloadable AI Module Kit (contract reference, starter template, working example, structured AI instructions) served as static backend assets. Validation error output includes an AI-friendly copy-paste feature for iterative debugging with AI coding assistants.
+- Bundled official starter modules are automatically discovered, validated, and seeded/upserted into the SQLite database on application startup, enabling out-of-the-box tracking of devices without manual upload.
+- Device type is derived from the linked extension module; the standalone DeviceType entity is removed from the domain model. Devices reference modules directly via `module_id` FK; device type grouping is computed at query time. See {SAD:ADR-0009}.
+- The application version is injected into the frontend bundle at Docker build time via a compile-time env var (populated from the latest git tag), enabling version display in the UI without runtime lookups. Uses the multi-stage build pattern from ADR-0003.
+

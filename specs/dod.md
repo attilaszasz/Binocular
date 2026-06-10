@@ -1,12 +1,12 @@
 # Deployment & Operations Document: Binocular
 
-> Date: 2026-05-31 | Status: Draft
+> Date: 2026-06-10 | Status: Draft
 
 ## Deployment Summary and Context
 
-Binocular ships as a **single, self-contained Docker image** that an operator runs on a private, trusted LAN. The deployment goal is set-and-forget homelab operation: one container, one port, one data volume, non-root, zero external dependencies (no database server, broker, or cloud service). This document covers how that image is built, distributed, configured, backed up, and operated. It complements — and does not repeat — the architecture in [specs/sad.md](sad.md); for runtime structure, the core/extension seam, and per-component decisions, see the SAD and its ADR catalog.
+Binocular ships as a **single, self-contained Docker image** that an operator runs on a private, trusted LAN. The deployment goal is set-and-forget homelab operation: one container, one port, one data volume, non-root, zero external dependencies (no database server, broker, or cloud service). This document covers how that image is built, distributed, configured, backed up, and operated. It complements — and does not repeat — the architecture in [specs/sad.md](sad.md).
 
-Operational ambition is intentionally **homelab-grade and minimal**: there is no environment ladder, no SLO/error-budget/on-call machinery, no IaC, and no external telemetry. Enterprise-oriented sections of the standard template are omitted as not applicable rather than filled with placeholders.
+Operational ambition is intentionally **homelab-grade and minimal**: there is no environment ladder, no SLO/error-budget/on-call machinery, no IaC, and no external telemetry.
 
 ## Environment Strategy
 
@@ -39,8 +39,7 @@ flowchart LR
 - **Container registry**: GitHub Container Registry (GHCR), public — `ghcr.io/<owner>/binocular`.
 - **Image tagging**: Driven by SemVer git tags via `docker/metadata-action` — `{{version}}`, `{{major}}.{{minor}}`, and `latest`. The `{{major}}` tag is enabled only for `>= v1.0.0`. Base image pinned by digest for reproducibility.
 - **Vulnerability scanning**: Trivy (`aquasecurity/trivy-action`) in CI against the built image; fail on HIGH/CRITICAL with available fixes. Weekly scheduled re-scan of the published image since it is long-lived.
-- **SBOM / provenance**: Emitted cheaply by buildx (`sbom: true`, `provenance: true` on `build-push-action`) and attached as OCI attestations.
-- **App store / Edge/CDN**: N/A.
+- **SBOM / provenance**: Emitted by buildx (`sbom: true`, `provenance: true` on `build-push-action`) and attached as OCI attestations.
 
 ## CI/CD Pipeline Design
 
@@ -58,15 +57,13 @@ flowchart LR
 - **Quality gates (PRs and pushes)**: Ruff + mypy `--strict` (backend), Biome/ESLint + `tsc` (frontend); `pytest` + `pytest-asyncio`, Vitest + React Testing Library, one Playwright smoke test, and golden/fixture module-correctness tests.
 - **Build stack**: `docker/setup-qemu-action` → `docker/setup-buildx-action` → `docker/login-action` (GHCR via `GITHUB_TOKEN`, `permissions: packages: write`) → `docker/metadata-action` → `docker/build-push-action` with `platforms: linux/amd64,linux/arm64`.
 - **Publish condition**: Images are pushed only on SemVer tag refs; PR builds build-but-do-not-push. Layer caching via `type=gha` (`mode=max`).
-- **IaC approach**: None — there is no managed infrastructure to provision.
-- **Deployment method**: Pull-based. The operator runs `docker compose pull && docker compose up -d`; there is no push deploy or GitOps controller.
 - **Secrets in pipeline**: Only the built-in `GITHUB_TOKEN` for GHCR; no application secrets are baked into the image or passed as build args.
 
 ## Infrastructure and Hosting
 
 - **Hosting**: Self-hosted by the operator (homelab host, NAS, mini-PC, or SBC). No cloud provider.
-- **Compute model**: A single Docker container managed by Docker / Docker Compose. No orchestrator (Kubernetes/Swarm) assumed or required.
-- **Networking**: One exposed port (`8000`) on the trusted LAN. TLS, if desired, is provided by the operator's own reverse proxy (e.g. Caddy/Traefik/Nginx) — out of scope for the image.
+- **Compute model**: A single Docker container managed by Docker / Docker Compose. No orchestrator assumed or required.
+- **Networking**: One exposed port (`8000`) on the trusted LAN. TLS, if desired, is provided by the operator's own reverse proxy — out of scope for the image.
 - **Storage infrastructure**: Two persistent volumes — `/app/data` (SQLite `binocular.db`) and `/app/modules` (user extension `.py` files). Operator-managed; backed up by file/volume copy.
 - **Container hardening**: Non-root user configurable via `PUID`/`PGID` environment variables (default `PUID=1000 PGID=1000`), applied at entrypoint via user/group creation and `su-exec`; `no-new-privileges:true`, `cap_drop: [ALL]`; optional `read_only` rootfs with a `tmpfs` for `/tmp`. See {SAD:ADR-0008}, {SAD:ADR-0001}.
 
@@ -91,36 +88,36 @@ flowchart TB
 
 ## Observability and Monitoring
 
-No external telemetry, metrics backend, or APM — by design. Observability is what an operator can see from Docker and the app's own UI.
+No external telemetry, metrics backend, or APM — by design.
 
 ### Logging
-- **Approach**: Structured (JSON / key=value) logs via `structlog` with contextual fields (`device_id`, `module_name`), written to **stdout/stderr only** — never to files inside the container.
-- **Aggregation**: `docker logs` / `docker compose logs -f`. The operator's Docker logging driver (`json-file` with `max-size`/`max-file`) handles rotation.
-- **In-app activity log**: A bounded, size-limited recent-events log persisted in SQLite and viewable in the UI (scrape runs, notification dispatches, errors). Complements stdout; does not replace it.
+- **Approach**: Structured (JSON / key=value) logs via `structlog` with contextual fields (`device_id`, `module_name`), written to **stdout/stderr only**.
+- **Aggregation**: `docker logs` / `docker compose logs -f`. The operator's Docker logging driver handles rotation.
+- **In-app activity log**: A bounded, size-limited recent-events log persisted in SQLite and viewable in the UI.
 
 ### Metrics
 - **Application signals**: Surfaced in the UI, not exported — failed-scrape count, last-success timestamps per device/module, notification dispatch failures.
 - **Infrastructure signals**: Container health and data-volume disk usage observed via the operator's own Docker tooling.
-- **DORA / distributed tracing**: N/A — out of scope for a single-user homelab app.
 
 ### Health Checking
-- **Container HEALTHCHECK**: `--interval=30s --timeout=5s --start-period=20s --retries=3` against a cheap `/healthz` endpoint (process up + SQLite openable). Drives `docker ps` health status and `restart` policy. Kept shallow intentionally — not a deep dependency check.
+- **Container HEALTHCHECK**: `--interval=30s --timeout=5s --start-period=20s --retries=3` against a cheap `/healthz` endpoint. Drives `docker ps` health status and `restart` policy.
 
 ### Alerting
-- **Self-notification**: Binocular can dispatch operational failures (e.g. repeated scrape failures, notification-channel errors) through its own Apprise channels (Email/SMTP, Gotify). There is no PagerDuty/on-call rotation.
+- **Self-notification**: Binocular can dispatch operational failures through its own Apprise channels.
+- **Official module health**: In-app notification when a shipped official module consistently fails scraping (CAP-014).
 - **What the operator watches**: container health = healthy; failed-scrape trend; notification dispatch failures; `/app/data` disk-usage growth; container restart loops.
 
 ## Reliability Engineering
 
-- **Availability target**: Best-effort homelab availability; `restart: unless-stopped` plus the HEALTHCHECK recover from crashes. No formal uptime SLO.
+- **Availability target**: Best-effort homelab availability; `restart: unless-stopped` plus the HEALTHCHECK recover from crashes.
 - **RPO** (Recovery Point Objective): **≤ 24h** — a nightly backup of `/app/data` to a second host/disk/NAS.
 - **RTO** (Recovery Time Objective): **≤ 1h** — pull the image tag, restore the data file, `docker compose up -d`.
 
 ### Backup and Restore
-- **Backup (live-safe)**: Do **not** plain-`cp` the WAL-mode database under load. Use SQLite `VACUUM INTO 'backup.db'` or the Online Backup API (`Connection.backup()`) for a consistent single-file snapshot. A scheduled (APScheduler) nightly job produces the snapshot; the operator copies it offsite/second-disk.
-- **Raw-copy caveat**: If copying the volume directly, copy `binocular.db` together with its `-wal`/`-shm` files, or run `PRAGMA wal_checkpoint(TRUNCATE)` first. Separating the DB from its WAL loses committed transactions. See {SAD:ADR-0004}.
+- **Backup (live-safe)**: Use SQLite `VACUUM INTO 'backup.db'` or the Online Backup API (`Connection.backup()`) for a consistent single-file snapshot. A scheduled (APScheduler) nightly job produces the snapshot; the operator copies it offsite.
+- **Raw-copy caveat**: If copying the volume directly, copy `binocular.db` together with its `-wal`/`-shm` files, or run `PRAGMA wal_checkpoint(TRUNCATE)` first.
 - **Restore**: Stop the container → replace `/app/data/binocular.db` (and remove stale `-wal`/`-shm`) → start. Boot path runs `PRAGMA integrity_check;`.
-- **Disaster recovery**: One offsite/second-disk copy is sufficient at homelab scale; no replication or failover. Reprovision = run the image against the restored volume.
+- **Disaster recovery**: One offsite copy is sufficient at homelab scale.
 
 ### Migration Safety
 - Schema migrations run at startup inside a transaction, gated by `schema_version` / `PRAGMA user_version`, forward-only and idempotent. An automatic **pre-migration backup** is taken so a failed migration or a rollback to a previous image tag is recoverable. See {SAD:ADR-0004}.
@@ -129,36 +126,32 @@ No external telemetry, metrics backend, or APM — by design. Observability is w
 - Non-root image builds and HEALTHCHECK pass.
 - A restore from backup has been verified at least once.
 - SMTP and/or Gotify notification channels validated end-to-end.
-- Operator has pinned a specific SemVer tag (not relying solely on `latest`).
+- Operator has pinned a specific SemVer tag.
 
 ## Security and Compliance in Operations
 
 ### Supply Chain Security
 - **SBOM**: buildx-generated, attached as an OCI attestation.
-- **Dependency scanning**: Trivy/Grype in CI; backend deps hash-pinned (`uv.lock` / `pip --require-hashes`), frontend via `package-lock.json` + `npm ci`.
+- **Dependency scanning**: Trivy in CI; backend deps hash-pinned (`uv.lock`), frontend via `package-lock.json` + `npm ci`.
 - **Artifact provenance**: buildx provenance attestation on published images.
 
 ### Runtime Security
-- **Trust boundary**: Extension modules in `/app/modules` execute **unsandboxed, in-process, with full app privileges** — installing a module is equivalent to running arbitrary code. Accepted under the trusted-LAN single-user threat model and mitigated (not eliminated) by non-root container execution and operator vetting. Operators must **not** expose port 8000 to untrusted networks. See {SAD:ADR-0005}, {SAD:ADR-0008}.
-- **Container**: non-root user, `no-new-privileges`, `cap_drop: [ALL]`, optional read-only rootfs.
-- **No WAF/IDS**: Not applicable on a trusted LAN; perimeter is the operator's network.
+- **Trust boundary**: Extension modules in `/app/modules` execute **unsandboxed, in-process, with full app privileges**. Accepted under the trusted-LAN single-user threat model. Operators must **not** expose port 8000 to untrusted networks. See {SAD:ADR-0005}, {SAD:ADR-0008}.
+- **Container**: non-root user (PUID/PGID configurable), `no-new-privileges`, `cap_drop: [ALL]`, optional read-only rootfs.
 
 ### Secrets Management
-- **Secrets store**: Environment variables, with the `_FILE` convention for Docker/Compose secrets — e.g. if `SMTP_PASSWORD_FILE` is set, read the credential from that path, else fall back to `SMTP_PASSWORD`. Same pattern for Gotify tokens.
+- **Secrets store**: Environment variables, with the `_FILE` convention for Docker/Compose secrets.
 - **Rotation**: Operator-managed; update the secret/env and recreate the container.
-- **Access pattern**: Injected at runtime; never baked into the image or build args. See {SAD:ADR-0008}.
+- **Access pattern**: Injected at runtime; never baked into the image.
 
 ### Compliance
-- **Frameworks**: None applicable (single-user, self-hosted, no personal-data processing beyond the operator's own inventory, no telemetry).
-- **Audit logging**: The in-app activity log provides operator-visible history.
+- **Frameworks**: None applicable (single-user, self-hosted, no personal-data processing beyond the operator's own inventory).
 
 ## Operational Ownership and Processes
 
-- **Ownership model**: The self-hosting operator is the sole owner and operator ("you run it"). Project maintainers own the image, CI, and release tags.
-- **On-call**: None.
+- **Ownership model**: The self-hosting operator is the sole owner and operator. Project maintainers own the image, CI, and release tags.
 - **Change management**: PR-based with CI quality gates; releases cut by tagging a SemVer version.
-- **Release approval**: Maintainer creates a SemVer git tag → CI publishes the versioned + `latest` image. Operators adopt on their own schedule.
-- **Documentation expectations**: A `compose.yaml` example, `.env.example`, README run/upgrade instructions, and a module dev/test kit for extension authors.
+- **Documentation expectations**: A `compose.yaml` example, `.env.example`, README run/upgrade instructions, and a module dev/test kit.
 
 ### Update Workflow
 
@@ -177,8 +170,6 @@ flowchart LR
 ## Cost Considerations
 
 - **Estimated cost**: Effectively $0 beyond the operator's existing hardware and electricity. GHCR is free for public images; GitHub Actions covers public-repo CI.
-- **Cost drivers**: None recurring. Multi-arch QEMU builds consume slightly more CI minutes (optionally mitigated with native arm64 runners).
-- **Cost monitoring**: N/A.
 
 ## Deployment Decisions
 
@@ -186,64 +177,47 @@ flowchart LR
 
 - **Status**: Accepted
 - **Context**: An OSS self-hosted app needs a free, trusted distribution channel covering both x86 and ARM homelab hosts, with reproducible, pinnable releases.
-- **Decision**: Build with `docker buildx` (QEMU) in GitHub Actions for `linux/amd64` + `linux/arm64`, publish to public GHCR, and tag from SemVer git tags (`{{version}}`, `{{major}}.{{minor}}`, `latest`).
-- **Rationale**: Zero cost for public repos, native fit with the GitHub-hosted source, arm64 reach for Raspberry Pi / SBC users, and version pinning for operators.
-- **Alternatives Considered**: Docker Hub (rate-limit friction, separate account); amd64-only (excludes SBC homelabs); local-build-only (poor operator UX).
-- **Tradeoffs**: Multi-arch QEMU builds are slower in CI; mitigated by gha caching and the option of native arm64 runners.
-- **Consequences**: Releases are cut by tagging; operators pull `ghcr.io/<owner>/binocular:<version>`.
+- **Decision**: Build with `docker buildx` (QEMU) in GitHub Actions for `linux/amd64` + `linux/arm64`, publish to public GHCR, and tag from SemVer git tags.
+- **Rationale**: Zero cost for public repos, native fit with GitHub, arm64 reach for SBC users, version pinning for operators.
 
 ### DDR-002: Minimal homelab-grade operations posture
 
 - **Status**: Accepted
-- **Context**: The system is a single-user, trusted-LAN, no-telemetry app. Standard enterprise ops machinery (environment ladder, SLO/error budgets, on-call, IaC, APM) would be disproportionate.
-- **Decision**: Operate at homelab scale — Docker/Compose only, stdout logs + in-app activity log, a shallow HEALTHCHECK, Apprise self-notification, and file-copy backups. Omit SLO/on-call/IaC/multi-env entirely.
-- **Rationale**: Matches the threat model and the single-operator reality; avoids dead-weight process.
-- **Alternatives Considered**: Adding staging + SLOs (rejected — no traffic/users to justify); full SRE template (rejected — unmaintainable for a single maintainer).
-- **Tradeoffs**: No formal availability guarantees or metrics history; acceptable for the use case.
-- **Consequences**: Reliability rests on `restart: unless-stopped`, the HEALTHCHECK, and operator backups rather than automated remediation.
+- **Context**: The system is a single-user, trusted-LAN, no-telemetry app. Enterprise ops machinery would be disproportionate.
+- **Decision**: Operate at homelab scale — Docker/Compose only, stdout logs + in-app activity log, a shallow HEALTHCHECK, Apprise self-notification, and file-copy backups.
 
 ### DDR-003: SQLite backup via Online Backup API / `VACUUM INTO`, not raw copy
 
 - **Status**: Accepted
-- **Context**: The data store is a WAL-mode SQLite file; naive copying under load risks an inconsistent snapshot or lost transactions.
-- **Decision**: Take backups with `VACUUM INTO` or the Online Backup API on a nightly schedule, plus an automatic pre-migration snapshot; document the WAL-coupling caveat for raw volume copies.
-- **Rationale**: Guarantees consistent, restorable single-file backups without stopping the service.
-- **Alternatives Considered**: Plain `cp` of the DB file (rejected — unsafe under WAL); external DB with managed backups (rejected — violates the no-external-DB constraint).
-- **Tradeoffs**: Slightly more logic than a file copy; negligible at this scale.
-- **Consequences**: RPO ≤ 24h / RTO ≤ 1h are achievable with a single offsite copy.
+- **Context**: The data store is a WAL-mode SQLite file; naive copying under load risks an inconsistent snapshot.
+- **Decision**: Take backups with `VACUUM INTO` or the Online Backup API on a nightly schedule, plus an automatic pre-migration snapshot.
 
 ### DDR-004: Linuxserver-style PUID/PGID entrypoint for configurable container user
 
 - **Status**: Accepted
-- **Context**: Operators mount persistent volumes owned by arbitrary host UIDs. A fixed non-root UID in the container (as initially shipped) requires the operator either to `chown` the volume before first run or to accept files created by a mismatched UID, both of which create friction and potential permission errors. The trusted-LAN security model in {SAD:ADR-0008} mandates non-root execution but does not prescribe the mechanism.
-- **Decision**: Adopt the linuxserver.io pattern: an entrypoint script reads `PUID` and `PGID` environment variables (defaulting to `1000:1000`), creates a matching user/group if absent, `chown`s the `/app/data` and `/app/modules` volumes to that user, then uses `su-exec` (or `gosu`) to drop privileges before launching uvicorn.
-- **Rationale**: Single established convention familiar to homelab operators; eliminates the most common "permission denied" support issue; backward compatible (default PUID/PGID preserves existing behavior for operators who do not set them).
-- **Alternatives Considered**: Document fixed UID and let operator `chown` (rejected — adds friction and support burden per {DDR-002} minimal-ops posture); `setpriv`/`chpst` (rejected — less familiar than `su-exec`/`gosu` to the target audience).
-- **Tradeoffs**: Adds a small entrypoint script and the `su-exec` binary to the image (~25 KB); the re-chown on every start provides a correctness guarantee at the cost of a few milliseconds on container start.
-- **Consequences**: Operators can set `PUID=1000 PGID=1000` in `docker-compose.yml` to match their host UID without chowning volumes manually; the entrypoint becomes the single place where container user identity is managed.
+- **Context**: Operators mount persistent volumes owned by arbitrary host UIDs. A fixed non-root UID creates friction.
+- **Decision**: Adopt the linuxserver.io pattern: an entrypoint script reads `PUID` and `PGID` environment variables (defaulting to `1000:1000`), creates a matching user/group, `chown`s the volumes, then drops privileges via `su-exec`.
+- **Rationale**: Single established convention familiar to homelab operators; eliminates the most common permission support issue; backward compatible.
 
 ## Risks, Assumptions, Constraints, and Open Questions
 
 ### Risks
 
-- Operator exposes port 8000 beyond the trusted LAN, turning the accepted unsandboxed-module trust boundary into a real RCE surface — mitigated only by documentation and optional basic auth.
-- Operator never configures or never tests backups — silent data-loss risk; mitigated by shipping a built-in scheduled backup job and a verified-restore readiness item.
-- Multi-arch QEMU build flakiness/slowness could delay releases — mitigated by caching and optional native arm64 runners.
-- `latest`-tag drift (operator not pinning a version) makes rollbacks and support harder — mitigated by recommending version pinning.
+- Operator exposes port 8000 beyond the trusted LAN — mitigated only by documentation and optional basic auth.
+- Operator never configures or tests backups — mitigated by shipping a built-in scheduled backup job and verified-restore documentation.
+- Multi-arch QEMU build flakiness — mitigated by caching and optional native arm64 runners.
 
 ### Assumptions
 
-- The host runs Docker (or a compatible runtime) with persistent volumes for `/app/data` and `/app/modules`.
+- The host runs Docker (or a compatible runtime) with persistent volumes.
 - The operator can reach a second disk/host/NAS for offsite backup copies.
-- The operator controls their own TLS/reverse proxy if exposing the UI beyond plain LAN HTTP.
+- The operator controls their own TLS/reverse proxy if exposing beyond LAN.
 
 ### Constraints
 
-- Single container, single port, single data volume, non-root, zero-config startup (per SAD constraints).
+- Single container, single port, single data volume, non-root, zero-config startup.
 - No external database, broker, telemetry, or cloud dependency.
-- All outbound scraping flows through the host-provided polite HTTP client.
 
 ### Open Questions
 
-- Should a scheduled backup-to-path job be enabled by default, or opt-in via env var?
-- Should optional basic auth be defaulted on (or strongly prompted) for operators who reverse-proxy the UI beyond the trusted LAN?
+- None. All prototype-era operational open questions have been resolved.

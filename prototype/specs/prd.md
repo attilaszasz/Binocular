@@ -1,6 +1,6 @@
 # Product Requirements Document: Binocular
 
-> Date: 2026-06-10 | Status: Draft
+> Date: 2026-05-31 | Status: Draft
 
 ## Product Overview
 
@@ -63,7 +63,6 @@ Evidence is observational and domain-driven rather than formal market research, 
 - When I want to create a module but don't know the codebase, I want to hand a ready-made prompt kit to my AI coding assistant and get back a valid module with zero prior knowledge.
 - When a module I upload fails validation, I want to copy the errors in a format my AI tool can understand so I can iterate to a fix without manual translation.
 - When something goes wrong (a page changed, a network error), I want to see honest status and a log rather than silent failure.
-- When a shipped official module consistently fails, I want to be notified in the app so I know to check for a project update.
 - When I deploy this, I want it to start with sane defaults, persist everything in one place, and survive restarts and upgrades with no data loss.
 
 ## Product Principles or UX Principles
@@ -78,20 +77,19 @@ Evidence is observational and domain-driven rather than formal market research, 
 
 ## Scope Summary
 
-The product scope equals the full product brief: a complete detect → compare → notify loop built on a user-extensible module engine, delivered as a self-hosted container with a responsive UI. Capabilities are prioritized P1–P2 to distinguish the minimum useful loop from supporting and convenience capabilities.
+The v1 product scope equals the full product brief: a complete detect → compare → notify loop built on a user-extensible module engine, delivered as a self-hosted container with a responsive UI. Capabilities are prioritized P1–P3 to distinguish the minimum useful loop from supporting and convenience capabilities.
 
 ### In-Scope Capabilities
 
 - Device inventory and lifecycle management, with each device linked to an extension module that determines its device type, stored current versions, and one-click update confirmation.
 - A pluggable extension-module engine with a strict authoring contract, plus full module lifecycle management (upload, update, delete) through the UI.
-- Automated scheduled checking with per-module frequency (user-configurable per device), plus manual on-demand checks (single and bulk) with side-by-side version comparison.
-- Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify. Only one notification is sent per detected version; a follow-up notification is dispatched only when a version newer than the last-notified version appears.
+- Automated scheduled checking with per-device-type frequency, plus manual on-demand checks (single and bulk) with side-by-side version comparison.
+- Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify. Only one notification is sent per detected version; a follow-up notification is dispatched only when an even newer version than the last-notified version is found.
 - Responsible-scraping enforcement (robots.txt, identifiable User-Agent, rate limiting, backoff) provided centrally by the host.
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
 - Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, and Godox Flashes that are automatically seeded and registered in the database on startup as working examples and templates.
-- Self-hosted operability: Docker distribution, single data volume, zero-config startup, non-root execution, configurable container UID/GID (PUID/PGID), responsive UI with dark mode and collapsible navigation.
+- Self-hosted operability: Docker distribution, single data volume, zero-config startup, non-root execution, responsive UI with dark mode.
 - Local module sharing enablement: an authoring contract and import/export, plus authoring guidance for module creators — including a downloadable AI Module Kit and AI-friendly validation error output for assisted module creation.
-- Official module health monitoring: in-app notification when a shipped official module consistently fails scraping, signaling the need for a project update.
 
 ### Out-of-Scope Items
 
@@ -101,7 +99,7 @@ The product scope equals the full product brief: a complete detect → compare �
 - Automatic application of firmware to devices (Binocular detects and notifies; it never flashes hardware).
 - Support for always-online devices that already auto-update through vendor ecosystems.
 - External/managed database servers (Postgres, MySQL) or cloud-hosted SaaS deployment.
-- Sandboxed/isolated execution of extension modules (explicitly a user-vetted trust boundary).
+- Sandboxed/isolated execution of extension modules (explicitly a user-vetted trust boundary in v1).
 
 ## Product Capability Map
 
@@ -112,24 +110,23 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-001 | Device Inventory & Lifecycle | P1 | Users maintain an inventory of devices each linked to an extension module, with stored versions and one-click update confirmation. |
 | CAP-002 | Extension Module Engine & Authoring Contract | P1 | A strict, documented contract lets modules supply device-specific firmware-checking intelligence in a standardized format. |
 | CAP-003 | Module Lifecycle Management | P1 | Users upload, update, and delete modules through the UI to control which device types are supported. |
-| CAP-004 | Automated Scheduled Checking | P1 | The system checks sources unattended on a per-module frequency, user-configurable per device. |
+| CAP-004 | Automated Scheduled Checking | P1 | The system checks sources unattended on a per-device-type frequency. |
 | CAP-005 | Manual On-Demand Checking | P1 | Users trigger immediate single or bulk checks and compare stored vs. latest versions side by side. |
 | CAP-006 | Update Detection & Comparison | P1 | The system reliably determines whether a newer version exists than the user's recorded version. |
 | CAP-007 | Notification & Alerting | P1 | Newer-version detections dispatch notifications once per version via configurable responsive HTML Email/SMTP (light-themed, mobile-friendly) and Gotify channels, with re-notification only when a version newer than the last-notified version appears. |
 | CAP-008 | Responsible Scraping Enforcement | P1 | All outbound checks honor robots.txt, identifiable User-Agent, rate limits, and backoff by default. |
-| CAP-009 | Self-Hosted Operability | P1 | Single-container, single-volume, zero-config, non-root deployment with PUID/PGID support that survives restarts and upgrades with no data loss. |
+| CAP-009 | Self-Hosted Operability | P1 | Single-container, single-volume, zero-config, non-root deployment that survives restarts and upgrades with no data loss. |
 | CAP-010 | Activity Logging & Visibility | P2 | All check activity and errors are recorded in a size-bounded, in-UI viewable log. |
 | CAP-011 | Official Starter Modules | P2 | Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, and Godox Flashes modules are automatically registered and seeded in the database on startup, serving as immediate value and templates. |
-| CAP-012 | Responsive UI & Dark Mode | P2 | The interface is fully usable on mobile and desktop with first-class dark mode and collapsible navigation with version display. |
+| CAP-012 | Responsive UI & Dark Mode | P2 | The interface is fully usable on mobile and desktop with first-class dark mode. |
 | CAP-013 | Module Authoring Guidance & AI-Assisted Dev Kit | P2 | Authoring docs, a downloadable AI Module Kit (prompt instructions, contract reference, templates, examples), an in-UI "Create a Module" guidance section, and AI-friendly validation error copy-paste empower users — especially those working with AI coding assistants — to create and iterate on valid modules with zero prior codebase knowledge. |
-| CAP-014 | Official Module Health Monitoring | P2 | When a shipped official module consistently fails scraping, an in-app notification alerts the operator to check for a project update with a fixed module. |
 
 ## Success Metrics / KPIs / Desired Outcomes
 
 Success is defined by **reliability and correctness**, validated before release rather than measured via field telemetry (none is collected).
 
 | Metric | Target | Why It Matters | Measurement Window |
-|--------|--------|----------------|-------------------|
+|--------|--------|----------------|--------------------|
 | Version-detection correctness | Detected latest == actual published latest for supported modules | The product's core promise is trustworthy detection. | Per release, against captured page fixtures |
 | Missed-update rate (false negatives) | Zero for supported device types | A silently missed update is the most damaging failure. | Per release, fixture + regression validation |
 | False-alert rate (false positives) | Zero for supported device types | False alerts erode set-and-forget trust. | Per release, fixture + regression validation |
@@ -152,7 +149,7 @@ Success is defined by **reliability and correctness**, validated before release 
 - Single-user, single-instance operation on a trusted network; not designed for public internet exposure or multi-tenancy.
 - Distributed primarily as a Docker container; must also be runnable on a host with standard language runtimes.
 - Must start with zero required configuration and persist all state in one clearly defined data volume.
-- Container must run as a non-root user with configurable UID/GID (PUID/PGID).
+- Container must run as a non-root user.
 - No telemetry or central data collection is permitted by design.
 
 ## Dependencies
@@ -166,7 +163,7 @@ Success is defined by **reliability and correctness**, validated before release 
 ## Risks
 
 - **Scraper breakage** when manufacturer pages change — highest operational risk; mitigated by clear failure signaling rather than silent misses.
-- **Arbitrary code execution** from user-supplied/imported modules running unsandboxed with the app's privileges — mitigated by least-privilege/non-root execution and an explicit user-vetting trust boundary, not by sandboxing.
+- **Arbitrary code execution** from user-supplied/imported modules running unsandboxed with the app's privileges — mitigated by least-privilege/non-root execution and an explicit user-vetting trust boundary, not by sandboxing in v1.
 - **Legal / ToS exposure** from scraping third-party sites despite favorable public-data case law — mitigated by polite-scraping defaults and clear user guidance; cannot be eliminated.
 - **Invisible false negatives** (missed updates) being undetectable without telemetry — mitigated by fixture-based correctness validation at release.
 - **Notification-channel failures** (SMTP/Gotify misconfiguration or outage) going unnoticed — mitigated by activity-log visibility and delivery validation.
@@ -174,7 +171,9 @@ Success is defined by **reliability and correctness**, validated before release 
 
 ## Open Questions
 
-- How should the product communicate when a shipped official module breaks due to a manufacturer page change — in-app guidance vs. project-side update? (Resolved: in-app notification via CAP-014.)
+- Should optional basic authentication be encouraged or off by default for users who expose the UI beyond a fully trusted LAN?
+- What is the appropriate default check frequency that balances timeliness against polite-scraping load?
+- How should the product communicate when a shipped official module breaks due to a manufacturer page change (in-app guidance vs. project-side update)?
 
 ## Release or Validation Approach
 
@@ -184,7 +183,7 @@ Validation is correctness-first and pre-release, since the product collects no f
 - **End-to-end alert-path smoke test**: Exercise the full detect → compare → notify loop for both notification channels (Email/SMTP and Gotify).
 - **Operability smoke test**: Verify zero-config startup, single-volume persistence, non-root execution, and no data loss across restarts and upgrades.
 - **Responsible-scraping verification**: Confirm robots.txt respect, identifiable User-Agent, rate limiting, and backoff behavior before release.
-- **Initial release**: Ship the full scope with the official modules as both immediate value and authoring templates; broader device coverage grows through user/community-authored modules.
+- **Initial release**: Ship the full v1 scope with the official modules as both immediate value and authoring templates; broader device coverage grows through user/community-authored modules.
 
 ## Domain Glossary / Terminology
 
@@ -202,10 +201,9 @@ Validation is correctness-first and pre-release, since the product collects no f
 Context that downstream architecture design or governance work must preserve.
 
 - **Product intent to preserve**: A reliable, unattended detect → compare → notify loop for offline devices; honest failure signaling over silent misses; data ownership with zero external backend.
-- **Scope boundaries to respect**: No marketplace/registry, no multi-user, no telemetry, no automatic firmware flashing; local module upload/import/export only; modules run as an explicit user-vetted trust boundary (not sandboxed).
-- **Critical constraints**: Self-contained storage (no external DB), single-container/single-volume/zero-config/non-root operability with PUID/PGID, primary Docker distribution with host-runtime fallback, polite-scraping defaults are mandatory.
-- **Open decisions needing technical input**: Mechanism for detecting and alerting on consistently failing official modules (CAP-014).
-- **Prototype learnings to incorporate**: Device type derived from linked module (not standalone entity); start with shadcn/ui component library from the outset; notification deduplication is essential; HTML email notifications are required; PUID/PGID entrypoint needed for homelab volume permissions; schema should be consolidated from the start to avoid fix migrations.
+- **Scope boundaries to respect**: No marketplace/registry, no multi-user, no telemetry, no automatic firmware flashing; local module upload/import/export only; modules run as an explicit user-vetted trust boundary (not sandboxed in v1).
+- **Critical constraints**: Self-contained storage (no external DB), single-container/single-volume/zero-config/non-root operability, primary Docker distribution with host-runtime fallback, polite-scraping defaults are mandatory.
+- **Open decisions needing technical input**: Optional auth default posture; default check-frequency balance vs. scraping load; mechanism for signaling and recovering from broken official modules.
 
 ## Project Context Baseline Updates
 
