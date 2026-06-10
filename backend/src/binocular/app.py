@@ -14,6 +14,7 @@ from binocular.db.connection import close_connection, open_connection
 from binocular.db.migrations import run_migrations
 from binocular.logging import setup_logging
 from binocular.routes import router
+from binocular.scraping.client import ScrapeClient
 
 
 @asynccontextmanager
@@ -28,8 +29,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     await run_migrations(conn, settings)
 
+    scrape_client = ScrapeClient()
+    app.state.scrape_client = scrape_client
+
     yield
 
+    await scrape_client.close()
     await close_connection(conn)
     logger.info("shutting_down")
 
