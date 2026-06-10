@@ -91,6 +91,7 @@ async def test_check_device_success_new_version(
         ("Sony Camera", "Camera", valid_module_path),
     )
     module_id = cursor.lastrowid
+    assert module_id is not None
 
     cursor = await conn.execute(
         "INSERT INTO devices (name, model, module_id, current_version)"
@@ -98,6 +99,7 @@ async def test_check_device_success_new_version(
         ("My Camera", "ILCE-7M4", module_id, "1.0.0"),
     )
     device_id = cursor.lastrowid
+    assert device_id is not None
     await conn.commit()
 
     # 2. Run check
@@ -113,7 +115,9 @@ async def test_check_device_success_new_version(
 
     # Verify DB update
     cursor = await conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,))
-    row = dict(await cursor.fetchone())
+    db_row = await cursor.fetchone()
+    assert db_row is not None
+    row = dict(db_row)
     assert row["has_update"] == 1
     assert row["latest_detected_version"] == "2.0.0"
     assert row["last_checked"] == result.checked_at
@@ -131,6 +135,7 @@ async def test_check_device_success_up_to_date(
         ("Sony Camera", "Camera", valid_module_path),
     )
     module_id = cursor.lastrowid
+    assert module_id is not None
 
     cursor = await conn.execute(
         "INSERT INTO devices (name, model, module_id, current_version,"
@@ -139,6 +144,7 @@ async def test_check_device_success_up_to_date(
         ("My Camera", "ILCE-7M4", module_id, "2.0.0", 1, "2.0.0"),
     )
     device_id = cursor.lastrowid
+    assert device_id is not None
     await conn.commit()
 
     # Run check when already up to date
@@ -149,7 +155,9 @@ async def test_check_device_success_up_to_date(
 
     # Verify DB update sets has_update to 0 (False) and latest_detected_version to None
     cursor = await conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,))
-    row = dict(await cursor.fetchone())
+    db_row = await cursor.fetchone()
+    assert db_row is not None
+    row = dict(db_row)
     assert row["has_update"] == 0
     assert row["latest_detected_version"] is None
 
@@ -166,6 +174,7 @@ async def test_check_device_runner_failure(
         ("Raising Module", "Camera", raising_module_path),
     )
     module_id = cursor.lastrowid
+    assert module_id is not None
 
     cursor = await conn.execute(
         "INSERT INTO devices (name, model, module_id, current_version, has_update)"
@@ -173,6 +182,7 @@ async def test_check_device_runner_failure(
         ("My Camera", "ILCE-7M4", module_id, "1.0.0", 1),
     )
     device_id = cursor.lastrowid
+    assert device_id is not None
     await conn.commit()
 
     # Run check for failing module
@@ -187,7 +197,9 @@ async def test_check_device_runner_failure(
 
     # Verify DB update does NOT change has_update status but updates last_checked
     cursor = await conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,))
-    row = dict(await cursor.fetchone())
+    db_row = await cursor.fetchone()
+    assert db_row is not None
+    row = dict(db_row)
     assert row["has_update"] == 1
     assert row["last_checked"] == result.checked_at
 
@@ -202,6 +214,7 @@ async def test_check_device_missing_file_path(
         ("Sony Camera", "Camera", ""),
     )
     module_id = cursor.lastrowid
+    assert module_id is not None
 
     cursor = await conn.execute(
         "INSERT INTO devices (name, model, module_id, current_version, has_update)"
@@ -209,16 +222,20 @@ async def test_check_device_missing_file_path(
         ("My Camera", "ILCE-7M4", module_id, "1.0.0", 0),
     )
     device_id = cursor.lastrowid
+    assert device_id is not None
     await conn.commit()
 
     result = await check_service.check_device(device_id)
 
     assert result.success is False
+    assert result.error_message is not None
     assert "no file_path configured" in result.error_message.lower()
 
     # Verify DB updates last_checked
     cursor = await conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,))
-    row = dict(await cursor.fetchone())
+    db_row = await cursor.fetchone()
+    assert db_row is not None
+    row = dict(db_row)
     assert row["last_checked"] == result.checked_at
 
 
@@ -232,6 +249,7 @@ async def test_check_device_nonexistent_file_path(
         ("Sony Camera", "Camera", "nonexistent_file.py"),
     )
     module_id = cursor.lastrowid
+    assert module_id is not None
 
     cursor = await conn.execute(
         "INSERT INTO devices (name, model, module_id, current_version, has_update)"
@@ -239,16 +257,20 @@ async def test_check_device_nonexistent_file_path(
         ("My Camera", "ILCE-7M4", module_id, "1.0.0", 0),
     )
     device_id = cursor.lastrowid
+    assert device_id is not None
     await conn.commit()
 
     result = await check_service.check_device(device_id)
 
     assert result.success is False
+    assert result.error_message is not None
     assert "failed to load module file" in result.error_message.lower()
 
     # Verify DB updates last_checked
     cursor = await conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,))
-    row = dict(await cursor.fetchone())
+    db_row = await cursor.fetchone()
+    assert db_row is not None
+    row = dict(db_row)
     assert row["last_checked"] == result.checked_at
 
 
