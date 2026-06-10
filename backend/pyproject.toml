@@ -33,11 +33,13 @@ python_version = "3.13"
 mypy_path = "src"
 packages = ["binocular"]
 plugins = ["pydantic.mypy"]
+exclude = ["tests/extensions/fixtures"]
 
 [tool.ruff]
 src = ["src"]
 target-version = "py313"
 line-length = 88
+extend-exclude = ["tests/extensions/fixtures"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "S", "B", "A", "C4", "PT", "RUF"]

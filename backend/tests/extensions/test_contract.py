@@ -1,5 +1,7 @@
 """Tests for the authoring contract types."""
 
+import pytest
+
 from binocular.extensions.contract import (
     CHECK_FIRMWARE_FUNC,
     CONTRACT_VERSION,
@@ -38,7 +40,7 @@ class TestCheckResult:
         result = CheckResult(latest_version="1.0.0")
         try:
             result.latest_version = "2.0.0"  # type: ignore[misc]
-            assert False, "Should have raised"  # noqa: B011
+            pytest.fail("Should have raised AttributeError")
         except AttributeError:
             pass
 

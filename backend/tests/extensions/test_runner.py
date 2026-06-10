@@ -38,7 +38,8 @@ class TestModuleRunnerSuccess:
         mock_client: MagicMock,
     ) -> None:
         result = loader.load(FIXTURES / "valid_module.py")
-        assert result.success and result.module is not None
+        assert result.success
+        assert result.module is not None
 
         run_result = await runner.run(
             result.module,
@@ -61,7 +62,8 @@ class TestModuleRunnerErrorBoundary:
         mock_client: MagicMock,
     ) -> None:
         result = loader.load(FIXTURES / "raising_module.py")
-        assert result.success and result.module is not None
+        assert result.success
+        assert result.module is not None
 
         run_result = await runner.run(
             result.module,
@@ -80,7 +82,8 @@ class TestModuleRunnerErrorBoundary:
         mock_client: MagicMock,
     ) -> None:
         result = loader.load(FIXTURES / "systemexit_module.py")
-        assert result.success and result.module is not None
+        assert result.success
+        assert result.module is not None
 
         run_result = await runner.run(
             result.module,
@@ -102,7 +105,8 @@ class TestModuleRunnerTimeout:
     ) -> None:
         slow_runner = ModuleRunner(timeout=0.5)
         result = loader.load(FIXTURES / "slow_module.py")
-        assert result.success and result.module is not None
+        assert result.success
+        assert result.module is not None
 
         run_result = await slow_runner.run(
             result.module,

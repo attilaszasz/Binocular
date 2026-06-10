@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
+
 import aiosqlite
 import pytest
 
@@ -9,7 +11,7 @@ from binocular.extensions.repository import ModuleRepository
 
 
 @pytest.fixture
-async def repo(tmp_path: object) -> ModuleRepository:
+async def repo(tmp_path: object) -> AsyncGenerator[ModuleRepository]:
     """Create an in-memory database with migrations applied and return a repo."""
     conn = await aiosqlite.connect(":memory:")
     conn.row_factory = aiosqlite.Row
@@ -33,7 +35,7 @@ async def repo(tmp_path: object) -> ModuleRepository:
         """
     )
     repo = ModuleRepository(conn)
-    yield repo  # type: ignore[misc]
+    yield repo
     await conn.close()
 
 

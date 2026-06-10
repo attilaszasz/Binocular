@@ -64,7 +64,10 @@ class TestASTValidator:
         validator = ASTValidator()
         result = validator.validate(bad)
         assert result.passed is False
-        assert any("parameter" in c.message.lower() for c in result.checks if not c.passed)
+        failing = [c for c in result.checks if not c.passed]
+        assert any(
+            "parameter" in c.message.lower() for c in failing
+        )
 
 
 class TestRuntimeValidator:
@@ -73,7 +76,8 @@ class TestRuntimeValidator:
     def test_valid_module_passes(self) -> None:
         loader = ModuleLoader(FIXTURES)
         load_result = loader.load(FIXTURES / "valid_module.py")
-        assert load_result.success and load_result.module is not None
+        assert load_result.success
+        assert load_result.module is not None
 
         validator = RuntimeValidator()
         result = validator.validate(load_result.module)
@@ -83,7 +87,8 @@ class TestRuntimeValidator:
     def test_raising_module_fails(self) -> None:
         loader = ModuleLoader(FIXTURES)
         load_result = loader.load(FIXTURES / "raising_module.py")
-        assert load_result.success and load_result.module is not None
+        assert load_result.success
+        assert load_result.module is not None
 
         validator = RuntimeValidator()
         result = validator.validate(load_result.module)
@@ -100,7 +105,8 @@ class TestRuntimeValidator:
         )
         loader = ModuleLoader(tmp_path)
         load_result = loader.load(bad)
-        assert load_result.success and load_result.module is not None
+        assert load_result.success
+        assert load_result.module is not None
 
         validator = RuntimeValidator()
         result = validator.validate(load_result.module)
@@ -120,7 +126,8 @@ class TestValidateModule:
     def test_phase1_and_phase2(self) -> None:
         loader = ModuleLoader(FIXTURES)
         load_result = loader.load(FIXTURES / "valid_module.py")
-        assert load_result.success and load_result.module is not None
+        assert load_result.success
+        assert load_result.module is not None
 
         result = validate_module(
             FIXTURES / "valid_module.py",
