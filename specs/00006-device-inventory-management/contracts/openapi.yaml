@@ -1,0 +1,214 @@
+openapi: "3.1.0"
+info:
+  title: Binocular Device Inventory API
+  version: "1.0.0"
+  description: CRUD operations for device inventory management
+
+paths:
+  /api/v1/devices:
+    get:
+      operationId: listDevices
+      summary: List all devices with module-derived fields
+      responses:
+        "200":
+          description: Device list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeviceResponse"
+    post:
+      operationId: createDevice
+      summary: Register a new device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceCreate"
+      responses:
+        "201":
+          description: Device created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "422":
+          description: Validation error (e.g., invalid module_id)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/devices/{device_id}:
+    parameters:
+      - name: device_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getDevice
+      summary: Retrieve a single device
+      responses:
+        "200":
+          description: Device details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "404":
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateDevice
+      summary: Update device fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceUpdate"
+      responses:
+        "200":
+          description: Device updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "404":
+          description: Device not found
+        "422":
+          description: Validation error
+    delete:
+      operationId: deleteDevice
+      summary: Remove a device
+      responses:
+        "204":
+          description: Device deleted
+        "404":
+          description: Device not found
+
+  /api/v1/devices/{device_id}/confirm:
+    parameters:
+      - name: device_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: confirmDeviceUpdate
+      summary: Confirm firmware update applied
+      description: Sets current_version = latest_detected_version and has_update = false
+      responses:
+        "200":
+          description: Update confirmed (or no-op if no pending update)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "404":
+          description: Device not found
+
+  /api/v1/modules:
+    get:
+      operationId: listModules
+      summary: List available modules (read-only, for device form dropdown)
+      responses:
+        "200":
+          description: Module list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModuleResponse"
+
+components:
+  schemas:
+    DeviceCreate:
+      type: object
+      required: [name, module_id]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        model:
+          type: string
+          default: ""
+        module_id:
+          type: integer
+        current_version:
+          type: string
+          default: ""
+
+    DeviceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        model:
+          type: string
+        module_id:
+          type: integer
+        current_version:
+          type: string
+
+    DeviceResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        model:
+          type: string
+        module_id:
+          type: integer
+        module_name:
+          type: string
+          description: Joined from modules table
+        device_type:
+          type: string
+          description: Joined from modules.device_type
+        current_version:
+          type: string
+        has_update:
+          type: boolean
+        latest_detected_version:
+          type: string
+          nullable: true
+        last_checked:
+          type: string
+          format: date-time
+          nullable: true
+        last_notified_version:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ModuleResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        device_type:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string

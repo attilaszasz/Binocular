@@ -7,7 +7,8 @@
             "request": "launch",
             "module": "uvicorn",
             "args": [
-                "binocular.main:app",
+                "binocular.app:create_app",
+                "--factory",
                 "--host",
                 "127.0.0.1",
                 "--port",
@@ -17,7 +18,9 @@
             "cwd": "${workspaceFolder}/backend",
             "python": "${workspaceFolder}/backend/.venv/bin/python",
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/backend/src"
+                "PYTHONPATH": "${workspaceFolder}/backend/src",
+                "BINOCULAR_DATA_DIR": "${workspaceFolder}/backend/.dev-data",
+                "BINOCULAR_MODULES_DIR": "${workspaceFolder}/backend/.dev-data/modules"
             },
             "console": "integratedTerminal",
             "justMyCode": true
