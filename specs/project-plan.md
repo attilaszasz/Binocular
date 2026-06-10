@@ -26,7 +26,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Depends on E001/E002. CI pipeline validates every increment; SPA shell provides the UI framework with shadcn/ui from day one.
 
-- [ ] E003 [P1] [OPERATIONAL] [P] {DOD:DDR-001}{DOD:DDR-002} Continuous Integration Pipeline — lint, type-check, test, image build on every change [→ Details](plan/E003.md)
+- [X] E003 [P1] [OPERATIONAL] [P] {DOD:DDR-001}{DOD:DDR-002} Continuous Integration Pipeline — lint, type-check, test, image build on every change [→ Details](plan/E003.md)
 - [ ] E004 [P1] [TECHNICAL] [P] {SAD:ADR-0003} Frontend SPA Shell — React/Vite/shadcn/ui app with collapsible nav, dark mode, version display [→ Details](plan/E004.md)
 - [ ] E005 [P1] [TECHNICAL] [P] {SAD:ADR-0006} Responsible Scraping Client — central polite httpx client with robots.txt, rate limiting, backoff [→ Details](plan/E005.md)
 
