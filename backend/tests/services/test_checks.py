@@ -37,9 +37,11 @@ async def conn() -> AsyncGenerator[aiosqlite.Connection]:
             id                      INTEGER PRIMARY KEY AUTOINCREMENT,
             name                    TEXT    NOT NULL,
             model                   TEXT    NOT NULL DEFAULT '',
-            module_id               INTEGER NOT NULL REFERENCES modules(id) ON DELETE RESTRICT,
+            module_id               INTEGER NOT NULL REFERENCES modules(id)
+                                    ON DELETE RESTRICT,
             current_version         TEXT    NOT NULL DEFAULT '',
-            has_update              INTEGER NOT NULL DEFAULT 0 CHECK(has_update IN (0,1)),
+            has_update              INTEGER NOT NULL DEFAULT 0
+                                    CHECK(has_update IN (0,1)),
             latest_detected_version TEXT,
             last_checked            TEXT,
             last_notified_version   TEXT,
@@ -91,7 +93,8 @@ async def test_check_device_success_new_version(
     module_id = cursor.lastrowid
 
     cursor = await conn.execute(
-        "INSERT INTO devices (name, model, module_id, current_version) VALUES (?, ?, ?, ?)",
+        "INSERT INTO devices (name, model, module_id, current_version)"
+        " VALUES (?, ?, ?, ?)",
         ("My Camera", "ILCE-7M4", module_id, "1.0.0"),
     )
     device_id = cursor.lastrowid
@@ -130,7 +133,9 @@ async def test_check_device_success_up_to_date(
     module_id = cursor.lastrowid
 
     cursor = await conn.execute(
-        "INSERT INTO devices (name, model, module_id, current_version, has_update, latest_detected_version) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO devices (name, model, module_id, current_version,"
+        " has_update, latest_detected_version)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
         ("My Camera", "ILCE-7M4", module_id, "2.0.0", 1, "2.0.0"),
     )
     device_id = cursor.lastrowid
@@ -163,7 +168,8 @@ async def test_check_device_runner_failure(
     module_id = cursor.lastrowid
 
     cursor = await conn.execute(
-        "INSERT INTO devices (name, model, module_id, current_version, has_update) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO devices (name, model, module_id, current_version, has_update)"
+        " VALUES (?, ?, ?, ?, ?)",
         ("My Camera", "ILCE-7M4", module_id, "1.0.0", 1),
     )
     device_id = cursor.lastrowid
@@ -174,7 +180,10 @@ async def test_check_device_runner_failure(
 
     assert result.success is False
     assert result.error_message is not None
-    assert "raising_module" in result.error_message or "exception" in result.error_message.lower()
+    assert (
+        "raising_module" in result.error_message
+        or "exception" in result.error_message.lower()
+    )
 
     # Verify DB update does NOT change has_update status but updates last_checked
     cursor = await conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,))
@@ -195,7 +204,8 @@ async def test_check_device_missing_file_path(
     module_id = cursor.lastrowid
 
     cursor = await conn.execute(
-        "INSERT INTO devices (name, model, module_id, current_version, has_update) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO devices (name, model, module_id, current_version, has_update)"
+        " VALUES (?, ?, ?, ?, ?)",
         ("My Camera", "ILCE-7M4", module_id, "1.0.0", 0),
     )
     device_id = cursor.lastrowid
@@ -219,12 +229,13 @@ async def test_check_device_nonexistent_file_path(
 ) -> None:
     cursor = await conn.execute(
         "INSERT INTO modules (name, device_type, file_path) VALUES (?, ?, ?)",
-        ("Sony Camera", "Camera", "/tmp/nonexistent_file.py"),
+        ("Sony Camera", "Camera", "nonexistent_file.py"),
     )
     module_id = cursor.lastrowid
 
     cursor = await conn.execute(
-        "INSERT INTO devices (name, model, module_id, current_version, has_update) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO devices (name, model, module_id, current_version, has_update)"
+        " VALUES (?, ?, ?, ?, ?)",
         ("My Camera", "ILCE-7M4", module_id, "1.0.0", 0),
     )
     device_id = cursor.lastrowid
