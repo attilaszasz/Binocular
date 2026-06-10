@@ -1,0 +1,51 @@
+FROM python:3.13-slim AS builder
+
+WORKDIR /build
+
+# Install build dependencies for su-exec.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc make libc-dev curl && \
+    curl -fsSL https://github.com/ncopa/su-exec/archive/refs/tags/v0.2.tar.gz | tar xz && \
+    cd su-exec-0.2 && make && cp su-exec /usr/local/bin/su-exec && \
+    apt-get purge -y gcc make libc-dev curl && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/* /build
+
+# Install uv for fast dependency resolution.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+COPY backend/pyproject.toml backend/uv.lock* /build/backend/
+WORKDIR /build/backend
+RUN uv sync --frozen --no-dev --no-install-project
+
+COPY backend/src /build/backend/src
+RUN uv sync --frozen --no-dev
+
+
+FROM python:3.13-slim
+
+LABEL maintainer="Binocular" \
+      description="Self-hosted firmware-update watcher"
+
+# Copy su-exec from builder.
+COPY --from=builder /usr/local/bin/su-exec /usr/local/bin/su-exec
+
+# Copy the virtual environment and app source.
+COPY --from=builder /build/backend/.venv /app/.venv
+COPY backend/src /app/src
+
+# Copy entrypoint.
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Ensure volume directories exist.
+RUN mkdir -p /app/data /app/modules
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app/src" \
+    PYTHONUNBUFFERED=1
+
+EXPOSE 8000
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["uvicorn", "binocular.app:create_app", "--host", "0.0.0.0", "--port", "8000", "--factory"]

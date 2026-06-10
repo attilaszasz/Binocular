@@ -1,0 +1,18 @@
+services:
+  binocular:
+    build: .
+    container_name: binocular
+    ports:
+      - "8000:8000"
+    volumes:
+      - binocular-data:/app/data
+      - binocular-modules:/app/modules
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - BINOCULAR_LOG_FORMAT=console
+    restart: unless-stopped
+
+volumes:
+  binocular-data:
+  binocular-modules:
