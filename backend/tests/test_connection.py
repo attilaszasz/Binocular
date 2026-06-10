@@ -38,7 +38,7 @@ async def test_connection_wal_mode(settings: Settings) -> None:
         cursor = await conn.execute("PRAGMA journal_mode")
         row = await cursor.fetchone()
         assert row is not None
-        assert row[0] == "wal"  # type: ignore[index]
+        assert row[0] == "wal"
     finally:
         await close_connection(conn)
 
@@ -51,7 +51,7 @@ async def test_connection_foreign_keys(settings: Settings) -> None:
         cursor = await conn.execute("PRAGMA foreign_keys")
         row = await cursor.fetchone()
         assert row is not None
-        assert row[0] == 1  # type: ignore[index]
+        assert row[0] == 1
     finally:
         await close_connection(conn)
 
@@ -64,7 +64,7 @@ async def test_connection_busy_timeout(settings: Settings) -> None:
         cursor = await conn.execute("PRAGMA busy_timeout")
         row = await cursor.fetchone()
         assert row is not None
-        assert row[0] == 5000  # type: ignore[index]
+        assert row[0] == 5000
     finally:
         await close_connection(conn)
 

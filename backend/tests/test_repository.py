@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,7 @@ def settings(tmp_path: Path) -> Settings:
 
 
 @pytest.fixture
-async def repo(settings: Settings) -> RepositoryBase:
+async def repo(settings: Settings) -> AsyncGenerator[RepositoryBase]:
     """Create a RepositoryBase with a test connection and sample table."""
     conn = await open_connection(settings)
     await conn.execute(
@@ -26,7 +27,7 @@ async def repo(settings: Settings) -> RepositoryBase:
     )
     await conn.commit()
     repo = RepositoryBase(conn)
-    yield repo  # type: ignore[misc]
+    yield repo
     await close_connection(conn)
 
 

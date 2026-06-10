@@ -70,7 +70,9 @@ def test_discover_missing_dir(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_migrations_fresh_db(settings: Settings, migrations_dir: Path) -> None:
+async def test_run_migrations_fresh_db(
+    settings: Settings, migrations_dir: Path
+) -> None:
     """All migrations applied on fresh database."""
     _write_migration(migrations_dir, "0001_init.sql", "-- baseline")
     _write_migration(

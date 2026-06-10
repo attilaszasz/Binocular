@@ -19,6 +19,6 @@ def settings() -> Settings:
 async def client(settings: Settings) -> AsyncIterator[AsyncClient]:
     """Provide an async HTTP client bound to the test app."""
     app = create_app(settings=settings)
-    transport = ASGITransport(app=app)  # type: ignore[arg-type]
+    transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
