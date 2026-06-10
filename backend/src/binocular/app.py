@@ -39,21 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("shutting_down")
 
 
-async def get_db(request: Request) -> aiosqlite.Connection:
-    """FastAPI dependency returning the lifespan-managed DB connection.
-
-    Args:
-        request: The incoming HTTP request.
-
-    Returns:
-        The shared :class:`aiosqlite.Connection` from app state.
-    """
-    conn: aiosqlite.Connection = request.app.state.db
-    return conn
-
-
-# Type alias for use in route handlers
-DBDep = Annotated[aiosqlite.Connection, Depends(get_db)]
+from binocular.deps import DBDep, get_db  # noqa: F401
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
