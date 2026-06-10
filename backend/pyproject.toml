@@ -59,4 +59,5 @@ dev = [
     "httpx>=0.27",
     "mypy>=1.13",
     "ruff>=0.8",
+    "pip-audit>=2.7",
 ]
