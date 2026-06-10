@@ -99,11 +99,14 @@ async def test_delete_nonexistent(repo: DeviceRepository) -> None:
 
 
 @pytest.mark.asyncio
-async def test_confirm_update(repo: DeviceRepository, conn: aiosqlite.Connection) -> None:
+async def test_confirm_update(
+    repo: DeviceRepository, conn: aiosqlite.Connection,
+) -> None:
     device_id = await repo.create("Camera", "", 1, "1.0")
     # Simulate detection engine setting has_update
     await conn.execute(
-        "UPDATE devices SET has_update = 1, latest_detected_version = '2.0' WHERE id = ?",
+        "UPDATE devices SET has_update = 1,"
+        " latest_detected_version = '2.0' WHERE id = ?",
         (device_id,),
     )
     await conn.commit()

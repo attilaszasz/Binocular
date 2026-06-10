@@ -96,7 +96,8 @@ async def test_confirm_update(
         DeviceCreate(name="Camera", module_id=1, current_version="1.0")
     )
     await conn.execute(
-        "UPDATE devices SET has_update = 1, latest_detected_version = '2.0' WHERE id = ?",
+        "UPDATE devices SET has_update = 1,"
+        " latest_detected_version = '2.0' WHERE id = ?",
         (device.id,),
     )
     await conn.commit()

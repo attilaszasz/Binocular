@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import tempfile
 from collections.abc import AsyncIterator
 from pathlib import Path
-import tempfile
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -45,7 +45,12 @@ async def test_list_devices_empty(client: AsyncClient) -> None:
 async def test_create_device(client: AsyncClient) -> None:
     resp = await client.post(
         "/api/v1/devices",
-        json={"name": "A7R V", "model": "ILCE-7RM5", "module_id": 1, "current_version": "2.01"},
+        json={
+            "name": "A7R V",
+            "model": "ILCE-7RM5",
+            "module_id": 1,
+            "current_version": "2.01",
+        },
     )
     assert resp.status_code == 201
     data = resp.json()
