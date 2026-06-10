@@ -45,8 +45,21 @@ class DeviceResponse(BaseModel):
 
 
 class ModuleResponse(BaseModel):
-    """Response schema for a module (read-only in E006)."""
+    """Response schema for a module."""
 
     id: int
     name: str
     device_type: str
+    version: str = ""
+    author: str = ""
+    file_path: str = ""
+    is_official: bool = False
+    status: str = "active"
+    created_at: str = ""
+
+
+class ModuleUpdate(BaseModel):
+    """Request body for updating a module's status."""
+
+    status: str
+

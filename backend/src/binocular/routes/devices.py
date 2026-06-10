@@ -9,7 +9,6 @@ from binocular.devices.models import (
     DeviceCreate,
     DeviceResponse,
     DeviceUpdate,
-    ModuleResponse,
 )
 from binocular.devices.repository import DeviceRepository
 from binocular.devices.service import (
@@ -85,16 +84,3 @@ async def confirm_device_update(device_id: int, db: DBDep) -> DeviceResponse:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("/modules", response_model=list[ModuleResponse])
-async def list_modules(db: DBDep) -> list[ModuleResponse]:
-    """List available modules for device form dropdown."""
-    repo = DeviceRepository(db)
-    rows = await repo.list_modules()
-    return [
-        ModuleResponse(
-            id=dict(r)["id"],
-            name=dict(r)["name"],
-            device_type=dict(r)["device_type"],
-        )
-        for r in rows
-    ]

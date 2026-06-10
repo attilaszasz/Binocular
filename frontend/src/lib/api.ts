@@ -6,14 +6,23 @@ const API_BASE = "/api/v1";
 
 /** Typed fetch wrapper with automatic JSON parsing and error handling. */
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (!(init?.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (init?.headers) {
+    Object.assign(headers, init.headers);
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers,
     ...init,
   });
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, body.detail ?? res.statusText);
+    const message = typeof body.detail === "object" ? JSON.stringify(body.detail) : (body.detail ?? res.statusText);
+    throw new ApiError(res.status, message, body);
   }
 
   // 204 No Content
@@ -24,13 +33,17 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly body: unknown;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, body?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.body = body;
   }
 }
+
+
 
 /* ── Device types ─────────────────────────────────────────────── */
 
@@ -68,6 +81,12 @@ export interface Module {
   id: number;
   name: string;
   device_type: string;
+  version: string;
+  author: string;
+  file_path: string;
+  is_official: boolean;
+  status: string;
+  created_at: string;
 }
 
 /* ── Device API ───────────────────────────────────────────────── */
@@ -95,4 +114,19 @@ export const devicesApi = {
 
 export const modulesApi = {
   list: () => apiFetch<Module[]>("/modules"),
+  upload: (file: File, runPhase2: boolean = false) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiFetch<Module>(`/modules?run_phase2=${runPhase2}`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+  update: (id: number, status: string) =>
+    apiFetch<Module>(`/modules/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
+  delete: (id: number) =>
+    apiFetch<void>(`/modules/${id}`, { method: "DELETE" }),
 };
