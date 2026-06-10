@@ -35,8 +35,8 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 > Build the inventory model (device linked to module from the start), the module engine, and operability. Distinct areas → parallel.
 
 - [X] E006 [P1] [PRODUCT] [P] {PRD:CAP-001}{SAD:ADR-0009} Device Inventory Management — module-linked inventory, stored versions, update confirmation [→ Details](plan/E006.md)
-- [ ] E007 [P1] [TECHNICAL] [P] {PRD:CAP-002}{SAD:ADR-0005} Module Engine & Contract — loader, error boundary, two-phase validation [→ Details](plan/E007.md)
-- [ ] E008 [P1] [PRODUCT] [P] {PRD:CAP-009}{SAD:ADR-0008}{DOD:DDR-002} Self-Hosted Operability — zero-config, secrets, optional basic auth [→ Details](plan/E008.md)
+- [X] E007 [P1] [TECHNICAL] [P] {PRD:CAP-002}{SAD:ADR-0005} Module Engine & Contract — loader, error boundary, two-phase validation [→ Details](plan/E007.md)
+- [X] E008 [P1] [PRODUCT] [P] {PRD:CAP-009}{SAD:ADR-0008}{DOD:DDR-002} Self-Hosted Operability — zero-config, secrets, optional basic auth [→ Details](plan/E008.md)
 
 ### Wave 4 — Module Management & Detection
 

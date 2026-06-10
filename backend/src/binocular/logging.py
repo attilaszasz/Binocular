@@ -5,10 +5,15 @@ import sys
 
 import structlog
 
-from binocular.config import LogFormat
+from binocular.config import LogFormat, Settings
+from binocular.utils.masking import mask_secrets_processor, set_secrets_to_mask
 
 
-def setup_logging(log_format: LogFormat, log_level: str = "info") -> None:
+def setup_logging(
+    log_format: LogFormat,
+    log_level: str = "info",
+    settings: Settings | None = None,
+) -> None:
     """Configure structlog with the requested output format.
 
     Must be called once at application startup (in the lifespan) before
@@ -18,12 +23,23 @@ def setup_logging(log_format: LogFormat, log_level: str = "info") -> None:
         log_format: ``LogFormat.JSON`` for machine-readable output or
             ``LogFormat.CONSOLE`` for human-readable coloured output.
         log_level: Python log-level name (``debug``, ``info``, etc.).
+        settings: Optional application settings to extract and register secrets.
     """
+    if settings is not None:
+        secrets = [
+            settings.basic_auth_password,
+            settings.smtp_password,
+            settings.gotify_token,
+        ]
+        set_secrets_to_mask([s for s in secrets if s])
+
     numeric_level = getattr(logging, log_level.upper(), logging.INFO)
 
     shared_processors: list[structlog.types.Processor] = [
         structlog.contextvars.merge_contextvars,
+        mask_secrets_processor,
         structlog.stdlib.add_log_level,
+
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),

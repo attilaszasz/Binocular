@@ -53,7 +53,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if settings is None:
         settings = Settings()
 
-    setup_logging(settings.log_format, settings.log_level.value)
+    setup_logging(settings.log_format, settings.log_level.value, settings=settings)
 
     app = FastAPI(
         title="Binocular",
@@ -63,6 +63,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.include_router(router)
+
+    from binocular.auth import BasicAuthMiddleware
+    app.add_middleware(BasicAuthMiddleware)
 
     # Mount the frontend SPA — must be after API routes so /api paths
     # are not intercepted by the catch-all.

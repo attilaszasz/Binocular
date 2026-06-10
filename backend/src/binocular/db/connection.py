@@ -29,7 +29,11 @@ async def open_connection(settings: Settings) -> aiosqlite.Connection:
     Returns:
         A configured :class:`aiosqlite.Connection`.
     """
-    db_path = settings.data_dir / "binocular.db"
+    db_path = (
+        settings.db_path
+        if settings.db_path is not None
+        else settings.data_dir / "binocular.db"
+    )
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     conn = await aiosqlite.connect(db_path)
@@ -64,6 +68,9 @@ def get_db_path(settings: Settings) -> Path:
         settings: Application settings providing ``data_dir``.
 
     Returns:
-        Path to ``binocular.db`` under the configured data directory.
+        Path to ``binocular.db`` under the configured data directory
+        or the custom db_path.
     """
+    if settings.db_path is not None:
+        return settings.db_path
     return settings.data_dir / "binocular.db"
