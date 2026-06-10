@@ -1,3 +1,20 @@
+# ── Frontend build ────────────────────────────────────────────
+FROM node:22-slim AS frontend-builder
+
+WORKDIR /build/frontend
+
+ARG VITE_APP_VERSION=dev
+ENV VITE_APP_VERSION=${VITE_APP_VERSION}
+
+# Install deps first for layer caching.
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+# Build the SPA.
+COPY frontend/ ./
+RUN npm run build
+
+# ── Backend build ─────────────────────────────────────────────
 FROM python:3.13-slim AS builder
 
 WORKDIR /build
@@ -33,6 +50,9 @@ COPY --from=builder /usr/local/bin/su-exec /usr/local/bin/su-exec
 # Copy the virtual environment and app source.
 COPY --from=builder /build/backend/.venv /app/.venv
 COPY backend/src /app/src
+
+# Copy the built frontend assets.
+COPY --from=frontend-builder /build/frontend/dist /app/static_dist
 
 # Copy entrypoint.
 COPY entrypoint.sh /entrypoint.sh

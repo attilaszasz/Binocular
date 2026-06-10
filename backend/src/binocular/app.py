@@ -75,6 +75,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.include_router(router)
+
+    # Mount the frontend SPA — must be after API routes so /api paths
+    # are not intercepted by the catch-all.
+    from binocular.spa import mount_spa
+
+    mount_spa(app)
+
     return app
 
 
