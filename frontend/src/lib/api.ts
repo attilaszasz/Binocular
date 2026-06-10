@@ -130,3 +130,24 @@ export const modulesApi = {
   delete: (id: number) =>
     apiFetch<void>(`/modules/${id}`, { method: "DELETE" }),
 };
+
+/* ── Checks API ───────────────────────────────────────────────── */
+
+export interface DeviceCheckResult {
+  device_id: number;
+  module_id: number;
+  latest_version: string | null;
+  current_version: string;
+  has_update: boolean;
+  checked_at: string;
+  success: boolean;
+  error_message: string | null;
+}
+
+export const checksApi = {
+  checkDevice: (id: number) =>
+    apiFetch<DeviceCheckResult>(`/checks/device/${id}`, { method: "POST" }),
+  checkBulk: () =>
+    apiFetch<DeviceCheckResult[]>("/checks/bulk", { method: "POST" }),
+};
+

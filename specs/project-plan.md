@@ -50,7 +50,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Manual and scheduled check paths. Distinct entry points → parallel.
 
-- [ ] E012 [P1] [PRODUCT] [P] {PRD:CAP-005} Manual On-Demand Checks — single/bulk checks, side-by-side comparison [→ Details](plan/E012.md)
+- [X] E012 [P1] [PRODUCT] [P] {PRD:CAP-005} Manual On-Demand Checks — single/bulk checks, side-by-side comparison [→ Details](plan/E012.md)
 - [ ] E013 [P1] [PRODUCT] [P] {PRD:CAP-004}{SAD:ADR-0007} Automated Scheduled Checking — per-module interval jobs, restart-safe, user-configurable frequency [→ Details](plan/E013.md)
 
 ### Wave 6 — Notifications, Logging & Modules

@@ -3,7 +3,7 @@
  * and add/edit form.
  */
 import { useState } from "react";
-import { ArrowUpCircle, CheckCircle, Monitor, Plus } from "lucide-react";
+import { ArrowUpCircle, CheckCircle, Monitor, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,6 +22,7 @@ import {
   useDeleteDevice,
   useDevices,
   useUpdateDevice,
+  useCheckBulk,
 } from "@/hooks/use-devices";
 import type { Device, DeviceCreate, DeviceUpdate } from "@/lib/api";
 
@@ -33,6 +34,7 @@ export function InventoryPage() {
   const updateDevice = useUpdateDevice();
   const deleteDevice = useDeleteDevice();
   const confirmUpdate = useConfirmUpdate();
+  const checkBulk = useCheckBulk();
 
   const [formMode, setFormMode] = useState<FormMode>({ type: "closed" });
 
@@ -45,6 +47,10 @@ export function InventoryPage() {
   const handleAdd = () => setFormMode({ type: "add" });
   const handleEdit = (device: Device) => setFormMode({ type: "edit", device });
   const handleCancel = () => setFormMode({ type: "closed" });
+
+  const handleCheckAll = () => {
+    checkBulk.mutate();
+  };
 
   const handleSubmit = (data: DeviceCreate | DeviceUpdate) => {
     if (formMode.type === "add") {
@@ -89,10 +95,20 @@ export function InventoryPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Inventory</h1>
         {totalDevices > 0 && formMode.type === "closed" && (
-          <Button onClick={handleAdd}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Device
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCheckAll}
+              disabled={checkBulk.isPending}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${checkBulk.isPending ? "animate-spin" : ""}`} />
+              Check All
+            </Button>
+            <Button onClick={handleAdd}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Device
+            </Button>
+          </div>
         )}
       </div>
 

@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   devicesApi,
+  checksApi,
   type Device,
   type DeviceCreate,
   type DeviceUpdate,
@@ -58,3 +59,20 @@ export function useConfirmUpdate() {
     onSuccess: () => qc.invalidateQueries({ queryKey: DEVICES_KEY }),
   });
 }
+
+export function useCheckDevice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => checksApi.checkDevice(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: DEVICES_KEY }),
+  });
+}
+
+export function useCheckBulk() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => checksApi.checkBulk(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: DEVICES_KEY }),
+  });
+}
+
