@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
+
 import aiosqlite
 import pytest
 
@@ -15,7 +17,7 @@ from binocular.devices.service import (
 
 
 @pytest.fixture
-async def conn() -> aiosqlite.Connection:
+async def conn() -> AsyncGenerator[aiosqlite.Connection]:
     db = await aiosqlite.connect(":memory:")
     db.row_factory = aiosqlite.Row
     await db.execute("PRAGMA foreign_keys=ON")
@@ -44,7 +46,7 @@ async def conn() -> aiosqlite.Connection:
         """
     )
     await db.commit()
-    yield db  # type: ignore[misc]
+    yield db
     await db.close()
 
 

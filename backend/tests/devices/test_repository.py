@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
+
 import aiosqlite
 import pytest
 
@@ -9,7 +11,7 @@ from binocular.devices.repository import DeviceRepository
 
 
 @pytest.fixture
-async def conn() -> aiosqlite.Connection:
+async def conn() -> AsyncGenerator[aiosqlite.Connection]:
     """Provide an in-memory SQLite connection with schema applied."""
     db = await aiosqlite.connect(":memory:")
     db.row_factory = aiosqlite.Row
@@ -41,7 +43,7 @@ async def conn() -> aiosqlite.Connection:
         """
     )
     await db.commit()
-    yield db  # type: ignore[misc]
+    yield db
     await db.close()
 
 

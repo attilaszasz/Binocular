@@ -95,6 +95,6 @@ async def list_modules(db: DBDep) -> list[ModuleResponse]:
             id=dict(r)["id"],
             name=dict(r)["name"],
             device_type=dict(r)["device_type"],
-        )  # type: ignore[arg-type]
+        )
         for r in rows
     ]

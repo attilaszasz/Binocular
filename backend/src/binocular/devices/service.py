@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+import aiosqlite
+
 from binocular.devices.models import DeviceCreate, DeviceResponse, DeviceUpdate
 from binocular.devices.repository import DeviceRepository
 
@@ -93,10 +97,9 @@ class DeviceService:
         return self._row_to_response(row)
 
     @staticmethod
-    def _row_to_response(row: object) -> DeviceResponse:
+    def _row_to_response(row: aiosqlite.Row) -> DeviceResponse:
         """Convert an aiosqlite.Row to a DeviceResponse."""
-        # aiosqlite.Row supports both index and key access
-        r = dict(row)  # type: ignore[arg-type]
+        r: dict[str, Any] = dict(row)
         return DeviceResponse(
             id=r["id"],
             name=r["name"],
