@@ -3,7 +3,7 @@ name: Software Engineer
 description: Execute the implementation plan by processing and completing all tasks defined in tasks.md.
 argument-hint: Optionally specify which phase or task to start from
 target: vscode
-tools: [vscode/askQuestions, execute/getTerminalOutput, execute/runInTerminal, read/readFile, agent/runSubagent, edit/createDirectory, edit/createFile, edit/editFiles, browser/openBrowserPage, browser/readPage, browser/screenshotPage, browser/navigatePage, browser/clickElement, browser/dragElement, browser/hoverElement, browser/typeInPage, browser/runPlaywrightCode, browser/handleDialog, todo]
+tools: ['vscode/askQuestions', 'read/readFile', 'agent', 'execute/runInTerminal', 'execute/getTerminalOutput', 'edit/createDirectory', 'edit/createFile', 'edit/editFiles', 'todo']
 agents: ['ContextGatherer', 'TaskTracker', 'Developer', 'ChecklistReader', 'TestEvaluator', 'TechnicalResearcher']
 handoffs:
   - label: Run Quality Control
