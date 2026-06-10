@@ -57,7 +57,13 @@ SUPPORTED_DEVICE_TYPE = "lens"
 def check_firmware(url, model, http_client):
     return {"latest_version": "1.0.0"}
 """
-    files = {"file": ("test_lens.py", io.BytesIO(valid_code.encode("utf-8")), "text/x-python")}
+    files = {
+        "file": (
+            "test_lens.py",
+            io.BytesIO(valid_code.encode("utf-8")),
+            "text/x-python",
+        )
+    }
     resp = await client.post("/api/v1/modules", files=files)
     assert resp.status_code == 201
     data = resp.json()
@@ -76,7 +82,13 @@ SUPPORTED_DEVICE_TYPE = "lens"
 def check_firmware(url, model, http_client):
     return {"latest_version": "1.0.0"}
 """
-    files = {"file": ("test_lens_p2.py", io.BytesIO(valid_code.encode("utf-8")), "text/x-python")}
+    files = {
+        "file": (
+            "test_lens_p2.py",
+            io.BytesIO(valid_code.encode("utf-8")),
+            "text/x-python",
+        )
+    }
     resp = await client.post("/api/v1/modules?run_phase2=true", files=files)
     assert resp.status_code == 201
     data = resp.json()
@@ -93,7 +105,13 @@ SUPPORTED_DEVICE_TYPE = "lens"
 def check_firmware(url, model, http_client)
     return {"latest_version": "1.0.0"}
 """
-    files = {"file": ("test_invalid_syntax.py", io.BytesIO(invalid_code.encode("utf-8")), "text/x-python")}
+    files = {
+        "file": (
+            "test_invalid_syntax.py",
+            io.BytesIO(invalid_code.encode("utf-8")),
+            "text/x-python",
+        )
+    }
     resp = await client.post("/api/v1/modules", files=files)
     assert resp.status_code == 422
     data = resp.json()
@@ -108,7 +126,13 @@ SUPPORTED_DEVICE_TYPE = "lens"
 def check_firmware(url, model, http_client):
     return {"latest_version": "1.0.0"}
 """
-    files = {"file": ("test_invalid_contract.py", io.BytesIO(invalid_code.encode("utf-8")), "text/x-python")}
+    files = {
+        "file": (
+            "test_invalid_contract.py",
+            io.BytesIO(invalid_code.encode("utf-8")),
+            "text/x-python",
+        )
+    }
     resp = await client.post("/api/v1/modules", files=files)
     assert resp.status_code == 422
     data = resp.json()
