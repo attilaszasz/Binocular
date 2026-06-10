@@ -44,7 +44,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 - [X] E009 [P1] [PRODUCT] [P] {PRD:CAP-003} Module Lifecycle Management — upload, update, delete modules via UI [→ Details](plan/E009.md)
 - [X] E010 [P1] [PRODUCT] [P] {PRD:CAP-006} Update Detection & Comparison — determine newer-than-recorded reliably [→ Details](plan/E010.md)
-- [ ] E011 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Sony Alpha Module — Sony Alpha detection with fixtures [→ Details](plan/E011.md)
+- [X] E011 [P2] [PRODUCT] [P] {PRD:CAP-011} Official Sony Alpha Module — Sony Alpha detection with fixtures [→ Details](plan/E011.md)
 
 ### Wave 5 — Check Workflows & Scheduling
 
