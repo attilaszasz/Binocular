@@ -2,16 +2,15 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated
 
-import aiosqlite
 import structlog
 import uvicorn
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI
 
 from binocular.config import Settings
 from binocular.db.connection import close_connection, open_connection
 from binocular.db.migrations import run_migrations
+from binocular.deps import DBDep, get_db  # noqa: F401  — re-exported for compat
 from binocular.logging import setup_logging
 from binocular.routes import router
 from binocular.scraping.client import ScrapeClient
@@ -38,8 +37,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await close_connection(conn)
     logger.info("shutting_down")
 
-
-from binocular.deps import DBDep, get_db  # noqa: F401
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

@@ -10,7 +10,7 @@ from binocular.devices.repository import DeviceRepository
 from binocular.devices.service import (
     DeviceNotFoundError,
     DeviceService,
-    ModuleNotFoundError,
+    InvalidModuleError,
 )
 
 
@@ -63,7 +63,7 @@ async def test_create_device(service: DeviceService) -> None:
 
 @pytest.mark.asyncio
 async def test_create_invalid_module(service: DeviceService) -> None:
-    with pytest.raises(ModuleNotFoundError):
+    with pytest.raises(InvalidModuleError):
         await service.create(DeviceCreate(name="Bad", module_id=999))
 
 

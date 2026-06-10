@@ -52,7 +52,9 @@ class DeviceRepository(RepositoryBase):
             VALUES (?, ?, ?, ?)
         """
         cursor = await self.execute(sql, (name, model, module_id, current_version))
-        assert cursor.lastrowid is not None
+        if cursor.lastrowid is None:  # pragma: no cover
+            msg = "INSERT did not return a lastrowid"
+            raise RuntimeError(msg)
         return cursor.lastrowid
 
     async def update(
@@ -73,7 +75,10 @@ class DeviceRepository(RepositoryBase):
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         params: list[Any] = list(updates.values())
         params.append(device_id)
-        sql = f"UPDATE devices SET {set_clause}, updated_at = datetime('now') WHERE id = ?"
+        sql = (
+            f"UPDATE devices SET {set_clause},"  # noqa: S608
+            " updated_at = datetime('now') WHERE id = ?"
+        )
         await self.execute(sql, params)
 
     async def delete(self, device_id: int) -> bool:
@@ -99,4 +104,8 @@ class DeviceRepository(RepositoryBase):
 
     async def list_modules(self) -> list[aiosqlite.Row]:
         """Return all modules (read-only, for device form dropdown)."""
-        return await self.fetch_all("SELECT id, name, device_type FROM modules ORDER BY name")
+        sql = (
+            "SELECT id, name, device_type"
+            " FROM modules ORDER BY name"
+        )
+        return await self.fetch_all(sql)

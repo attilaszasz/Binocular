@@ -14,7 +14,7 @@ class DeviceNotFoundError(Exception):
         super().__init__(f"Device {device_id} not found")
 
 
-class ModuleNotFoundError(Exception):
+class InvalidModuleError(Exception):
     """Raised when a module_id references a non-existent module."""
 
     def __init__(self, module_id: int) -> None:
@@ -35,7 +35,7 @@ class DeviceService:
     async def create(self, data: DeviceCreate) -> DeviceResponse:
         """Create a new device after validating module_id."""
         if not await self._repo.module_exists(data.module_id):
-            raise ModuleNotFoundError(data.module_id)
+            raise InvalidModuleError(data.module_id)
 
         device_id = await self._repo.create(
             name=data.name,
@@ -58,8 +58,11 @@ class DeviceService:
         """Update device fields after validating existence and module_id."""
         await self._get_or_raise(device_id)
 
-        if data.module_id is not None and not await self._repo.module_exists(data.module_id):
-            raise ModuleNotFoundError(data.module_id)
+        if (
+            data.module_id is not None
+            and not await self._repo.module_exists(data.module_id)
+        ):
+            raise InvalidModuleError(data.module_id)
 
         await self._repo.update(
             device_id,

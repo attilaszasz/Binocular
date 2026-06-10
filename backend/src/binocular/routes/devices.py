@@ -15,7 +15,7 @@ from binocular.devices.repository import DeviceRepository
 from binocular.devices.service import (
     DeviceNotFoundError,
     DeviceService,
-    ModuleNotFoundError,
+    InvalidModuleError,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["devices"])
@@ -36,7 +36,7 @@ async def create_device(body: DeviceCreate, db: DBDep) -> DeviceResponse:
     """Register a new device."""
     try:
         return await _service(db).create(body)
-    except ModuleNotFoundError as exc:
+    except InvalidModuleError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
@@ -60,7 +60,7 @@ async def update_device(
         return await _service(db).update(device_id, body)
     except DeviceNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ModuleNotFoundError as exc:
+    except InvalidModuleError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
@@ -91,6 +91,10 @@ async def list_modules(db: DBDep) -> list[ModuleResponse]:
     repo = DeviceRepository(db)
     rows = await repo.list_modules()
     return [
-        ModuleResponse(id=dict(r)["id"], name=dict(r)["name"], device_type=dict(r)["device_type"])  # type: ignore[arg-type]
+        ModuleResponse(
+            id=dict(r)["id"],
+            name=dict(r)["name"],
+            device_type=dict(r)["device_type"],
+        )  # type: ignore[arg-type]
         for r in rows
     ]
