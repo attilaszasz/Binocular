@@ -97,6 +97,27 @@ class DeviceRepository(RepositoryBase):
         """
         await self.execute(sql, (device_id,))
 
+    async def update_check_status(
+        self,
+        device_id: int,
+        has_update: bool,
+        latest_detected_version: str | None,
+        last_checked: str,
+    ) -> None:
+        """Update device check status fields."""
+        sql = """
+            UPDATE devices
+            SET has_update = ?,
+                latest_detected_version = ?,
+                last_checked = ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+        """
+        await self.execute(
+            sql,
+            (1 if has_update else 0, latest_detected_version, last_checked, device_id),
+        )
+
     async def module_exists(self, module_id: int) -> bool:
         """Check if a module with the given ID exists."""
         row = await self.fetch_one("SELECT 1 FROM modules WHERE id = ?", (module_id,))
