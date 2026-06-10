@@ -2,12 +2,16 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated
 
+import aiosqlite
 import structlog
 import uvicorn
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 
 from binocular.config import Settings
+from binocular.db.connection import close_connection, open_connection
+from binocular.db.migrations import run_migrations
 from binocular.logging import setup_logging
 from binocular.routes import router
 
@@ -17,8 +21,34 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan — startup and shutdown logic."""
     logger = structlog.get_logger("binocular.app")
     logger.info("starting", version="0.1.0")
+
+    settings: Settings = app.state.settings
+    conn = await open_connection(settings)
+    app.state.db = conn
+
+    await run_migrations(conn, settings)
+
     yield
+
+    await close_connection(conn)
     logger.info("shutting_down")
+
+
+async def get_db(request: Request) -> aiosqlite.Connection:
+    """FastAPI dependency returning the lifespan-managed DB connection.
+
+    Args:
+        request: The incoming HTTP request.
+
+    Returns:
+        The shared :class:`aiosqlite.Connection` from app state.
+    """
+    conn: aiosqlite.Connection = request.app.state.db
+    return conn
+
+
+# Type alias for use in route handlers
+DBDep = Annotated[aiosqlite.Connection, Depends(get_db)]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -43,6 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+    app.state.settings = settings
     app.include_router(router)
     return app
 

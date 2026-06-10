@@ -19,8 +19,8 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > No dependencies. Establishes the runnable application shell, container with PUID/PGID entrypoint, and the data layer so all later work has something concrete to validate.
 
-- [ ] E001 [P1] [TECHNICAL] {SAD:ADR-0001}{SAD:ADR-0002}{SAD:ADR-0008}{DOD:DDR-004} Application Skeleton & Container — layered FastAPI app, config, /healthz, non-root image with PUID/PGID entrypoint [→ Details](plan/E001.md)
-- [ ] E002 [P1] [TECHNICAL] [P] {SAD:ADR-0004}{DOD:DDR-003} Data Layer & Migrations — aiosqlite, raw SQL, numbered migrations, pre-migration backup [→ Details](plan/E002.md)
+- [X] E001 [P1] [TECHNICAL] {SAD:ADR-0001}{SAD:ADR-0002}{SAD:ADR-0008}{DOD:DDR-004} Application Skeleton & Container — layered FastAPI app, config, /healthz, non-root image with PUID/PGID entrypoint [→ Details](plan/E001.md)
+- [X] E002 [P1] [TECHNICAL] [P] {SAD:ADR-0004}{DOD:DDR-003} Data Layer & Migrations — aiosqlite, raw SQL, numbered migrations, pre-migration backup [→ Details](plan/E002.md)
 
 ### Wave 2 — Validation & Frontend Shell
 
