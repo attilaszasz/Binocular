@@ -105,7 +105,11 @@ async def test_check_bulk(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_check_bulk_empty(client: AsyncClient) -> None:
     # Remove all devices
-    app = client._transport.app
+    from fastapi import FastAPI
+    transport = client._transport
+    assert isinstance(transport, ASGITransport)
+    app = transport.app
+    assert isinstance(app, FastAPI)
     db = app.state.db
     await db.execute("DELETE FROM devices")
     await db.commit()

@@ -38,7 +38,7 @@ export function DeviceCard({
           setCheckError(data.error_message || "Check failed");
         }
       },
-      onError: (err: any) => {
+      onError: (err: Error) => {
         setCheckError(err.message || "Network error");
       },
     });
