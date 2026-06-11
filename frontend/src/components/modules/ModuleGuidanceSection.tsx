@@ -32,10 +32,9 @@ interface KitListResponse {
 export function ModuleGuidanceSection() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [kitFiles, setKitFiles] = useState<KitFile[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsLoading(true);
     fetch("/api/v1/module-kit/")
       .then((r) => r.json())
       .then((data: KitListResponse) => {

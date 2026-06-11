@@ -5,7 +5,7 @@ import { ModuleGuidanceSection } from "./ModuleGuidanceSection";
 
 // Mock fetch for kit files API
 beforeEach(() => {
-  global.fetch = vi.fn().mockResolvedValue({
+  globalThis.fetch = vi.fn().mockResolvedValue({
     json: () =>
       Promise.resolve({
         files: [
@@ -67,7 +67,7 @@ describe("ModuleGuidanceSection", () => {
 
   it("fetches kit files on mount", async () => {
     render(<ModuleGuidanceSection />);
-    expect(global.fetch).toHaveBeenCalledWith("/api/v1/module-kit/");
+    expect(globalThis.fetch).toHaveBeenCalledWith("/api/v1/module-kit/");
   });
 
   it("renders kit file names after loading", async () => {
