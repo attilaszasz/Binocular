@@ -87,7 +87,10 @@ export interface Module {
   is_official: boolean;
   status: string;
   created_at: string;
+  consecutive_failures?: number;
+  last_success?: string | null;
 }
+
 
 /* ── Device API ───────────────────────────────────────────────── */
 

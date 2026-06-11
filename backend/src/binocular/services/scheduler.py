@@ -59,6 +59,7 @@ class SchedulerService:
     async def run_backup(self) -> None:
         """Run daily database backup."""
         from binocular.services.backup import BackupService
+
         backup_service = BackupService(self._db, self._settings)
         try:
             await backup_service.create_backup()
@@ -231,6 +232,7 @@ class SchedulerService:
             scrape_client=self._scrape_client,
             modules_dir=self._settings.modules_dir,
             runner_timeout=self._settings.module_timeout,
+            health_threshold=self._settings.module_health_threshold,
         )
 
         tasks = [check_service.check_device(device_id) for device_id in device_ids]

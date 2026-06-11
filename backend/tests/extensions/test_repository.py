@@ -32,6 +32,9 @@ async def repo(tmp_path: object) -> AsyncGenerator[ModuleRepository]:
             CHECK(is_official IN (0, 1));
         ALTER TABLE modules ADD COLUMN status TEXT NOT NULL DEFAULT 'active'
             CHECK(status IN ('active', 'inactive', 'error'));
+        ALTER TABLE modules ADD COLUMN consecutive_failures INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE modules ADD COLUMN last_success TEXT NULL;
+
         """
     )
     repo = ModuleRepository(conn)

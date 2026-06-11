@@ -42,13 +42,61 @@ class CheckService:
         scrape_client: ScrapeClient,
         modules_dir: Path,
         runner_timeout: float = 30.0,
+        health_threshold: int = 5,
     ) -> None:
         self._db = db
         self._scrape_client = scrape_client
         self._modules_dir = modules_dir
         self._runner_timeout = runner_timeout
+        self._health_threshold = health_threshold
 
     async def check_device(self, device_id: int) -> DeviceCheckResult:
+        result = await self._check_device_inner(device_id)
+        if result.module_id:
+            module_repo = ModuleRepository(self._db)
+            module_row = await module_repo.get_by_id(result.module_id)
+            if module_row:
+                module_info = dict(module_row)
+                if bool(module_info.get("is_official")):
+                    if result.success:
+                        await self._db.execute(
+                            "UPDATE modules SET consecutive_failures = 0, "
+                            "last_success = ? WHERE id = ?",
+                            (result.checked_at, result.module_id),
+                        )
+                        await self._db.commit()
+                    else:
+                        current_failures = int(
+                            module_info.get("consecutive_failures") or 0
+                        )
+                        new_failures = current_failures + 1
+                        await self._db.execute(
+                            "UPDATE modules SET consecutive_failures = ? WHERE id = ?",
+                            (new_failures, result.module_id),
+                        )
+                        await self._db.commit()
+                        if new_failures == self._health_threshold:
+                            try:
+                                from binocular.services.notifier import NotifierService
+
+                                notifier = NotifierService(self._db)
+                                module_name = module_info.get("name", "Unknown Module")
+                                title = f"Official Module Failing: {module_name}"
+                                body = (
+                                    f"Official module '{module_name}' has failed "
+                                    f"{new_failures} consecutive checks. "
+                                    "Please inspect the logs."
+                                )
+                                await notifier.send_notification(title=title, body=body)
+
+                            except Exception:
+                                logger.exception(
+                                    "failed_to_send_health_notification",
+                                    module_id=result.module_id,
+                                )
+        return result
+
+    async def _check_device_inner(self, device_id: int) -> DeviceCheckResult:
         """Run update detection check for a device by its ID.
 
         Returns:

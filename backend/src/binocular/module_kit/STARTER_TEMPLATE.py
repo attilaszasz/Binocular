@@ -95,9 +95,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
         response = loop.run_until_complete(http_client.get(source_url))
         html = response.text
     except Exception as exc:
-        raise ValueError(
-            f"network_error: Failed to fetch {source_url}: {exc}"
-        ) from exc
+        raise ValueError(f"network_error: Failed to fetch {source_url}: {exc}") from exc
 
     # -----------------------------------------------------------------------
     # Step 2: Parse the response to find firmware information

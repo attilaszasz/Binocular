@@ -31,6 +31,8 @@ async def conn() -> AsyncGenerator[aiosqlite.Connection]:
             file_path   TEXT    NOT NULL DEFAULT '',
             is_official INTEGER NOT NULL DEFAULT 0,
             status      TEXT    NOT NULL DEFAULT 'active',
+            consecutive_failures INTEGER NOT NULL DEFAULT 0,
+            last_success TEXT,
             created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
         );
         CREATE TABLE devices (
@@ -288,3 +290,150 @@ async def test_check_device_missing_device(
 ) -> None:
     with pytest.raises(ValueError, match="Device 999 not found"):
         await check_service.check_device(999)
+
+
+@pytest.mark.asyncio
+async def test_official_module_health_monitoring(
+    conn: aiosqlite.Connection,
+    mock_scrape_client: MagicMock,
+    fixtures_dir: Path,
+) -> None:
+    # Set up CheckService with custom threshold
+    check_service = CheckService(
+        db=conn,
+        scrape_client=mock_scrape_client,
+        modules_dir=fixtures_dir,
+        health_threshold=3,
+    )
+
+    # 1. Insert official module and device
+    valid_module_path = str(fixtures_dir / "valid_module.py")
+    cursor = await conn.execute(
+        "INSERT INTO modules (name, device_type, file_path, is_official) "
+        "VALUES (?, ?, ?, ?)",
+
+        ("Sony Camera", "Camera", valid_module_path, 1),
+    )
+    module_id = cursor.lastrowid
+    assert module_id is not None
+
+    cursor = await conn.execute(
+        "INSERT INTO devices (name, model, module_id, current_version)"
+        " VALUES (?, ?, ?, ?)",
+        ("My Camera", "ILCE-7M4", module_id, "1.0.0"),
+    )
+    device_id = cursor.lastrowid
+    assert device_id is not None
+    await conn.commit()
+
+    # 2. Check succeeds -> failures reset to 0, last_success set
+    result = await check_service.check_device(device_id)
+    assert result.success is True
+
+    cursor = await conn.execute(
+        "SELECT consecutive_failures, last_success FROM modules WHERE id = ?",
+        (module_id,),
+    )
+    row = await cursor.fetchone()
+    assert row["consecutive_failures"] == 0
+    assert row["last_success"] is not None
+
+    # 3. Simulate failure by changing file_path to nonexistent
+    await conn.execute(
+        "UPDATE modules SET file_path = ? WHERE id = ?", ("nonexistent.py", module_id)
+    )
+    await conn.commit()
+
+    # Mock NotifierService to check if notification is sent
+    from unittest.mock import patch
+
+    with patch(
+        "binocular.services.notifier.NotifierService.send_notification"
+    ) as mock_send:
+        mock_send.return_value = True
+
+        # First failure
+        result = await check_service.check_device(device_id)
+        assert result.success is False
+        cursor = await conn.execute(
+            "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
+        )
+        row = await cursor.fetchone()
+        assert row["consecutive_failures"] == 1
+        mock_send.assert_not_called()
+
+        # Second failure
+        result = await check_service.check_device(device_id)
+        assert result.success is False
+        cursor = await conn.execute(
+            "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
+        )
+        row = await cursor.fetchone()
+        assert row["consecutive_failures"] == 2
+        mock_send.assert_not_called()
+
+        # Third failure (should trigger notification since threshold is 3)
+        result = await check_service.check_device(device_id)
+        assert result.success is False
+        cursor = await conn.execute(
+            "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
+        )
+        row = await cursor.fetchone()
+        assert row["consecutive_failures"] == 3
+        mock_send.assert_called_once()
+        mock_send.reset_mock()
+
+        # Fourth failure (should NOT trigger notification again
+        # since it's past threshold transition)
+        result = await check_service.check_device(device_id)
+
+        assert result.success is False
+        cursor = await conn.execute(
+            "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
+        )
+        row = await cursor.fetchone()
+        assert row["consecutive_failures"] == 4
+        mock_send.assert_not_called()
+
+        # Restore valid file path and run check to succeed again -> resets to 0
+        await conn.execute(
+            "UPDATE modules SET file_path = ? WHERE id = ?",
+            (valid_module_path, module_id),
+        )
+        await conn.commit()
+
+        result = await check_service.check_device(device_id)
+        assert result.success is True
+        cursor = await conn.execute(
+            "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
+        )
+        row = await cursor.fetchone()
+        assert row["consecutive_failures"] == 0
+
+    # 4. Verify non-official module is NOT tracked
+    cursor = await conn.execute(
+        "INSERT INTO modules (name, device_type, file_path, is_official) "
+        "VALUES (?, ?, ?, ?)",
+
+        ("Custom Camera", "Camera", "nonexistent.py", 0),
+    )
+    custom_module_id = cursor.lastrowid
+    assert custom_module_id is not None
+
+    cursor = await conn.execute(
+        "INSERT INTO devices (name, model, module_id, current_version)"
+        " VALUES (?, ?, ?, ?)",
+        ("Custom Camera Device", "ILCE-7M4", custom_module_id, "1.0.0"),
+    )
+    custom_device_id = cursor.lastrowid
+    assert custom_device_id is not None
+    await conn.commit()
+
+    # Custom module fails
+    result = await check_service.check_device(custom_device_id)
+    assert result.success is False
+    cursor = await conn.execute(
+        "SELECT consecutive_failures FROM modules WHERE id = ?", (custom_module_id,)
+    )
+    row = await cursor.fetchone()
+    assert row["consecutive_failures"] == 0

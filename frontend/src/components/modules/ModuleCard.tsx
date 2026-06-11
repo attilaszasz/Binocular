@@ -87,9 +87,37 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
               {module.file_path || "—"}
             </span>
           </div>
+          {module.is_official && (
+            <>
+              <div className="flex justify-between border-b border-border/40 pb-1">
+                <span className="text-muted-foreground">Health</span>
+                <span className={module.consecutive_failures && module.consecutive_failures >= 5 ? "text-destructive font-semibold" : module.consecutive_failures && module.consecutive_failures > 0 ? "text-amber-500 font-semibold" : "text-emerald-500 font-semibold"}>
+                  {module.consecutive_failures && module.consecutive_failures > 0
+                    ? `${module.consecutive_failures} consecutive failures`
+                    : "Healthy"}
+                </span>
+              </div>
+              {module.last_success && (
+                <div className="flex justify-between border-b border-border/40 pb-1">
+                  <span className="text-muted-foreground">Last Success</span>
+                  <span className="text-xs font-mono">
+                    {new Date(module.last_success).toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
+
         <FrequencyEditor module={module} />
+
+        {module.is_official && module.consecutive_failures !== undefined && module.consecutive_failures >= 5 && (
+          <div className="mt-3 flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
+            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>Consistently failing updates checks. Please check logs/targets.</span>
+          </div>
+        )}
 
         {errorText && (
           <div className="mt-3 flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
@@ -97,6 +125,7 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
             <span>{errorText}</span>
           </div>
         )}
+
 
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/60">
           <div className="flex items-center gap-2">

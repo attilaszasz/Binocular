@@ -66,6 +66,7 @@ class Settings(BaseSettings):
 
     # Module engine
     module_timeout: float = 30.0
+    module_health_threshold: int = 5
 
     # Basic Authentication
     basic_auth_enabled: bool = False

@@ -53,9 +53,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
         response = loop.run_until_complete(http_client.get(source_url))
         html = response.text
     except Exception as exc:
-        raise ValueError(
-            f"network_error: Failed to fetch {source_url}: {exc}"
-        ) from exc
+        raise ValueError(f"network_error: Failed to fetch {source_url}: {exc}") from exc
 
     # Parse firmware entries from the page.
     entries = _parse_firmware_entries(html)
@@ -68,15 +66,11 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
     # Find the matching entry for the requested model.
     entry = _find_entry(entries, model)
     if entry is None:
-        raise ValueError(
-            f"product_not_found: Model '{model}' not found in catalog"
-        )
+        raise ValueError(f"product_not_found: Model '{model}' not found in catalog")
 
     version = entry.get("firmware_version", "")
     if not version:
-        raise ValueError(
-            f"firmware_not_available: No firmware listed for {model}"
-        )
+        raise ValueError(f"firmware_not_available: No firmware listed for {model}")
 
     # Return the result dict — "latest_version" is required.
     return {
@@ -112,22 +106,24 @@ def _parse_firmware_entries(html: str) -> list[dict[str, Any]]:
             firmware = product.get("firmware", {})
             if not isinstance(firmware, dict):
                 firmware = {}
-            entries.append({
-                "name": str(product.get("name", "")).strip(),
-                "model": str(product.get("model", "")).strip(),
-                "firmware_version": str(firmware.get("firmwareVersion", "")).strip(),
-                "firmware_date": str(firmware.get("firmwareDate", "")).strip() or None,
-                "firmware_download_url": (
-                    str(firmware.get("firmwareDownloadURL", "")).strip()
-                    or None
-                ),
-            })
+            entries.append(
+                {
+                    "name": str(product.get("name", "")).strip(),
+                    "model": str(product.get("model", "")).strip(),
+                    "firmware_version": str(
+                        firmware.get("firmwareVersion", "")
+                    ).strip(),
+                    "firmware_date": str(firmware.get("firmwareDate", "")).strip()
+                    or None,
+                    "firmware_download_url": (
+                        str(firmware.get("firmwareDownloadURL", "")).strip() or None
+                    ),
+                }
+            )
     return entries
 
 
-def _extract_json_array(
-    html: str, catalog_name: str
-) -> list[dict[str, Any]] | None:
+def _extract_json_array(html: str, catalog_name: str) -> list[dict[str, Any]] | None:
     """Find and parse a named JSON array from page source."""
     marker = f'"{catalog_name}"'
     pos = html.find(marker)
@@ -152,9 +148,7 @@ def _extract_json_array(
     return None
 
 
-def _find_entry(
-    entries: list[dict[str, Any]], model: str
-) -> dict[str, Any] | None:
+def _find_entry(entries: list[dict[str, Any]], model: str) -> dict[str, Any] | None:
     """Find a catalog entry by model name (case-insensitive)."""
     key = model.upper().strip()
     for entry in entries:

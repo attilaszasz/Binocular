@@ -56,6 +56,8 @@ class ModuleResponse(BaseModel):
     is_official: bool = False
     status: str = "active"
     created_at: str = ""
+    consecutive_failures: int = 0
+    last_success: str | None = None
 
 
 class ModuleUpdate(BaseModel):

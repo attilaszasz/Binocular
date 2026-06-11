@@ -25,4 +25,3 @@ router.include_router(checks_router)
 router.include_router(notifications_router)
 router.include_router(activity_router)
 router.include_router(backups_router)
-

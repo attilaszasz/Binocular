@@ -34,6 +34,7 @@ def _check_service(db: DBDep, request: Request) -> CheckService:
         scrape_client=request.app.state.scrape_client,
         modules_dir=settings.modules_dir,
         runner_timeout=settings.module_timeout,
+        health_threshold=settings.module_health_threshold,
     )
 
 

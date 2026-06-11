@@ -22,7 +22,8 @@ class ModuleRepository(RepositoryBase):
 
     _SELECT_COLS = (
         "id, name, device_type, version, author,"
-        " file_path, is_official, status, created_at"
+        " file_path, is_official, status, created_at,"
+        " consecutive_failures, last_success"
     )
 
     async def list_all(self) -> list[aiosqlite.Row]:
@@ -83,7 +84,10 @@ class ModuleRepository(RepositoryBase):
             "file_path",
             "is_official",
             "status",
+            "consecutive_failures",
+            "last_success",
         }
+
         updates = {k: v for k, v in fields.items() if k in allowed and v is not None}
         if not updates:
             return

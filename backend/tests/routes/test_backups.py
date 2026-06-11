@@ -64,6 +64,7 @@ async def test_trigger_backup_basic_auth(client: AsyncClient) -> None:
 
                 # 2. Authenticated request should succeed
                 import base64
+
                 encoded = base64.b64encode(b"admin:password123").decode("utf-8")
                 headers = {"Authorization": f"Basic {encoded}"}
                 resp_auth = await ac.post("/api/v1/backups/trigger", headers=headers)

@@ -72,13 +72,14 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Module dev kit and AI-assisted authoring UX.
 
-- [ ] E019 [P2] [PRODUCT] {PRD:CAP-013}{PRD:CAP-003} Module Dev Kit & AI-Assisted Authoring — authoring guide, standalone test harness, AI Module Kit, copy-errors-for-AI [→ Details](plan/E019.md)
+- [X] E019 [P2] [PRODUCT] {PRD:CAP-013}{PRD:CAP-003} Module Dev Kit & AI-Assisted Authoring — authoring guide, standalone test harness, AI Module Kit, copy-errors-for-AI [→ Details](plan/E019.md)
 
 ### Wave 9 — Official Module Health Monitoring
 
 > In-app notification when shipped official modules consistently fail.
 
-- [ ] E020 [P2] [PRODUCT] {PRD:CAP-014} Official Module Health Monitoring — detect consistently failing official modules, in-app notification [→ Details](plan/E020.md)
+- [X] E020 [P2] [PRODUCT] {PRD:CAP-014} Official Module Health Monitoring — detect consistently failing official modules, in-app notification [→ Details](plan/E020.md)
+
 
 ## Dependency Diagram
 
