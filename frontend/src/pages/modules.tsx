@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useModules } from "@/hooks/use-modules";
 import { ModuleCard } from "@/components/modules/ModuleCard";
+import { ModuleGuidanceSection } from "@/components/modules/ModuleGuidanceSection";
 import { ModuleUploadForm } from "@/components/modules/ModuleUploadForm";
 import { StatCard } from "@/components/inventory/stat-card";
 
@@ -72,6 +73,9 @@ export function ModulesPage() {
           />
         </div>
       )}
+
+      {/* Module Authoring Guidance */}
+      <ModuleGuidanceSection />
 
       {/* Upload Form Section */}
       {showUpload && (

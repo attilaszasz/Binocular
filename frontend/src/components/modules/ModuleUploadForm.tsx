@@ -12,26 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useUploadModule } from "@/hooks/use-modules";
 import { ApiError } from "@/lib/api";
+import {
+  formatErrorsForAI,
+  type ValidationError,
+} from "@/lib/copy-errors-for-ai";
 
-interface ValidationCheck {
-  name: string;
-  passed: boolean;
-  message: string;
-  line: number | null;
-  fix_suggestion: string | null;
-}
 
-interface PhaseResult {
-  phase: string;
-  passed: boolean;
-  checks: ValidationCheck[];
-}
-
-interface ValidationError {
-  valid?: boolean;
-  phases?: PhaseResult[];
-  detail?: string;
-}
 
 export function ModuleUploadForm() {
   const uploadMutation = useUploadModule();
@@ -111,40 +97,12 @@ export function ModuleUploadForm() {
     );
   };
 
-  const formatErrorsForAI = () => {
-    if (!validationErrors) return "";
-
-    let md = `### Module Validation Failed\n`;
-    md += `File: \`${file?.name || "uploaded_module.py"}\`\n\n`;
-
-    if (validationErrors.phases) {
-      validationErrors.phases.forEach((phase) => {
-        md += `#### Phase: ${phase.phase.toUpperCase()} (Passed: ${
-          phase.passed ? "YES" : "NO"
-        })\n`;
-        phase.checks.forEach((check) => {
-          if (!check.passed) {
-            md += `- **Check**: \`${check.name}\`\n`;
-            md += `  - **Message**: ${check.message}\n`;
-            if (check.line !== null && check.line !== undefined) {
-              md += `  - **Line**: ${check.line}\n`;
-            }
-            if (check.fix_suggestion) {
-              md += `  - **Suggested Fix**: \`${check.fix_suggestion}\`\n`;
-            }
-          }
-        });
-        md += `\n`;
-      });
-    } else {
-      md += `Error detail: ${validationErrors.detail || "Unknown error"}\n`;
-    }
-
-    return md;
-  };
-
   const handleCopyForAI = () => {
-    const text = formatErrorsForAI();
+    if (!validationErrors) return;
+    const text = formatErrorsForAI(
+      validationErrors,
+      file?.name || "uploaded_module.py"
+    );
     if (text) {
       navigator.clipboard.writeText(text).then(() => {
         setCopied(true);
