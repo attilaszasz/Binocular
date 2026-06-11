@@ -12,13 +12,13 @@ from binocular.config import Settings
 
 @pytest.fixture
 def auth_settings() -> Settings:
-    """Return Settings with Basic Auth enabled."""
     return Settings(
         data_dir="/tmp/test-data",  # noqa: S108
         modules_dir="/tmp/test-modules",  # noqa: S108
         basic_auth_enabled=True,
         basic_auth_username="admin",
         basic_auth_password="secretpassword",  # noqa: S106
+        seed_modules=False,
     )
 
 

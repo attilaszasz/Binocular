@@ -58,6 +58,7 @@ class CheckService:
         device_repo = DeviceRepository(self._db)
         module_repo = ModuleRepository(self._db)
         from binocular.db.activity_repository import ActivityRepository
+
         activity_repo = ActivityRepository(self._db)
 
         # 1. Fetch device
@@ -191,6 +192,7 @@ class CheckService:
             )
         except Exception as exc:
             import traceback
+
             tb_str = traceback.format_exc()
             err_msg = f"Unexpected runner failure: {exc}"
             logger.exception("check_failed_runner_exception", device_id=device_id)

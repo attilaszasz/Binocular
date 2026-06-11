@@ -145,6 +145,7 @@ class NotifierService:
                     enabled_channels.append(channel["type"])
 
         from binocular.db.activity_repository import ActivityRepository
+
         activity_repo = ActivityRepository(self._db)
 
         if not enabled_channels:
@@ -199,6 +200,7 @@ class NotifierService:
                 return False
         except Exception as exc:
             import traceback
+
             tb_str = traceback.format_exc()
             logger.exception(
                 "notifications_dispatch_error",

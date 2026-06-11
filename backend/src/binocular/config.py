@@ -60,6 +60,9 @@ class Settings(BaseSettings):
     modules_dir: Path = Path("/app/modules")
     db_path: Path | None = None
 
+    # Seeding
+    seed_modules: bool = True
+
     # Module engine
     module_timeout: float = 30.0
 

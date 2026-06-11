@@ -17,7 +17,11 @@ from binocular.config import Settings
 async def client() -> AsyncIterator[AsyncClient]:
     """Provide an HTTP client with a started app (lifespan active)."""
     with tempfile.TemporaryDirectory() as td:
-        settings = Settings(data_dir=Path(td), modules_dir=Path(td) / "modules")
+        settings = Settings(
+            data_dir=Path(td),
+            modules_dir=Path(td) / "modules",
+            seed_modules=False,
+        )
         app = create_app(settings=settings)
 
         async with app.router.lifespan_context(app):

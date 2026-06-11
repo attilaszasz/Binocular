@@ -11,8 +11,11 @@ from binocular.config import Settings
 
 @pytest.fixture
 def settings() -> Settings:
-    """Return a Settings instance with test-safe defaults."""
-    return Settings(data_dir="/tmp/test-data", modules_dir="/tmp/test-modules")  # noqa: S108
+    return Settings(
+        data_dir="/tmp/test-data",  # noqa: S108
+        modules_dir="/tmp/test-modules",  # noqa: S108
+        seed_modules=False,
+    )
 
 
 @pytest.fixture

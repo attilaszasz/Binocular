@@ -28,6 +28,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     await run_migrations(conn, settings)
 
+    if settings.seed_modules:
+        from binocular.services.seeder import OfficialModuleSeeder
+
+        seeder = OfficialModuleSeeder(settings, conn)
+        await seeder.discover_and_seed()
+
     scrape_client = ScrapeClient()
     app.state.scrape_client = scrape_client
 

@@ -18,7 +18,11 @@ from binocular.db.activity_repository import ActivityRepository
 async def test_app_client() -> AsyncIterator[AsyncClient]:
     """Provide an HTTP client with active database state and seeded logs."""
     with tempfile.TemporaryDirectory() as td:
-        settings = Settings(data_dir=Path(td), modules_dir=Path(td) / "modules")
+        settings = Settings(
+            data_dir=Path(td),
+            modules_dir=Path(td) / "modules",
+            seed_modules=False,
+        )
         app = create_app(settings=settings)
 
         async with app.router.lifespan_context(app):
