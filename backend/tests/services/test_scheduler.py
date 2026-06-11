@@ -46,10 +46,12 @@ async def test_scheduler_lifecycle(temp_db: Any) -> None:
     await scheduler_service.start()
     assert scheduler_service._is_running
 
-    # Check that the job is registered in APScheduler
+    # Check that the jobs are registered in APScheduler
     jobs = scheduler_service._scheduler.get_jobs()
-    assert len(jobs) == 1
-    assert jobs[0].id == "module_1"
+    assert len(jobs) == 2
+    job_ids = [j.id for j in jobs]
+    assert "module_1" in job_ids
+    assert "db_backup" in job_ids
 
     await scheduler_service.stop()
     assert not scheduler_service._is_running
@@ -89,10 +91,10 @@ async def test_reschedule_module(temp_db: Any) -> None:
     assert row[0] == 12
 
     # Confirm APScheduler job interval updated
-    jobs = scheduler_service._scheduler.get_jobs()
-    assert len(jobs) == 1
+    job = scheduler_service._scheduler.get_job("module_1")
+    assert job is not None
     # Interval trigger hours field is checked
-    assert jobs[0].trigger.interval.total_seconds() == 12 * 3600
+    assert job.trigger.interval.total_seconds() == 12 * 3600
 
     await scheduler_service.stop()
 
@@ -114,13 +116,13 @@ async def test_remove_job_on_status_change(temp_db: Any) -> None:
     await scheduler_service.start()
 
     # Ensure job is present
-    assert len(scheduler_service._scheduler.get_jobs()) == 1
+    assert scheduler_service._scheduler.get_job("module_1") is not None
 
     # Deactivate the module and remove job
     scheduler_service.remove_job(1)
 
     # Job should be removed
-    assert len(scheduler_service._scheduler.get_jobs()) == 0
+    assert scheduler_service._scheduler.get_job("module_1") is None
 
     await scheduler_service.stop()
 

@@ -66,7 +66,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 > Staged release pipeline for publishing images, plus backup/restore. Distinct areas → parallel.
 
 - [X] E017 [P2] [OPERATIONAL] [P] {DOD:DDR-001} Release & Publish Pipeline — multi-arch buildx, GHCR, SemVer, scan, SBOM [→ Details](plan/E017.md)
-- [ ] E018 [P2] [OPERATIONAL] [P] {DOD:DDR-003} Backup & Restore Operations — scheduled snapshot job + restore runbook [→ Details](plan/E018.md)
+- [X] E018 [P2] [OPERATIONAL] [P] {DOD:DDR-003} Backup & Restore Operations — scheduled snapshot job + restore runbook [→ Details](plan/E018.md)
 
 ### Wave 8 — Module Authoring & Dev Kit
 

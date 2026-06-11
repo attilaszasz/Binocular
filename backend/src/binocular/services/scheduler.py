@@ -6,6 +6,7 @@ from typing import Any
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 logger = structlog.get_logger("binocular.services.scheduler")
@@ -37,6 +38,15 @@ class SchedulerService:
         # Load existing schedules from database and register them as jobs
         await self._load_and_register_schedules()
 
+        # Schedule nightly database backup at 02:00 UTC
+        if self._scheduler.get_job("db_backup"):
+            self._scheduler.remove_job("db_backup")
+        self._scheduler.add_job(
+            self.run_backup,
+            trigger=CronTrigger(hour=2, minute=0, timezone=UTC),
+            id="db_backup",
+        )
+
     async def stop(self) -> None:
         """Stop the background job scheduler."""
         if not self._is_running:
@@ -45,6 +55,15 @@ class SchedulerService:
         logger.info("stopping_scheduler")
         self._scheduler.shutdown()
         self._is_running = False
+
+    async def run_backup(self) -> None:
+        """Run daily database backup."""
+        from binocular.services.backup import BackupService
+        backup_service = BackupService(self._db, self._settings)
+        try:
+            await backup_service.create_backup()
+        except Exception as e:
+            logger.error("nightly_backup_failed", error=str(e))
 
     async def _load_and_register_schedules(self) -> None:
         """Load active module schedules and schedule them."""

@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     data_dir: Path = Path("/app/data")
     modules_dir: Path = Path("/app/modules")
     db_path: Path | None = None
+    backup_dir: Path | None = None
 
     # Seeding
     seed_modules: bool = True
