@@ -48,6 +48,14 @@ async def conn() -> AsyncGenerator[aiosqlite.Connection]:
             created_at              TEXT    NOT NULL DEFAULT (datetime('now')),
             updated_at              TEXT    NOT NULL DEFAULT (datetime('now'))
         );
+        CREATE TABLE notification_channels (
+            id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+            type                    TEXT NOT NULL UNIQUE,
+            enabled                 INTEGER NOT NULL DEFAULT 0,
+            config                  TEXT NOT NULL,
+            created_at              TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at              TEXT NOT NULL DEFAULT (datetime('now'))
+        );
         """
     )
     await db.commit()

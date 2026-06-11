@@ -172,4 +172,27 @@ export const schedulesApi = {
     }),
 };
 
+/* ── Notifications API ────────────────────────────────────────── */
+
+export interface NotificationChannel {
+  type: string;
+  enabled: boolean;
+  config: Record<string, unknown>;
+}
+
+export const notificationsApi = {
+  list: () => apiFetch<NotificationChannel[]>("/notifications"),
+  save: (data: NotificationChannel) =>
+    apiFetch<NotificationChannel>("/notifications", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  test: (data: { type: string; config: Record<string, unknown> }) =>
+    apiFetch<{ success: boolean; message: string }>("/notifications/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+
 

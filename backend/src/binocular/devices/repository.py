@@ -87,15 +87,28 @@ class DeviceRepository(RepositoryBase):
         return cursor.rowcount > 0
 
     async def confirm_update(self, device_id: int) -> None:
-        """Set current_version = latest_detected_version, has_update = 0."""
+        """Set current_version = latest_detected_version,
+        has_update = 0, last_notified_version = NULL.
+        """
         sql = """
             UPDATE devices
             SET current_version = latest_detected_version,
                 has_update = 0,
+                last_notified_version = NULL,
                 updated_at = datetime('now')
             WHERE id = ? AND has_update = 1
         """
         await self.execute(sql, (device_id,))
+
+    async def update_last_notified_version(self, device_id: int, version: str) -> None:
+        """Update last_notified_version column for a device."""
+        sql = """
+            UPDATE devices
+            SET last_notified_version = ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+        """
+        await self.execute(sql, (version, device_id))
 
     async def update_check_status(
         self,

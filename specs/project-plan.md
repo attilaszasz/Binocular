@@ -57,7 +57,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Completes the detect→compare→notify loop with deduplication and HTML email. Adds operational visibility and auto-seeding. Distinct areas → parallel.
 
-- [ ] E014 [P1] [PRODUCT] [P] {PRD:CAP-007}{SAD:ADR-0007} Notification & Alerting — Apprise dispatch with HTML email, deduplication, Email/SMTP + Gotify [→ Details](plan/E014.md)
+- [X] E014 [P1] [PRODUCT] [P] {PRD:CAP-007}{SAD:ADR-0007} Notification & Alerting — Apprise dispatch with HTML email, deduplication, Email/SMTP + Gotify [→ Details](plan/E014.md)
 - [ ] E015 [P2] [PRODUCT] [P] {PRD:CAP-010} Activity Logging & Visibility — bounded activity log + in-UI viewer [→ Details](plan/E015.md)
 - [ ] E016 [P2] [PRODUCT] [P] {PRD:CAP-011}{SAD:ADR-0005} Automatic Module Seeding & Additional Official Modules — discover and auto-register bundled official modules on startup; ship Panasonic Lumix MFT, Panasonic Lumix Lenses, and Godox Flashes modules [→ Details](plan/E016.md)
 

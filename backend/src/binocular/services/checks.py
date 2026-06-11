@@ -227,6 +227,51 @@ class CheckService:
             last_checked=checked_at,
         )
 
+        # 7. Trigger notification if version is newer than last_notified_version
+        if new_has_update and latest_version:
+            last_notified = device.get("last_notified_version")
+            should_notify = False
+            if not last_notified:
+                should_notify = True
+            else:
+                try:
+                    should_notify = VersionCompare.is_newer(
+                        last_notified, latest_version
+                    )
+                except Exception:
+                    should_notify = latest_version != last_notified
+
+            if should_notify:
+                from binocular.services.email_renderer import EmailRenderer
+                from binocular.services.notifier import NotifierService
+
+                renderer = EmailRenderer()
+                html_body = renderer.render_update_alert(
+                    device_name=device["name"],
+                    model=model,
+                    module_name=module_info["name"],
+                    current_version=current_version,
+                    latest_version=latest_version,
+                )
+
+                notifier = NotifierService(self._db)
+                title = f"Firmware Update Available: {device['name']}"
+                success = await notifier.send_notification(
+                    title=title,
+                    body=html_body,
+                    is_html=True,
+                )
+                if success:
+                    await device_repo.update_last_notified_version(
+                        device_id, latest_version
+                    )
+                else:
+                    logger.error(
+                        "notification_delivery_failed",
+                        device_id=device_id,
+                        latest_version=latest_version,
+                    )
+
         return DeviceCheckResult(
             device_id=device_id,
             module_id=module_id,
