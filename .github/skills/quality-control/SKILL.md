@@ -17,6 +17,7 @@ description: "Executes Quality Control checks. It evaluates requirements, runs s
 - **Browser runtime**: Prefer built-in browser tools over Playwright/Cypress for interactive validation when available.
 - **Browser probe**: At the start of Step 6, actively probe for browser tools (integration-native `web` tool AND MCP browser servers). Set `BROWSER_RUNTIME_AVAILABLE` based on probe results — do not rely solely on static integration-adapter declarations. Do not skip browser scenarios when the probe succeeds.
 - **Manual fallback**: Generate `manual-test.md` if all automated/browser tools insufficient.
+- **CI Quality Gate Alignment**: Run equivalent checks for CI pipeline quality gates locally: backend lint/typing/tests/security (`ruff check`, `mypy --strict`, `pytest` with coverage, `pip-audit`), frontend lint/typing/tests (`npm run lint`, `npm run typecheck`, `npm test` with `--run`), and a Docker image build check if a Dockerfile is present. Any failure in these CI-equivalent local checks MUST result in a QC FAIL verdict.
 </rules>
 
 <workflow>
@@ -148,6 +149,26 @@ Category = `required` if keywords appear in non-negotiable principles. Default =
 
 QC Auditor performs: build check → static analysis/linting → security scanning → test suite with coverage → tool recommendations. Returns structured PASSED/FAILED/SKIPPED per category with coverage percentage.
 
+### CI Quality Gate Alignment
+
+To guarantee that the CI pipeline quality gates pass in GitHub Actions, the local quality control process must run the exact backend and frontend verification suites locally. The QC Auditor MUST execute the following commands in their respective project directories and ensure they pass:
+
+1. **Backend Verification** (in `backend/` using `uv`):
+   - **Linting**: `uv run ruff check .`
+   - **Type Checking**: `uv run mypy .`
+   - **Tests with Coverage**: `uv run pytest --cov=binocular --cov-report=term-missing`
+   - **Security Audit**: `uv run pip-audit`
+2. **Frontend Verification** (in `frontend/` if `package.json` exists):
+   - **Linting**: `npm run lint`
+   - **Type Checking**: `npm run typecheck`
+   - **Tests**: `npm test -- --run`
+3. **Docker Build Check**:
+   - If a `Dockerfile` exists at the root of the repository, verify that the image builds cleanly by executing:
+     `docker build -t binocular:qc-check -f Dockerfile .`
+   - If Docker is not installed or not running in the local environment, the check must be reported as SKIPPED (escalated to WARNING severity), and MUST NOT fail the overall QC verdict.
+
+Any warning or failure from these command runs (excluding a SKIPPED Docker check due to missing environment) must be captured in the output and will result in a FAILED verdict for the respective category.
+
 Store output as `AUDITOR_REPORT`.
 
 ## 3.5. SKIPPED Check Escalation
@@ -274,7 +295,7 @@ Flag regressions (current worse) as `⚠ REGRESSION`.
 
 Write `FEATURE_DIR/qc-report.md` using [assets/qc-report-template.md](assets/qc-report-template.md).
 
-Required sections: Test Results (runner, counts, failures) | Static Analysis (tool, issues) | Security Audit (tool, vulns) | PI Compliance (violations or "No violations") | Requirements Traceability (per work-item + SC status) | Traceability Gaps | Implementation Review Findings (if `.review-findings` loaded) | Code Coverage (%, threshold, uncovered) | Checklist Fulfillment (spot-checked PASSED/GAP) | Performance (automated or MANUAL VERIFICATION NEEDED) | Accessibility (same) | Browser Runtime Validation (mode, app start, target, scenarios) | Manual Testing (ref to manual-test.md) | Tool Recommendations (SKIPPED tools + install cmds) | Bug Tasks Generated (list or "None").
+Required sections: Test Results (runner, counts, failures) | Static Analysis (tool, issues) | Security Audit (tool, vulns) | Docker Build Check (status, commands run) | PI Compliance (violations or "No violations") | Requirements Traceability (per work-item + SC status) | Traceability Gaps | Implementation Review Findings (if `.review-findings` loaded) | Code Coverage (%, threshold, uncovered) | Checklist Fulfillment (spot-checked PASSED/GAP) | Performance (automated or MANUAL VERIFICATION NEEDED) | Accessibility (same) | Browser Runtime Validation (mode, app start, target, scenarios) | Manual Testing (ref to manual-test.md) | Tool Recommendations (SKIPPED tools + install cmds) | Bug Tasks Generated (list or "None").
 
 **Overall Verdict**: PASS or FAIL.
 

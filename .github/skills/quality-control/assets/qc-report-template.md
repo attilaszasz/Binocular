@@ -36,6 +36,10 @@
 - Vulnerabilities found: X
 - [file:line — severity — description] (per finding)
 
+## Docker Build Check — PASSED | FAILED | SKIPPED
+- Command: [docker build command]
+- Status / Log Summary: [details]
+
 ## Project Instructions Compliance — PASSED | FAILED | SKIPPED
 - [List any violations with CRITICAL severity, or "No violations"]
 

@@ -50,6 +50,10 @@ You will receive:
   - Tests: `vitest --changed` | `jest --changedSince=HEAD~1` | `pytest --lf`
   - Lint/security: scope to `changedFiles` only (e.g., `eslint [files]`, `ruff check [files]`)
   - Fall back to full run if runner lacks change-aware flag
+- **CI Quality Gate Verification**: Always verify that the CI quality gates pass by executing:
+  - Backend (in `backend/` using `uv`): `uv run ruff check .`, `uv run mypy .`, `uv run pytest --cov=binocular --cov-report=term-missing`, `uv run pip-audit`.
+  - Frontend (in `frontend/` if `frontend/package.json` exists): `npm run lint`, `npm run typecheck`, `npm test -- --run`.
+  - Docker Image Build (if `Dockerfile` exists at root): `docker build -t binocular:qc-check -f Dockerfile .`.
 </rules>
 
 <workflow>
@@ -82,11 +86,12 @@ You will receive:
 
 2. **Execute** (lint + security may run in parallel; tests sequential):
    a. **Compilation** → fail = ERROR, skip tests (lint/security still run)
-   b. **Linting / Static Analysis**
-   c. **Security Scanning**
-   d. **Unit Tests** (with coverage flags)
-   e. **Integration Tests** (if separate command exists)
-   - Missing tool → prompt/install/skip per provisioning rules.
+   b. **Linting / Static Analysis** (execute `uv run ruff check .` for backend, and `npm run lint` for frontend if it exists)
+   c. **Type Checking** (execute `uv run mypy .` for backend, and `npm run typecheck` for frontend if it exists; compilation or strict type errors = ERROR, blocks tests)
+   d. **Security Scanning** (execute `uv run pip-audit` for backend)
+   e. **Unit & Integration Tests** (execute `uv run pytest --cov=binocular --cov-report=term-missing` for backend, and `npm test -- --run` for frontend if it exists)
+   f. **Docker Build Check** (if `Dockerfile` exists at repo root, execute `docker build -t binocular:qc-check -f Dockerfile .` to verify that image build passes; if docker is not installed or running, mark check as SKIPPED and escalate to WARNING, do not fail overall QC)
+   - Missing tool or command failure (other than missing Docker daemon/tool) → mark the check failed or prompt/install/skip per provisioning rules.
 
 3. **Collect Coverage** — append coverage flags when running tests:
    - TS/Node: `vitest run --coverage` / `jest --coverage` / `c8 npm test`
