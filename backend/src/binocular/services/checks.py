@@ -57,6 +57,8 @@ class CheckService:
         checked_at = datetime.now(UTC).isoformat()
         device_repo = DeviceRepository(self._db)
         module_repo = ModuleRepository(self._db)
+        from binocular.db.activity_repository import ActivityRepository
+        activity_repo = ActivityRepository(self._db)
 
         # 1. Fetch device
         device_row = await device_repo.get_by_id(device_id)
@@ -64,6 +66,7 @@ class CheckService:
             raise ValueError(f"Device {device_id} not found")
 
         device = dict(device_row)
+        device_name = device["name"]
         module_id = device["module_id"]
         current_version = device["current_version"]
         model = device["model"]
@@ -83,6 +86,16 @@ class CheckService:
                 latest_detected_version=device["latest_detected_version"],
                 last_checked=checked_at,
             )
+            try:
+                await activity_repo.log(
+                    level="ERROR",
+                    category="check",
+                    message=f"Firmware check failed for '{device_name}': {err_msg}",
+                    device_id=device_id,
+                    module_name=None,
+                )
+            except Exception:
+                logger.exception("failed_to_write_activity_log", device_id=device_id)
             return DeviceCheckResult(
                 device_id=device_id,
                 module_id=module_id,
@@ -109,6 +122,16 @@ class CheckService:
                 latest_detected_version=device["latest_detected_version"],
                 last_checked=checked_at,
             )
+            try:
+                await activity_repo.log(
+                    level="ERROR",
+                    category="check",
+                    message=f"Firmware check failed for '{device_name}': {err_msg}",
+                    device_id=device_id,
+                    module_name=None,
+                )
+            except Exception:
+                logger.exception("failed_to_write_activity_log", device_id=device_id)
             return DeviceCheckResult(
                 device_id=device_id,
                 module_id=module_id,
@@ -136,6 +159,16 @@ class CheckService:
                 latest_detected_version=device["latest_detected_version"],
                 last_checked=checked_at,
             )
+            try:
+                await activity_repo.log(
+                    level="ERROR",
+                    category="check",
+                    message=f"Firmware check failed for '{device_name}': {err_msg}",
+                    device_id=device_id,
+                    module_name=module_info["name"],
+                )
+            except Exception:
+                logger.exception("failed_to_write_activity_log", device_id=device_id)
             return DeviceCheckResult(
                 device_id=device_id,
                 module_id=module_id,
@@ -157,6 +190,8 @@ class CheckService:
                 http_client=self._scrape_client,
             )
         except Exception as exc:
+            import traceback
+            tb_str = traceback.format_exc()
             err_msg = f"Unexpected runner failure: {exc}"
             logger.exception("check_failed_runner_exception", device_id=device_id)
             await device_repo.update_check_status(
@@ -165,6 +200,17 @@ class CheckService:
                 latest_detected_version=device["latest_detected_version"],
                 last_checked=checked_at,
             )
+            try:
+                await activity_repo.log(
+                    level="ERROR",
+                    category="check",
+                    message=f"Firmware check failed for '{device_name}': {err_msg}",
+                    device_id=device_id,
+                    module_name=module_info["name"],
+                    traceback=tb_str,
+                )
+            except Exception:
+                logger.exception("failed_to_write_activity_log", device_id=device_id)
             return DeviceCheckResult(
                 device_id=device_id,
                 module_id=module_id,
@@ -189,6 +235,16 @@ class CheckService:
                 latest_detected_version=device["latest_detected_version"],
                 last_checked=checked_at,
             )
+            try:
+                await activity_repo.log(
+                    level="ERROR",
+                    category="check",
+                    message=f"Firmware check failed for '{device_name}': {err_msg}",
+                    device_id=device_id,
+                    module_name=module_info["name"],
+                )
+            except Exception:
+                logger.exception("failed_to_write_activity_log", device_id=device_id)
             return DeviceCheckResult(
                 device_id=device_id,
                 module_id=module_id,
@@ -226,6 +282,20 @@ class CheckService:
             latest_detected_version=new_latest_detected,
             last_checked=checked_at,
         )
+
+        try:
+            await activity_repo.log(
+                level="INFO",
+                category="check",
+                message=(
+                    f"Firmware check succeeded for '{device_name}': "
+                    f"latest version {latest_version}"
+                ),
+                device_id=device_id,
+                module_name=module_info["name"],
+            )
+        except Exception:
+            logger.exception("failed_to_write_activity_log", device_id=device_id)
 
         # 7. Trigger notification if version is newer than last_notified_version
         if new_has_update and latest_version:

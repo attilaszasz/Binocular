@@ -144,8 +144,22 @@ class NotifierService:
                     ap.add(url)
                     enabled_channels.append(channel["type"])
 
+        from binocular.db.activity_repository import ActivityRepository
+        activity_repo = ActivityRepository(self._db)
+
         if not enabled_channels:
             logger.info("no_enabled_notification_channels_skipping")
+            try:
+                await activity_repo.log(
+                    level="INFO",
+                    category="notification",
+                    message=(
+                        "No enabled notification channels configured; "
+                        "skipping dispatch."
+                    ),
+                )
+            except Exception:
+                logger.exception("failed_to_write_activity_log")
             return True
 
         body_format = "html" if is_html else "text"
@@ -157,14 +171,47 @@ class NotifierService:
             )
             if success:
                 logger.info("notifications_sent", channels=enabled_channels)
+                try:
+                    await activity_repo.log(
+                        level="INFO",
+                        category="notification",
+                        message=(
+                            "Notification dispatch succeeded for channels: "
+                            f"{', '.join(enabled_channels)}"
+                        ),
+                    )
+                except Exception:
+                    logger.exception("failed_to_write_activity_log")
                 return True
             else:
                 logger.error("notifications_delivery_failed", channels=enabled_channels)
+                try:
+                    await activity_repo.log(
+                        level="ERROR",
+                        category="notification",
+                        message=(
+                            "Notification dispatch failed for channels: "
+                            f"{', '.join(enabled_channels)}"
+                        ),
+                    )
+                except Exception:
+                    logger.exception("failed_to_write_activity_log")
                 return False
         except Exception as exc:
+            import traceback
+            tb_str = traceback.format_exc()
             logger.exception(
                 "notifications_dispatch_error",
                 channels=enabled_channels,
                 error=str(exc),
             )
+            try:
+                await activity_repo.log(
+                    level="ERROR",
+                    category="notification",
+                    message=f"Notification dispatch failed with error: {exc}",
+                    traceback=tb_str,
+                )
+            except Exception:
+                logger.exception("failed_to_write_activity_log")
             return False
