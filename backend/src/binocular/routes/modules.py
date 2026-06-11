@@ -9,7 +9,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 
 from binocular.deps import DBDep
-from binocular.devices.models import ModuleResponse, ModuleUpdate
+from binocular.devices.models import (
+    ModuleResponse,
+    ModuleUpdate,
+    ScheduleResponse,
+    ScheduleUpdate,
+)
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.repository import ModuleRepository
 from binocular.extensions.validator import validate_module
@@ -164,6 +169,10 @@ async def upload_module(
                 status_code=500, detail="Failed to retrieve registered module."
             )
 
+        # Register/ensure schedule is active in background scheduler
+        scheduler = request.app.state.scheduler
+        await scheduler.register_new_module(module_id)
+
         d = dict(row)
         d["is_official"] = bool(d["is_official"])
         return ModuleResponse(**d)
@@ -174,6 +183,7 @@ async def update_module(
     module_id: int,
     body: ModuleUpdate,
     db: DBDep,
+    request: Request,
 ) -> ModuleResponse:
     """Update a module's status."""
     repo = _repository(db)
@@ -182,6 +192,13 @@ async def update_module(
         raise HTTPException(status_code=404, detail="Module not found")
 
     await repo.update(module_id, status=body.status)
+
+    # Enable or disable background job
+    scheduler = request.app.state.scheduler
+    if body.status == "active":
+        await scheduler.register_new_module(module_id)
+    else:
+        scheduler.remove_job(module_id)
 
     updated = await repo.get_by_id(module_id)
     if not updated:
@@ -198,6 +215,7 @@ async def update_module(
 async def delete_module(
     module_id: int,
     db: DBDep,
+    request: Request,
 ) -> None:
     """Delete a module."""
     repo = _repository(db)
@@ -220,8 +238,76 @@ async def delete_module(
             ),
         )
 
+    # Remove background job
+    scheduler = request.app.state.scheduler
+    scheduler.remove_job(module_id)
+
     file_path_str = dict(existing).get("file_path")
     deleted = await repo.delete(module_id)
     if deleted and file_path_str:
         path = Path(file_path_str)
         path.unlink(missing_ok=True)
+
+
+@router.get("/schedules", response_model=list[ScheduleResponse])
+async def list_schedules(db: DBDep) -> list[ScheduleResponse]:
+    """Retrieve all schedules with module details."""
+    cursor = await db.execute(
+        """
+        SELECT s.module_id, m.name AS module_name, m.device_type,
+               s.interval_hours, s.last_run, s.next_run
+        FROM schedules s
+        JOIN modules m ON s.module_id = m.id
+        ORDER BY m.name
+        """
+    )
+    rows = await cursor.fetchall()
+    return [
+        ScheduleResponse(
+            module_id=row[0],
+            module_name=row[1],
+            device_type=row[2],
+            interval_hours=row[3],
+            last_run=row[4],
+            next_run=row[5],
+        )
+        for row in rows
+    ]
+
+
+@router.put("/schedules", response_model=ScheduleResponse)
+async def update_schedule(
+    body: ScheduleUpdate,
+    db: DBDep,
+    request: Request,
+) -> ScheduleResponse:
+    """Update check interval hours for a specific module."""
+    cursor = await db.execute(
+        "SELECT name, device_type FROM modules WHERE id = ?", (body.module_id,)
+    )
+    row = await cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    module_name, device_type = row
+
+    scheduler = request.app.state.scheduler
+    await scheduler.reschedule_module(body.module_id, body.interval_hours)
+
+    # Retrieve updated schedule timestamps
+    cursor = await db.execute(
+        "SELECT last_run, next_run FROM schedules WHERE module_id = ?",
+        (body.module_id,),
+    )
+    sched_row = await cursor.fetchone()
+    last_run = sched_row[0] if sched_row else None
+    next_run = sched_row[1] if sched_row else None
+
+    return ScheduleResponse(
+        module_id=body.module_id,
+        module_name=module_name,
+        device_type=device_type,
+        interval_hours=body.interval_hours,
+        last_run=last_run,
+        next_run=next_run,
+    )

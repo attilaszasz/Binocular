@@ -37,6 +37,26 @@ vi.mock("@/hooks/use-modules", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-schedules", () => ({
+  useSchedules: () => ({
+    data: [
+      {
+        module_id: 1,
+        module_name: "test_module",
+        device_type: "camera",
+        interval_hours: 24,
+        last_run: null,
+        next_run: "2026-06-11T12:00:00Z",
+      },
+    ],
+    isLoading: false,
+  }),
+  useUpdateSchedule: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 describe("ModulesPage", () => {
   it("renders modules list successfully", () => {
     const queryClient = new QueryClient();

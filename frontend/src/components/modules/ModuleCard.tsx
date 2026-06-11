@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ModuleStatusBadge } from "./ModuleStatusBadge";
+import { FrequencyEditor } from "./FrequencyEditor";
 import { useUpdateModule, useDeleteModule } from "@/hooks/use-modules";
 import type { Module } from "@/lib/api";
 
@@ -87,6 +88,8 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
             </span>
           </div>
         </div>
+
+        <FrequencyEditor module={module} />
 
         {errorText && (
           <div className="mt-3 flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">

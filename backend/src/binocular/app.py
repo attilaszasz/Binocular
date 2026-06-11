@@ -31,8 +31,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     scrape_client = ScrapeClient()
     app.state.scrape_client = scrape_client
 
+    from binocular.services.scheduler import SchedulerService
+    scheduler = SchedulerService(
+        db=conn,
+        scrape_client=scrape_client,
+        settings=settings,
+    )
+    await scheduler.start()
+    app.state.scheduler = scheduler
+
     yield
 
+    await scheduler.stop()
     await scrape_client.close()
     await close_connection(conn)
     logger.info("shutting_down")

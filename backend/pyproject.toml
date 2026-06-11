@@ -11,6 +11,7 @@ dependencies = [
     "structlog>=24.4",
     "aiosqlite>=0.20",
     "python-multipart>=0.0.32",
+    "apscheduler>=3.10.0,<4",
 ]
 
 [project.scripts]
@@ -35,6 +36,10 @@ mypy_path = "src"
 packages = ["binocular"]
 plugins = ["pydantic.mypy"]
 exclude = ["tests/extensions/fixtures"]
+
+[[tool.mypy.overrides]]
+module = "apscheduler.*"
+ignore_missing_imports = true
 
 [tool.ruff]
 src = ["src"]

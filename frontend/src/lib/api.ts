@@ -151,3 +151,25 @@ export const checksApi = {
     apiFetch<DeviceCheckResult[]>("/checks/bulk", { method: "POST" }),
 };
 
+
+/* ── Schedules API ────────────────────────────────────────────── */
+
+export interface Schedule {
+  module_id: number;
+  module_name: string;
+  device_type: string;
+  interval_hours: number;
+  last_run: string | null;
+  next_run: string | null;
+}
+
+export const schedulesApi = {
+  list: () => apiFetch<Schedule[]>("/schedules"),
+  update: (moduleId: number, intervalHours: number) =>
+    apiFetch<Schedule>("/schedules", {
+      method: "PUT",
+      body: JSON.stringify({ module_id: moduleId, interval_hours: intervalHours }),
+    }),
+};
+
+

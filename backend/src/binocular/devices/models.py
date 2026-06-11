@@ -63,3 +63,22 @@ class ModuleUpdate(BaseModel):
 
     status: str
 
+
+class ScheduleResponse(BaseModel):
+    """Response schema for a module check schedule."""
+
+    module_id: int
+    module_name: str
+    device_type: str
+    interval_hours: int
+    last_run: str | None = None
+    next_run: str | None = None
+
+
+class ScheduleUpdate(BaseModel):
+    """Request body for updating a schedule's interval."""
+
+    module_id: int
+    interval_hours: int = Field(gt=0)
+
+
