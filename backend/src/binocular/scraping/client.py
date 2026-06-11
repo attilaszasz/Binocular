@@ -42,7 +42,9 @@ class ScrapeClient:
         default_delay: float = 1.0,
     ) -> None:
         """Initialize ScrapeClient with default pacing and rules."""
-        self.user_agent = user_agent or "Binocular/0.1.0 (+https://github.com/attilaszasz/Binocular)"
+        self.user_agent = (
+            user_agent or "Binocular/0.1.0 (+https://github.com/attilaszasz/Binocular)"
+        )
         self.client = httpx.AsyncClient(headers={"User-Agent": self.user_agent})
         self.robots = RobotsChecker(user_agent=self.user_agent)
         self.limiter = RateLimiter(default_delay=default_delay)
@@ -73,7 +75,7 @@ class ScrapeClient:
                     response = await self.client.get(url, **kwargs)
                     if response.status_code == 429 or response.status_code >= 500:
                         if attempt < attempts:
-                            delay = (2.0 ** attempt) + random.uniform(0.0, 1.0)  # noqa: S311
+                            delay = (2.0**attempt) + random.uniform(0.0, 1.0)  # noqa: S311
                             logger.warning(
                                 "scrape_retry_status",
                                 url=url,
@@ -100,7 +102,7 @@ class ScrapeClient:
 
                 except (httpx.ConnectError, httpx.TimeoutException) as e:
                     if attempt < attempts:
-                        delay = (2.0 ** attempt) + random.uniform(0.0, 1.0)  # noqa: S311
+                        delay = (2.0**attempt) + random.uniform(0.0, 1.0)  # noqa: S311
                         logger.warning(
                             "scrape_retry_connect",
                             url=url,
@@ -125,7 +127,6 @@ class ScrapeClient:
             raise
         except Exception as e:
             raise ScrapeError(str(e)) from e
-
 
     async def close(self) -> None:
         """Close the underlying httpx client cleanly."""

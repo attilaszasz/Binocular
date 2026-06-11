@@ -106,6 +106,7 @@ async def test_check_bulk(client: AsyncClient) -> None:
 async def test_check_bulk_empty(client: AsyncClient) -> None:
     # Remove all devices
     from fastapi import FastAPI
+
     transport = client._transport
     assert isinstance(transport, ASGITransport)
     app = transport.app

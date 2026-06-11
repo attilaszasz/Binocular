@@ -32,6 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.scrape_client = scrape_client
 
     from binocular.services.scheduler import SchedulerService
+
     scheduler = SchedulerService(
         db=conn,
         scrape_client=scrape_client,
@@ -46,7 +47,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await scrape_client.close()
     await close_connection(conn)
     logger.info("shutting_down")
-
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -75,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router)
 
     from binocular.auth import BasicAuthMiddleware
+
     app.add_middleware(BasicAuthMiddleware)
 
     # Mount the frontend SPA — must be after API routes so /api paths

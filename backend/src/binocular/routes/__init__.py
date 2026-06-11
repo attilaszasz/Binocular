@@ -17,6 +17,3 @@ router.include_router(health_router)
 router.include_router(devices_router)
 router.include_router(modules_router)
 router.include_router(checks_router)
-
-
-

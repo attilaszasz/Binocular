@@ -58,9 +58,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
         response = loop.run_until_complete(http_client.get(source_url))
         html = response.text
     except Exception as exc:
-        raise ValueError(
-            f"network_error: Failed to fetch {source_url}: {exc}"
-        ) from exc
+        raise ValueError(f"network_error: Failed to fetch {source_url}: {exc}") from exc
 
     entries = parse_firmware_entries(html)
     if not entries:
@@ -106,9 +104,7 @@ def parse_firmware_entries(html: str) -> tuple[FirmwareEntry, ...]:
     return tuple(entries)
 
 
-def _extract_json_array(
-    html: str, catalog_name: str
-) -> list[dict[str, Any]] | None:
+def _extract_json_array(html: str, catalog_name: str) -> list[dict[str, Any]] | None:
     marker = f'"{catalog_name}"'
     marker_index = html.find(marker)
     if marker_index == -1:

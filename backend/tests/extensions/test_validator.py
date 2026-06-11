@@ -65,9 +65,7 @@ class TestASTValidator:
         result = validator.validate(bad)
         assert result.passed is False
         failing = [c for c in result.checks if not c.passed]
-        assert any(
-            "parameter" in c.message.lower() for c in failing
-        )
+        assert any("parameter" in c.message.lower() for c in failing)
 
 
 class TestRuntimeValidator:

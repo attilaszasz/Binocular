@@ -114,5 +114,3 @@ class TestSettingsSelfHosted:
         with pytest.raises(ValidationError) as excinfo:
             Settings()
         assert "Secret file for basic_auth_password not found" in str(excinfo.value)
-
-

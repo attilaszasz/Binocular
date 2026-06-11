@@ -82,5 +82,3 @@ async def confirm_device_update(device_id: int, db: DBDep) -> DeviceResponse:
         return await _service(db).confirm_update(device_id)
     except DeviceNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-

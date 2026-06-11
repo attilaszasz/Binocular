@@ -39,7 +39,6 @@ def setup_logging(
         structlog.contextvars.merge_contextvars,
         mask_secrets_processor,
         structlog.stdlib.add_log_level,
-
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),

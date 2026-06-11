@@ -44,7 +44,7 @@ async def test_scrape_client_success() -> None:
     # Replace transport with MockTransport for testing
     client.client = httpx.AsyncClient(
         transport=httpx.MockTransport(mock_handler),
-        headers={"User-Agent": client.user_agent}
+        headers={"User-Agent": client.user_agent},
     )
 
     response = await client.get("http://example.com/success")
@@ -59,7 +59,7 @@ async def test_scrape_client_http_error() -> None:
     client = ScrapeClient()
     client.client = httpx.AsyncClient(
         transport=httpx.MockTransport(mock_handler),
-        headers={"User-Agent": client.user_agent}
+        headers={"User-Agent": client.user_agent},
     )
 
     with pytest.raises(HTTPStatusError) as exc_info:
@@ -79,7 +79,7 @@ async def test_scrape_client_connection_error() -> None:
     client = ScrapeClient()
     client.client = httpx.AsyncClient(
         transport=httpx.MockTransport(mock_handler),
-        headers={"User-Agent": client.user_agent}
+        headers={"User-Agent": client.user_agent},
     )
 
     with pytest.raises(ConnectError):

@@ -133,5 +133,3 @@ class Settings(BaseSettings):
                 "when BINOCULAR_BASIC_AUTH_ENABLED is True"
             )
         return self
-
-

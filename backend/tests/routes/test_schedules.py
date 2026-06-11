@@ -23,8 +23,9 @@ async def client() -> AsyncIterator[AsyncClient]:
         async with app.router.lifespan_context(app):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
-                # DB migrations already seed default schedule since we have modules trigger,
-                # but let's seed an initial module and verify its trigger schedule is created.
+                # DB migrations already seed default schedule since we have
+                # modules trigger, but let's seed an initial module and
+                # verify its trigger schedule is created.
                 db = app.state.db
                 await db.execute(
                     "INSERT INTO modules (name, device_type, version, author, status) "

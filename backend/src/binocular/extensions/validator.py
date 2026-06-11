@@ -175,8 +175,7 @@ class ASTValidator:
                     passed=False,
                     message=f"Missing required constant '{MODULE_VERSION_ATTR}'",
                     fix_suggestion=(
-                        f"Add at module level:"
-                        f' {MODULE_VERSION_ATTR} = "1.0.0"'
+                        f'Add at module level: {MODULE_VERSION_ATTR} = "1.0.0"'
                     ),
                 )
             )
@@ -201,8 +200,7 @@ class ASTValidator:
                     passed=False,
                     message=f"Missing required constant '{SUPPORTED_DEVICE_TYPE_ATTR}'",
                     fix_suggestion=(
-                        f"Add at module level:"
-                        f' {SUPPORTED_DEVICE_TYPE_ATTR} = "camera"'
+                        f'Add at module level: {SUPPORTED_DEVICE_TYPE_ATTR} = "camera"'
                     ),
                 )
             )
@@ -391,8 +389,7 @@ class RuntimeValidator:
                     name="return_type",
                     passed=False,
                     message=(
-                        "Expected dict or CheckResult,"
-                        f" got {type(result).__name__}"
+                        f"Expected dict or CheckResult, got {type(result).__name__}"
                     ),
                     fix_suggestion='Return a dict like {"latest_version": "1.0.0"}',
                 )

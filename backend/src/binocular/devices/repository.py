@@ -125,8 +125,5 @@ class DeviceRepository(RepositoryBase):
 
     async def list_modules(self) -> list[aiosqlite.Row]:
         """Return all modules (read-only, for device form dropdown)."""
-        sql = (
-            "SELECT id, name, device_type"
-            " FROM modules ORDER BY name"
-        )
+        sql = "SELECT id, name, device_type FROM modules ORDER BY name"
         return await self.fetch_all(sql)

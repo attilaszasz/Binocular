@@ -62,9 +62,8 @@ class DeviceService:
         """Update device fields after validating existence and module_id."""
         await self._get_or_raise(device_id)
 
-        if (
-            data.module_id is not None
-            and not await self._repo.module_exists(data.module_id)
+        if data.module_id is not None and not await self._repo.module_exists(
+            data.module_id
         ):
             raise InvalidModuleError(data.module_id)
 

@@ -79,9 +79,7 @@ async def test_sony_a7cii_detects_latest_201_as_newer_than_200() -> None:
         read_fixture("alpha_universe_firmware.html"), fetched_urls
     )
 
-    result = await asyncio.to_thread(
-        check_firmware, "", "ILCE-7CM2", client
-    )
+    result = await asyncio.to_thread(check_firmware, "", "ILCE-7CM2", client)
 
     assert result["latest_version"] == "2.01"
     assert (
@@ -98,9 +96,7 @@ async def test_sony_a7cii_marketing_name_uses_same_fixture() -> None:
         read_fixture("alpha_universe_firmware.html"), fetched_urls
     )
 
-    result = await asyncio.to_thread(
-        check_firmware, "", "Sony A7CII", client
-    )
+    result = await asyncio.to_thread(check_firmware, "", "Sony A7CII", client)
     assert result["latest_version"] == "2.01"
 
 
@@ -111,9 +107,7 @@ async def test_sony_lens_model_detects_latest_firmware() -> None:
         read_fixture("alpha_universe_firmware.html"), fetched_urls
     )
 
-    result = await asyncio.to_thread(
-        check_firmware, "", "SEL2470GM", client
-    )
+    result = await asyncio.to_thread(check_firmware, "", "SEL2470GM", client)
     assert result["latest_version"] == "2"
     assert result["product_type"] == "Lens"
 

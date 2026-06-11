@@ -19,8 +19,10 @@ async def test_rate_limiter_pacing() -> None:
     #    Updates last_time to 10.1.
     # 2. Second acquire: now = 10.1. last_time = 10.1 -> delay = 1.0.
     #    Updates last_time to 11.2.
-    with mock.patch("time.monotonic", side_effect=[10.0, 10.1, 10.1, 11.2]), \
-         mock.patch("asyncio.sleep", new_callable=mock.AsyncMock) as mock_sleep:
+    with (
+        mock.patch("time.monotonic", side_effect=[10.0, 10.1, 10.1, 11.2]),
+        mock.patch("asyncio.sleep", new_callable=mock.AsyncMock) as mock_sleep,
+    ):
         await limiter.acquire("http://a.com/1")
         assert mock_sleep.call_count == 0
 
@@ -35,8 +37,10 @@ async def test_rate_limiter_different_origins() -> None:
     """Test that RateLimiter does not delay requests to different origins."""
     limiter = RateLimiter(default_delay=1.0)
 
-    with mock.patch("time.monotonic", side_effect=[10.0, 10.1, 10.1, 10.2]), \
-         mock.patch("asyncio.sleep", new_callable=mock.AsyncMock) as mock_sleep:
+    with (
+        mock.patch("time.monotonic", side_effect=[10.0, 10.1, 10.1, 10.2]),
+        mock.patch("asyncio.sleep", new_callable=mock.AsyncMock) as mock_sleep,
+    ):
         await limiter.acquire("http://a.com/1")
         await limiter.acquire("http://b.com/1")
         assert mock_sleep.call_count == 0

@@ -80,5 +80,3 @@ class ScheduleUpdate(BaseModel):
 
     module_id: int
     interval_hours: int = Field(gt=0)
-
-

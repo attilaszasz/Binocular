@@ -26,7 +26,7 @@ from binocular.services.version_compare import VersionCompare
         ("1.0a", "1.0", False),
         ("1", "2", True),
         ("foo", "bar", False),  # fallback to string compare, 'bar' < 'foo'
-        ("bar", "foo", True),   # fallback to string compare, 'foo' > 'bar'
+        ("bar", "foo", True),  # fallback to string compare, 'foo' > 'bar'
     ],
 )
 def test_version_compare_is_newer(current: str, latest: str, expected: bool) -> None:

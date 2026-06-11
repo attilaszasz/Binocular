@@ -9,11 +9,7 @@ from binocular.scraping.client import RobotsDisallowedError, ScrapeClient
 @pytest.mark.asyncio
 async def test_robots_allowed_and_forbidden() -> None:
     """Test that robots.txt allowed and disallowed paths are correctly handled."""
-    robots_content = (
-        "User-agent: *\n"
-        "Disallow: /private/\n"
-        "Allow: /public/\n"
-    )
+    robots_content = "User-agent: *\nDisallow: /private/\nAllow: /public/\n"
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/robots.txt":
@@ -60,6 +56,7 @@ async def test_robots_caching() -> None:
 @pytest.mark.asyncio
 async def test_robots_missing_404_allowed() -> None:
     """Test that missing robots.txt (404) allows all paths by default."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/robots.txt":
             return httpx.Response(404, text="Not Found")
@@ -76,6 +73,7 @@ async def test_robots_missing_404_allowed() -> None:
 @pytest.mark.asyncio
 async def test_robots_forbidden_403_disallowed() -> None:
     """Test that forbidden robots.txt (403) disallows all paths."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/robots.txt":
             return httpx.Response(403, text="Forbidden")
@@ -92,6 +90,7 @@ async def test_robots_forbidden_403_disallowed() -> None:
 @pytest.mark.asyncio
 async def test_robots_server_error_disallowed() -> None:
     """Test that server error (500) or exception on robots.txt disallows all paths."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/robots.txt":
             return httpx.Response(500, text="Server Error")
