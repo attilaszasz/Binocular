@@ -335,6 +335,7 @@ async def test_official_module_health_monitoring(
         (module_id,),
     )
     row = await cursor.fetchone()
+    assert row is not None
     assert row["consecutive_failures"] == 0
     assert row["last_success"] is not None
 
@@ -359,6 +360,7 @@ async def test_official_module_health_monitoring(
             "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
         )
         row = await cursor.fetchone()
+        assert row is not None
         assert row["consecutive_failures"] == 1
         mock_send.assert_not_called()
 
@@ -369,6 +371,7 @@ async def test_official_module_health_monitoring(
             "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
         )
         row = await cursor.fetchone()
+        assert row is not None
         assert row["consecutive_failures"] == 2
         mock_send.assert_not_called()
 
@@ -379,6 +382,7 @@ async def test_official_module_health_monitoring(
             "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
         )
         row = await cursor.fetchone()
+        assert row is not None
         assert row["consecutive_failures"] == 3
         mock_send.assert_called_once()
         mock_send.reset_mock()
@@ -392,6 +396,7 @@ async def test_official_module_health_monitoring(
             "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
         )
         row = await cursor.fetchone()
+        assert row is not None
         assert row["consecutive_failures"] == 4
         mock_send.assert_not_called()
 
@@ -408,6 +413,7 @@ async def test_official_module_health_monitoring(
             "SELECT consecutive_failures FROM modules WHERE id = ?", (module_id,)
         )
         row = await cursor.fetchone()
+        assert row is not None
         assert row["consecutive_failures"] == 0
 
     # 4. Verify non-official module is NOT tracked
@@ -436,4 +442,5 @@ async def test_official_module_health_monitoring(
         "SELECT consecutive_failures FROM modules WHERE id = ?", (custom_module_id,)
     )
     row = await cursor.fetchone()
+    assert row is not None
     assert row["consecutive_failures"] == 0
