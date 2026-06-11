@@ -194,5 +194,47 @@ export const notificationsApi = {
     }),
 };
 
+/* ── Activity API ─────────────────────────────────────────────── */
+
+export interface ActivityLogEntry {
+  id: number;
+  timestamp: string;
+  level: string;
+  category: string;
+  message: string;
+  device_id: number | null;
+  device_name: string | null;
+  module_name: string | null;
+  traceback: string | null;
+}
+
+export interface ActivityLogListResponse {
+  items: ActivityLogEntry[];
+  total: number;
+}
+
+export interface ActivityQueryParams {
+  level?: string;
+  category?: string;
+  device_id?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export const activityApi = {
+  list: (params: ActivityQueryParams = {}) => {
+    const query = new URLSearchParams();
+    if (params.level) query.append("level", params.level);
+    if (params.category) query.append("category", params.category);
+    if (params.device_id) query.append("device_id", String(params.device_id));
+    if (params.limit !== undefined) query.append("limit", String(params.limit));
+    if (params.offset !== undefined) query.append("offset", String(params.offset));
+
+    const queryString = query.toString();
+    return apiFetch<ActivityLogListResponse>(`/activity${queryString ? `?${queryString}` : ""}`);
+  },
+};
+
+
 
 
