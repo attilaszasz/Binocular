@@ -90,7 +90,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Depends on E007 and E009. Adds real-time step-by-step progress reporting during custom module upload and validation to improve operator UX.
 
-- [ ] E022 [P1] [PRODUCT] [P] {PRD:CAP-003}{SAD:ADR-0011} Module Upload Progress Feedback — Implement streaming validation progress in the frontend and backend [→ Details](plan/E022.md)
+- [X] E022 [P1] [PRODUCT] [P] {PRD:CAP-003}{SAD:ADR-0011} Module Upload Progress Feedback — Implement streaming validation progress in the frontend and backend [→ Details](plan/E022.md)
 
 
 ## Dependency Diagram

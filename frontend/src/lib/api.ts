@@ -117,13 +117,19 @@ export const devicesApi = {
 
 export const modulesApi = {
   list: () => apiFetch<Module[]>("/modules"),
-  upload: (file: File, runPhase2: boolean = false) => {
+  upload: async (file: File, runPhase2: boolean = false): Promise<Response> => {
     const formData = new FormData();
     formData.append("file", file);
-    return apiFetch<Module>(`/modules?run_phase2=${runPhase2}`, {
+    const res = await fetch(`${API_BASE}/modules?run_phase2=${runPhase2}`, {
       method: "POST",
       body: formData,
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ detail: res.statusText }));
+      const message = typeof body.detail === "object" ? JSON.stringify(body.detail) : (body.detail ?? res.statusText);
+      throw new ApiError(res.status, message, body);
+    }
+    return res;
   },
   update: (id: number, status: string) =>
     apiFetch<Module>(`/modules/${id}`, {

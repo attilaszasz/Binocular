@@ -1,4 +1,4 @@
-"""Integration tests for module API routes."""
+"""Integration tests for module upload streaming progress."""
 
 from __future__ import annotations
 
@@ -41,20 +41,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 
 @pytest.mark.asyncio
-async def test_list_modules(client: AsyncClient) -> None:
-    resp = await client.get("/api/v1/modules")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert len(data) >= 1
-    assert data[0]["name"] == "sony_camera"
-    assert data[0]["device_type"] == "camera"
-    assert data[0]["version"] == "1.0.0"
-    assert data[0]["author"] == "Official"
-    assert data[0]["status"] == "active"
-
-
-@pytest.mark.asyncio
-async def test_upload_valid_module_ast(client: AsyncClient) -> None:
+async def test_stream_upload_success_no_phase2(client: AsyncClient) -> None:
     valid_code = """
 MODULE_VERSION = "2.3.4"
 SUPPORTED_DEVICE_TYPE = "lens"
@@ -64,33 +51,40 @@ def check_firmware(url, model, http_client):
 """
     files = {
         "file": (
-            "test_lens.py",
+            "test_lens_stream.py",
             io.BytesIO(valid_code.encode("utf-8")),
             "text/x-python",
         )
     }
     resp = await client.post("/api/v1/modules", files=files)
     assert resp.status_code == 200
+
     events = []
     async for line in resp.aiter_lines():
         if line.strip():
             events.append(json.loads(line))
+
     assert len(events) >= 2
+
+    # Event 1: AST static check running
     assert events[0]["step"] == "ast"
     assert events[0]["status"] == "running"
 
-    last_event = events[-1]
-    assert last_event["step"] == "saved"
-    assert last_event["status"] == "success"
-    data = last_event["module"]
-    assert data["name"] == "test_lens"
-    assert data["device_type"] == "lens"
-    assert data["version"] == "2.3.4"
-    assert data["status"] == "active"
+    # Event 2: Saving progress
+    saving_events = [e for e in events if e["step"] == "saving"]
+    assert len(saving_events) == 1
+    assert saving_events[0]["status"] == "running"
+
+    # Event 3: Final saved success
+    success_events = [e for e in events if e["step"] == "saved"]
+    assert len(success_events) == 1
+    assert success_events[0]["status"] == "success"
+    assert success_events[0]["module"]["name"] == "test_lens_stream"
+    assert success_events[0]["module"]["version"] == "2.3.4"
 
 
 @pytest.mark.asyncio
-async def test_upload_valid_module_phase2(client: AsyncClient) -> None:
+async def test_stream_upload_success_with_phase2(client: AsyncClient) -> None:
     valid_code = """
 MODULE_VERSION = "2.3.4"
 SUPPORTED_DEVICE_TYPE = "lens"
@@ -100,34 +94,35 @@ def check_firmware(url, model, http_client):
 """
     files = {
         "file": (
-            "test_lens_p2.py",
+            "test_lens_stream_p2.py",
             io.BytesIO(valid_code.encode("utf-8")),
             "text/x-python",
         )
     }
     resp = await client.post("/api/v1/modules?run_phase2=true", files=files)
     assert resp.status_code == 200
+
     events = []
     async for line in resp.aiter_lines():
         if line.strip():
             events.append(json.loads(line))
-    assert len(events) >= 3
+
+    assert len(events) >= 4
+
     steps = [e["step"] for e in events]
     assert "ast" in steps
     assert "runtime" in steps
+    assert "saving" in steps
     assert "saved" in steps
 
-    last_event = events[-1]
-    assert last_event["step"] == "saved"
-    assert last_event["status"] == "success"
-    data = last_event["module"]
-    assert data["name"] == "test_lens_p2"
-    assert data["device_type"] == "lens"
-    assert data["version"] == "2.3.4"
+    # The last event must be success
+    assert events[-1]["step"] == "saved"
+    assert events[-1]["status"] == "success"
 
 
 @pytest.mark.asyncio
-async def test_upload_invalid_module_ast_syntax(client: AsyncClient) -> None:
+async def test_stream_upload_fail_ast(client: AsyncClient) -> None:
+    # Syntax error
     invalid_code = """
 MODULE_VERSION = "2.3.4"
 SUPPORTED_DEVICE_TYPE = "lens"
@@ -136,88 +131,55 @@ def check_firmware(url, model, http_client)
 """
     files = {
         "file": (
-            "test_invalid_syntax.py",
+            "test_lens_fail_ast.py",
             io.BytesIO(invalid_code.encode("utf-8")),
             "text/x-python",
         )
     }
     resp = await client.post("/api/v1/modules", files=files)
     assert resp.status_code == 200
+
     events = []
     async for line in resp.aiter_lines():
         if line.strip():
             events.append(json.loads(line))
+
+    assert len(events) >= 2
+    # Last event should indicate failure in AST check
     last_event = events[-1]
-    assert last_event["status"] == "failed"
     assert last_event["step"] == "ast"
-    data = last_event["validation_result"]
-    assert data["valid"] is False
+    assert last_event["status"] == "failed"
+    assert last_event["validation_result"]["valid"] is False
 
 
 @pytest.mark.asyncio
-async def test_upload_invalid_module_ast_contract(client: AsyncClient) -> None:
+async def test_stream_upload_fail_runtime(client: AsyncClient) -> None:
+    # Raises error in check_firmware
     invalid_code = """
+MODULE_VERSION = "2.3.4"
 SUPPORTED_DEVICE_TYPE = "lens"
+
 def check_firmware(url, model, http_client):
-    return {"latest_version": "1.0.0"}
+    raise ValueError("Simulation of check_firmware failure")
 """
     files = {
         "file": (
-            "test_invalid_contract.py",
+            "test_lens_fail_rt.py",
             io.BytesIO(invalid_code.encode("utf-8")),
             "text/x-python",
         )
     }
-    resp = await client.post("/api/v1/modules", files=files)
+    resp = await client.post("/api/v1/modules?run_phase2=true", files=files)
     assert resp.status_code == 200
+
     events = []
     async for line in resp.aiter_lines():
         if line.strip():
             events.append(json.loads(line))
+
+    assert len(events) >= 2
+    # Last event should indicate failure in runtime check
     last_event = events[-1]
+    assert last_event["step"] == "runtime"
     assert last_event["status"] == "failed"
-    assert last_event["step"] == "ast"
-    data = last_event["validation_result"]
-    assert data["valid"] is False
-
-
-@pytest.mark.asyncio
-async def test_update_module_status(client: AsyncClient) -> None:
-    resp = await client.put("/api/v1/modules/1", json={"status": "inactive"})
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "inactive"
-
-
-@pytest.mark.asyncio
-async def test_delete_module_success(client: AsyncClient) -> None:
-    # First check we can delete
-    resp = await client.delete("/api/v1/modules/1")
-    assert resp.status_code == 204
-
-    # Verify listing is now empty
-    list_resp = await client.get("/api/v1/modules")
-    assert list_resp.status_code == 200
-    assert len(list_resp.json()) == 0
-
-
-@pytest.mark.asyncio
-async def test_delete_module_in_use(client: AsyncClient) -> None:
-    # Seed a device linked to module 1
-    # Check we first get the mock client's DB reference to perform operations
-    # But since the client is in a fixture, we can register the device via the API!
-    dev_resp = await client.post(
-        "/api/v1/devices",
-        json={
-            "name": "My Camera",
-            "model": "Sony ILCE-7M4",
-            "module_id": 1,
-            "current_version": "1.00",
-        },
-    )
-    assert dev_resp.status_code == 201
-
-    # Try to delete the module
-    resp = await client.delete("/api/v1/modules/1")
-    assert resp.status_code == 400
-    assert "referenced" in resp.json()["detail"]
+    assert last_event["validation_result"]["valid"] is False

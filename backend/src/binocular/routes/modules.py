@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import AsyncGenerator
 import tempfile
 from pathlib import Path
-from typing import Any
 
+import structlog
 from fastapi import APIRouter, HTTPException, Request, UploadFile
+from fastapi.responses import StreamingResponse
 
 from binocular.deps import DBDep
 from binocular.devices.models import (
@@ -18,6 +21,8 @@ from binocular.devices.models import (
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.repository import ModuleRepository
 from binocular.extensions.validator import validate_module
+
+logger = structlog.get_logger("binocular.routes.modules")
 
 router = APIRouter(prefix="/api/v1", tags=["modules"])
 
@@ -39,63 +44,72 @@ async def list_modules(db: DBDep) -> list[ModuleResponse]:
     return res
 
 
-@router.post("/modules", response_model=ModuleResponse, status_code=201)
+@router.post("/modules", response_class=StreamingResponse)
 async def upload_module(
     file: UploadFile,
     db: DBDep,
     request: Request,
     run_phase2: bool = False,
-) -> Any:
-    """Upload and validate a module file."""
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No filename provided.")
+) -> StreamingResponse:
+    """Upload and validate a module file with streaming progress."""
 
-    filename = Path(file.filename).name
-    if not filename.endswith(".py"):
-        raise HTTPException(
-            status_code=400, detail="Uploaded file must be a Python (.py) file."
-        )
-
-    settings = request.app.state.settings
-    modules_dir = settings.modules_dir
-    modules_dir.mkdir(parents=True, exist_ok=True)
-
-    contents = await file.read()
-
-    # Run validation in a temporary directory
-    with tempfile.TemporaryDirectory() as tmpdir:
-        temp_path = Path(tmpdir) / filename
-        temp_path.write_bytes(contents)
-
-        # Phase 1: AST validation
-        validation_result = validate_module(temp_path)
-
-        # Phase 2: Runtime validation (optional)
-        if run_phase2 and validation_result.valid:
-            loader = ModuleLoader(temp_path.parent)
-            load_result = loader.load(temp_path)
-            if load_result.success:
-                validation_result = validate_module(
-                    temp_path,
-                    loaded_module=load_result.module,
-                    run_phase2=True,
-                    test_client=request.app.state.scrape_client,
+    async def progress_generator() -> AsyncGenerator[str, None]:
+        try:
+            # Yield: AST check started
+            yield (
+                json.dumps(
+                    {
+                        "status": "running",
+                        "step": "ast",
+                        "message": "Running Phase 1: Static AST validation...",
+                    }
                 )
-            else:
-                validation_result = validate_module(
-                    temp_path,
-                    loaded_module=None,
-                    run_phase2=False,
+                + "\n"
+            )
+
+            if not file.filename:
+                yield (
+                    json.dumps(
+                        {
+                            "status": "failed",
+                            "step": "ast",
+                            "message": "No filename provided.",
+                        }
+                    )
+                    + "\n"
                 )
+                return
 
-        if not validation_result.valid:
-            from fastapi.responses import JSONResponse
+            filename = Path(file.filename).name
+            if not filename.endswith(".py"):
+                yield (
+                    json.dumps(
+                        {
+                            "status": "failed",
+                            "step": "ast",
+                            "message": "Uploaded file must be a Python (.py) file.",
+                        }
+                    )
+                    + "\n"
+                )
+                return
 
-            return JSONResponse(
-                status_code=422,
-                content={
-                    "detail": "Module validation failed",
-                    "validation_result": {
+            settings = request.app.state.settings
+            modules_dir = settings.modules_dir
+            modules_dir.mkdir(parents=True, exist_ok=True)
+
+            contents = await file.read()
+
+            # Run validation in a temporary directory
+            with tempfile.TemporaryDirectory() as tmpdir:
+                temp_path = Path(tmpdir) / filename
+                temp_path.write_bytes(contents)
+
+                # Phase 1: AST validation
+                validation_result = validate_module(temp_path)
+
+                if not validation_result.valid:
+                    result_dict = {
                         "valid": False,
                         "phases": [
                             {
@@ -114,68 +128,201 @@ async def upload_module(
                             }
                             for phase in validation_result.phases
                         ],
-                    },
-                },
+                    }
+                    yield (
+                        json.dumps(
+                            {
+                                "status": "failed",
+                                "step": "ast",
+                                "message": "Module validation failed",
+                                "validation_result": result_dict,
+                            }
+                        )
+                        + "\n"
+                    )
+                    return
+
+                # Yield: AST completed, starting Runtime
+                yield (
+                    json.dumps(
+                        {
+                            "status": "running",
+                            "step": "runtime",
+                            "message": "Running Phase 2: Runtime verification...",
+                        }
+                    )
+                    + "\n"
+                )
+
+                # Phase 2: Runtime validation (optional)
+                if run_phase2 and validation_result.valid:
+                    loader = ModuleLoader(temp_path.parent)
+                    load_result = loader.load(temp_path)
+                    if load_result.success:
+                        validation_result = validate_module(
+                            temp_path,
+                            loaded_module=load_result.module,
+                            run_phase2=True,
+                            test_client=request.app.state.scrape_client,
+                        )
+                    else:
+                        validation_result = validate_module(
+                            temp_path,
+                            loaded_module=None,
+                            run_phase2=False,
+                        )
+
+                if not validation_result.valid:
+                    result_dict = {
+                        "valid": False,
+                        "phases": [
+                            {
+                                "phase": phase.phase,
+                                "passed": phase.passed,
+                                "checks": [
+                                    {
+                                        "name": check.name,
+                                        "passed": check.passed,
+                                        "message": check.message,
+                                        "line": check.line,
+                                        "fix_suggestion": check.fix_suggestion,
+                                    }
+                                    for check in phase.checks
+                                ],
+                            }
+                            for phase in validation_result.phases
+                        ],
+                    }
+                    yield (
+                        json.dumps(
+                            {
+                                "status": "failed",
+                                "step": "runtime",
+                                "message": "Module validation failed",
+                                "validation_result": result_dict,
+                            }
+                        )
+                        + "\n"
+                    )
+                    return
+
+                # Yield: Runtime completed (or skipped), starting Saving
+                yield (
+                    json.dumps(
+                        {
+                            "status": "running",
+                            "step": "saving",
+                            "message": "Registering and saving module...",
+                        }
+                    )
+                    + "\n"
+                )
+
+                # Load the module to extract properties
+                loader = ModuleLoader(temp_path.parent)
+                load_result = loader.load(temp_path)
+                if not load_result.success:
+                    yield (
+                        json.dumps(
+                            {
+                                "status": "failed",
+                                "step": "saving",
+                                "message": "Failed to load module properties.",
+                            }
+                        )
+                        + "\n"
+                    )
+                    return
+
+                name = load_result.module_name
+                device_type = load_result.device_type
+                version = load_result.version
+                author = (
+                    getattr(load_result.module, "MODULE_AUTHOR", "")
+                    or getattr(load_result.module, "__author__", "")
+                    or "Operator"
+                )
+
+                # Save file to final modules directory
+                final_path = modules_dir / filename
+                final_path.write_bytes(contents)
+
+                # Register in database
+                repo = _repository(db)
+                existing = await repo.get_by_name(name)
+                if existing:
+                    await repo.update(
+                        existing["id"],
+                        device_type=device_type,
+                        version=version,
+                        author=author,
+                        file_path=str(final_path),
+                        status="active",
+                    )
+                    module_id = existing["id"]
+                else:
+                    module_id = await repo.create(
+                        name=name,
+                        device_type=device_type,
+                        version=version,
+                        author=author,
+                        file_path=str(final_path),
+                        is_official=False,
+                        status="active",
+                    )
+
+                row = await repo.get_by_id(module_id)
+                if not row:
+                    yield (
+                        json.dumps(
+                            {
+                                "status": "failed",
+                                "step": "saving",
+                                "message": "Failed to retrieve registered module.",
+                            }
+                        )
+                        + "\n"
+                    )
+                    return
+
+                # Register/ensure schedule is active in background scheduler
+                scheduler = request.app.state.scheduler
+                await scheduler.register_new_module(module_id)
+
+                d = dict(row)
+                d["is_official"] = bool(d["is_official"])
+
+                # Yield final success event
+                yield (
+                    json.dumps(
+                        {
+                            "status": "success",
+                            "step": "saved",
+                            "message": "Module uploaded successfully",
+                            "module": d,
+                        }
+                    )
+                    + "\n"
+                )
+
+        except Exception as e:
+            logger.exception("Unexpected error in streaming module validation")
+            yield (
+                json.dumps(
+                    {
+                        "status": "failed",
+                        "step": "error",
+                        "message": f"Unexpected server error: {e!s}",
+                    }
+                )
+                + "\n"
             )
 
-        # Load the module to extract properties
-        loader = ModuleLoader(temp_path.parent)
-        load_result = loader.load(temp_path)
-        if not load_result.success:
-            raise HTTPException(
-                status_code=422, detail="Failed to load module properties."
-            )
-
-        name = load_result.module_name
-        device_type = load_result.device_type
-        version = load_result.version
-        author = (
-            getattr(load_result.module, "MODULE_AUTHOR", "")
-            or getattr(load_result.module, "__author__", "")
-            or "Operator"
-        )
-
-        # Save file to final modules directory
-        final_path = modules_dir / filename
-        final_path.write_bytes(contents)
-
-        # Register in database
-        repo = _repository(db)
-        existing = await repo.get_by_name(name)
-        if existing:
-            await repo.update(
-                existing["id"],
-                device_type=device_type,
-                version=version,
-                author=author,
-                file_path=str(final_path),
-                status="active",
-            )
-            module_id = existing["id"]
-        else:
-            module_id = await repo.create(
-                name=name,
-                device_type=device_type,
-                version=version,
-                author=author,
-                file_path=str(final_path),
-                is_official=False,
-                status="active",
-            )
-
-        row = await repo.get_by_id(module_id)
-        if not row:
-            raise HTTPException(
-                status_code=500, detail="Failed to retrieve registered module."
-            )
-
-        # Register/ensure schedule is active in background scheduler
-        scheduler = request.app.state.scheduler
-        await scheduler.register_new_module(module_id)
-
-        d = dict(row)
-        d["is_official"] = bool(d["is_official"])
-        return ModuleResponse(**d)
+    return StreamingResponse(
+        progress_generator(),
+        media_type="application/x-ndjson",
+        headers={"X-Accel-Buffering": "no"},
+    )
 
 
 @router.put("/modules/{module_id}", response_model=ModuleResponse)

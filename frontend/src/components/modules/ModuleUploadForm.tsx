@@ -19,6 +19,12 @@ import {
 
 
 
+interface ProgressStep {
+  id: "ast" | "runtime" | "saving";
+  label: string;
+  status: "idle" | "running" | "success" | "failed";
+}
+
 export function ModuleUploadForm() {
   const uploadMutation = useUploadModule();
   const [file, setFile] = useState<File | null>(null);
@@ -28,6 +34,9 @@ export function ModuleUploadForm() {
   const [validationErrors, setValidationErrors] = useState<ValidationError | null>(
     null
   );
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -46,6 +55,8 @@ export function ModuleUploadForm() {
     if (droppedFile && droppedFile.name.endsWith(".py")) {
       setFile(droppedFile);
       setValidationErrors(null);
+      setUploadSuccess(false);
+      setProgressSteps([]);
     } else {
       alert("Please upload a Python (.py) file.");
     }
@@ -57,44 +68,123 @@ export function ModuleUploadForm() {
       if (selectedFile.name.endsWith(".py")) {
         setFile(selectedFile);
         setValidationErrors(null);
+        setUploadSuccess(false);
+        setProgressSteps([]);
       } else {
         alert("Please select a Python (.py) file.");
       }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
 
     setValidationErrors(null);
-    uploadMutation.mutate(
-      { file, runPhase2 },
-      {
-        onSuccess: () => {
-          setFile(null);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        },
-        onError: (err: unknown) => {
-          if (
-            err instanceof ApiError &&
-            err.body &&
-            typeof err.body === "object" &&
-            "validation_result" in err.body
-          ) {
-            const body = err.body as { validation_result: ValidationError };
-            setValidationErrors(body.validation_result);
-          } else {
-            const error = err as Error;
-            setValidationErrors({
-              detail: error.message || "Failed to upload module",
-            });
-          }
-        },
+    setUploadSuccess(false);
+
+    const initialSteps: ProgressStep[] = [
+      { id: "ast", label: "Phase 1: Static AST Validation", status: "idle" },
+    ];
+    if (runPhase2) {
+      initialSteps.push({
+        id: "runtime",
+        label: "Phase 2: Runtime Verification",
+        status: "idle",
+      });
+    }
+    initialSteps.push({
+      id: "saving",
+      label: "Registering & Saving Module",
+      status: "idle",
+    });
+    setProgressSteps(initialSteps);
+    setIsUploading(true);
+
+    try {
+      const response = await uploadMutation.mutateAsync({ file, runPhase2 });
+      if (!response.body) {
+        throw new Error("No response body");
       }
-    );
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const event = JSON.parse(line);
+
+            setProgressSteps((prev) =>
+              prev.map((step) => {
+                if (step.id === event.step) {
+                  return {
+                    ...step,
+                    status:
+                      event.status === "running"
+                        ? "running"
+                        : event.status === "success"
+                        ? "success"
+                        : "failed",
+                  };
+                }
+                if (event.step === "runtime" && step.id === "ast") {
+                  return { ...step, status: "success" };
+                }
+                if (event.step === "saving" && (step.id === "ast" || step.id === "runtime")) {
+                  return { ...step, status: "success" };
+                }
+                return step;
+              })
+            );
+
+            if (event.status === "failed") {
+              setValidationErrors(event.validation_result || { detail: event.message });
+              setIsUploading(false);
+              return;
+            }
+
+            if (event.status === "success") {
+              setProgressSteps((prev) => prev.map((s) => ({ ...s, status: "success" })));
+              setFile(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+              }
+              setUploadSuccess(true);
+              setIsUploading(false);
+              return;
+            }
+          } catch (err) {
+            console.error("Failed to parse stream event", err);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      setIsUploading(false);
+      if (
+        err instanceof ApiError &&
+        err.body &&
+        typeof err.body === "object" &&
+        "validation_result" in err.body
+      ) {
+        const body = err.body as { validation_result: ValidationError };
+        setValidationErrors(body.validation_result);
+      } else {
+        const error = err as Error;
+        setValidationErrors({
+          detail: error.message || "Failed to upload module",
+        });
+      }
+    }
   };
 
   const handleCopyForAI = () => {
@@ -132,11 +222,13 @@ export function ModuleUploadForm() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragOver
+          onClick={() => !isUploading && fileInputRef.current?.click()}
+          className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            isUploading ? "cursor-not-allowed opacity-50 border-muted" : "cursor-pointer border-border hover:border-primary/50 hover:bg-accent/10"
+          } ${
+            isDragOver && !isUploading
               ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50 hover:bg-accent/10"
+              : ""
           }`}
         >
           <input
@@ -144,6 +236,7 @@ export function ModuleUploadForm() {
             ref={fileInputRef}
             onChange={handleFileChange}
             accept=".py"
+            disabled={isUploading}
             className="hidden"
           />
           {file ? (
@@ -172,6 +265,7 @@ export function ModuleUploadForm() {
           <Switch
             id="run-phase2"
             checked={runPhase2}
+            disabled={isUploading}
             onCheckedChange={setRunPhase2}
           />
           <div className="space-y-0.5">
@@ -185,15 +279,54 @@ export function ModuleUploadForm() {
           </div>
         </div>
 
+        {/* Visual Progress Steps */}
+        {(isUploading || progressSteps.some((s) => s.status !== "idle")) && (
+          <div className="bg-card p-4 rounded-lg border border-border/80 space-y-3">
+            <h4 className="font-semibold text-sm">Validation & Upload Progress</h4>
+            <div className="space-y-2">
+              {progressSteps.map((step) => (
+                <div key={step.id} className="flex items-center gap-3 text-sm">
+                  {step.status === "idle" && (
+                    <div className="h-4 w-4 rounded-full border border-muted-foreground/30 shrink-0" />
+                  )}
+                  {step.status === "running" && (
+                    <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                  )}
+                  {step.status === "success" && (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                  )}
+                  {step.status === "failed" && (
+                    <XCircle className="h-4 w-4 text-destructive shrink-0" />
+                  )}
+                  <span
+                    className={
+                      step.status === "running"
+                        ? "font-medium text-foreground animate-pulse"
+                        : step.status === "success"
+                        ? "text-muted-foreground"
+                        : step.status === "failed"
+                        ? "text-destructive font-medium"
+                        : "text-muted-foreground/70"
+                    }
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Buttons */}
         <div className="flex gap-2 justify-end">
-          {file && (
+          {file && !isUploading && (
             <Button
               type="button"
               variant="outline"
               onClick={() => {
                 setFile(null);
                 setValidationErrors(null);
+                setProgressSteps([]);
               }}
             >
               Clear
@@ -201,16 +334,16 @@ export function ModuleUploadForm() {
           )}
           <Button
             type="submit"
-            disabled={!file || uploadMutation.isPending}
+            disabled={!file || isUploading}
             className="px-6"
           >
-            {uploadMutation.isPending ? "Validating & Uploading..." : "Upload Module"}
+            {isUploading ? "Validating & Uploading..." : "Upload Module"}
           </Button>
         </div>
       </form>
 
       {/* Validation success / failures */}
-      {uploadMutation.isSuccess && (
+      {uploadSuccess && (
         <div className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-emerald-600 dark:text-emerald-400">
           <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
           <div>
