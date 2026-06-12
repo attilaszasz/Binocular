@@ -93,16 +93,16 @@ export function DeviceCard({
           
           {device.has_update ? (
             <div className="flex items-center gap-1.5 text-xs font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md border border-amber-200/50 dark:border-amber-900/30">
-              <span>v{device.current_version}</span>
+              <span>{device.current_version}</span>
               <span className="text-amber-400">→</span>
               <span className="font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1">
                 <ArrowUpCircle className="h-3 w-3 animate-bounce" />
-                v{device.latest_detected_version}
+                {device.latest_detected_version}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-transparent">
-              <span>v{device.current_version || "—"}</span>
+              <span>{device.current_version || "—"}</span>
               <span className="text-[10px] px-1 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-semibold flex items-center gap-0.5">
                 <CheckCircle2 className="h-2.5 w-2.5" /> Latest
               </span>
