@@ -31,11 +31,11 @@ RUN apt-get update && \
 # Install uv for fast dependency resolution.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY backend/pyproject.toml backend/uv.lock* /build/backend/
-WORKDIR /build/backend
+WORKDIR /app
+COPY backend/pyproject.toml backend/uv.lock* /app/
 RUN uv sync --frozen --no-dev --no-install-project
 
-COPY backend/src /build/backend/src
+COPY backend/src /app/src
 RUN uv sync --frozen --no-dev
 
 
