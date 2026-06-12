@@ -9,6 +9,8 @@ from typing import Any
 
 import pytest
 
+import httpx
+
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.runner import ModuleRunner
 from binocular.official_modules import godox_flashes
@@ -28,7 +30,7 @@ _PAGE_3_URL = f"{_GODOX_BASE}/firmware-flash_3/"
 class FakeResponse:
     text: str
     status_code: int = 200
-    url: str = _PAGE_1_URL
+    url: httpx.URL | str = _PAGE_1_URL
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,7 +44,7 @@ class FakeScrapeClient:
         if self.fail_on_url == url:
             raise RuntimeError("Fake connection failure")
         text = self.url_map.get(url, "")
-        return FakeResponse(text=text, url=url)
+        return FakeResponse(text=text, url=httpx.URL(url))
 
 
 def read_fixture(name: str) -> str:

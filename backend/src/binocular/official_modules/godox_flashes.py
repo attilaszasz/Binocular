@@ -66,7 +66,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
                 f"network_error: Failed to fetch {page_url}: {exc}"
             ) from exc
 
-        entries = parse_page_entries(html, response.url, page_number)
+        entries = parse_page_entries(html, str(response.url), page_number)
 
         if not entries:
             if page_number == 1:
