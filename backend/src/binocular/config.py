@@ -5,7 +5,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator, model_validator
+from pydantic import AliasChoices, BeforeValidator, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -69,13 +69,55 @@ class Settings(BaseSettings):
     module_health_threshold: int = 5
 
     # Basic Authentication
-    basic_auth_enabled: bool = False
+    basic_auth_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "binocular_auth_enabled",
+            "binocular_basic_auth_enabled",
+            "basic_auth_enabled",
+        ),
+    )
     basic_auth_username: str = "binocular"
     basic_auth_password: str | None = None
 
-    # Apprise Dispatcher Secrets
-    smtp_password: str | None = None
-    gotify_token: str | None = None
+    # Apprise Dispatcher Settings
+    smtp_host: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("binocular_smtp_host", "smtp_host"),
+    )
+    smtp_port: int = Field(
+        default=587,
+        validation_alias=AliasChoices("binocular_smtp_port", "smtp_port"),
+    )
+    smtp_use_tls: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("binocular_smtp_use_tls", "smtp_use_tls"),
+    )
+    smtp_username: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("binocular_smtp_username", "smtp_username"),
+    )
+    smtp_password: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("binocular_smtp_password", "smtp_password"),
+    )
+    smtp_from: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("binocular_smtp_from", "smtp_from"),
+    )
+    smtp_to: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("binocular_smtp_to", "smtp_to"),
+    )
+
+    gotify_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("binocular_gotify_url", "gotify_url"),
+    )
+    gotify_token: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("binocular_gotify_token", "gotify_token"),
+    )
 
     @model_validator(mode="before")
     @classmethod

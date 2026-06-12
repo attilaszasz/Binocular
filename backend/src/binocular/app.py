@@ -28,6 +28,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     await run_migrations(conn, settings)
 
+    from binocular.services.settings_seeder import NotificationSettingsSeeder
+
+    settings_seeder = NotificationSettingsSeeder(settings, conn)
+    await settings_seeder.seed()
+
     if settings.seed_modules:
         from binocular.services.seeder import OfficialModuleSeeder
 

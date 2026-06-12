@@ -114,3 +114,79 @@ class TestSettingsSelfHosted:
         with pytest.raises(ValidationError) as excinfo:
             Settings()
         assert "Secret file for basic_auth_password not found" in str(excinfo.value)
+
+
+class TestNotificationSettingsAliases:
+    """Verify that SMTP and Gotify settings load correctly from custom aliases."""
+
+    def test_prefixed_and_unprefixed_aliases(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Del env vars to avoid bleeding from other tests
+        for key in [
+            "BINOCULAR_AUTH_ENABLED",
+            "BINOCULAR_BASIC_AUTH_ENABLED",
+            "BASIC_AUTH_ENABLED",
+            "SMTP_HOST",
+            "BINOCULAR_SMTP_HOST",
+            "SMTP_PORT",
+            "BINOCULAR_SMTP_PORT",
+            "SMTP_USE_TLS",
+            "BINOCULAR_SMTP_USE_TLS",
+            "SMTP_USERNAME",
+            "BINOCULAR_SMTP_USERNAME",
+            "SMTP_PASSWORD",
+            "BINOCULAR_SMTP_PASSWORD",
+            "SMTP_FROM",
+            "BINOCULAR_SMTP_FROM",
+            "SMTP_TO",
+            "BINOCULAR_SMTP_TO",
+            "GOTIFY_URL",
+            "BINOCULAR_GOTIFY_URL",
+            "GOTIFY_TOKEN",
+            "BINOCULAR_GOTIFY_TOKEN",
+        ]:
+            monkeypatch.delenv(key, raising=False)
+
+        # Test non-prefixed env vars (which are used on user's container)
+        monkeypatch.setenv("SMTP_HOST", "smtp.gmail.com")
+        monkeypatch.setenv("SMTP_PORT", "587")
+        monkeypatch.setenv("SMTP_USE_TLS", "true")
+        monkeypatch.setenv("SMTP_USERNAME", "user@gmail.com")
+        monkeypatch.setenv("SMTP_PASSWORD", "pass123")
+        monkeypatch.setenv("SMTP_FROM", "user@gmail.com")
+        monkeypatch.setenv("SMTP_TO", "recipient@gmail.com")
+        monkeypatch.setenv("GOTIFY_URL", "https://gotify.example.com")
+        monkeypatch.setenv("GOTIFY_TOKEN", "token123")
+        monkeypatch.setenv("BINOCULAR_AUTH_ENABLED", "true")
+        monkeypatch.setenv("BINOCULAR_BASIC_AUTH_PASSWORD", "secret")
+
+        s = Settings()
+        assert s.smtp_host == "smtp.gmail.com"
+        assert s.smtp_port == 587
+        assert s.smtp_use_tls is True
+        assert s.smtp_username == "user@gmail.com"
+        assert s.smtp_password == "pass123"  # noqa: S105
+        assert s.smtp_from == "user@gmail.com"
+        assert s.smtp_to == "recipient@gmail.com"
+        assert s.gotify_url == "https://gotify.example.com"
+        assert s.gotify_token == "token123"  # noqa: S105
+        assert s.basic_auth_enabled is True
+
+    def test_unprefixed_secrets_files(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        smtp_pass_file = tmp_path / "smtp_pass.txt"
+        smtp_pass_file.write_text("file_smtp_pass\n")
+
+        gotify_token_file = tmp_path / "gotify_token.txt"
+        gotify_token_file.write_text("file_gotify_token\n")
+
+        monkeypatch.setenv("SMTP_PASSWORD_FILE", str(smtp_pass_file))
+        monkeypatch.setenv("GOTIFY_TOKEN_FILE", str(gotify_token_file))
+
+        s = Settings()
+        assert s.smtp_password == "file_smtp_pass"  # noqa: S105
+        assert s.gotify_token == "file_gotify_token"  # noqa: S105
+
+

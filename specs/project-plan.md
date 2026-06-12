@@ -84,7 +84,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Depends on E001/E002 and E014. Adds capability to pre-configure and seed notification channels and authentication options using environment variables at container startup.
 
-- [ ] E021 [P1] [TECHNICAL] {PRD:CAP-007}{PRD:CAP-009}{SAD:ADR-0010}{DOD:DDR-002} Environment-Based Notification Settings — Pydantic settings parsing, database startup sync, and configuration seeding [→ Details](plan/E021.md)
+- [X] E021 [P1] [TECHNICAL] {PRD:CAP-007}{PRD:CAP-009}{SAD:ADR-0010}{DOD:DDR-002} Environment-Based Notification Settings — Pydantic settings parsing, database startup sync, and configuration seeding [→ Details](plan/E021.md)
 
 
 ## Dependency Diagram
