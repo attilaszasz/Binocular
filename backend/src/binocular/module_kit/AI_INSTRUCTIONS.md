@@ -58,8 +58,11 @@ import asyncio
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
-response = loop.run_until_complete(http_client.get(url))
-html = response.text
+try:
+    response = loop.run_until_complete(http_client.get(url))
+    html = response.text
+finally:
+    loop.close()
 ```
 
 ## Constraints

@@ -64,8 +64,12 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
 
             import asyncio
             loop = asyncio.new_event_loop()
-            response = loop.run_until_complete(http_client.get(source_url))
-            html = response.text
+            asyncio.set_event_loop(loop)
+            try:
+                response = loop.run_until_complete(http_client.get(source_url))
+                html = response.text
+            finally:
+                loop.close()
 
     Returns
     -------
@@ -92,10 +96,15 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        response = loop.run_until_complete(http_client.get(source_url))
-        html = response.text
-    except Exception as exc:
-        raise ValueError(f"network_error: Failed to fetch {source_url}: {exc}") from exc
+        try:
+            response = loop.run_until_complete(http_client.get(source_url))
+            html = response.text
+        except Exception as exc:
+            raise ValueError(
+                f"network_error: Failed to fetch {source_url}: {exc}"
+            ) from exc
+    finally:
+        loop.close()
 
     # -----------------------------------------------------------------------
     # Step 2: Parse the response to find firmware information

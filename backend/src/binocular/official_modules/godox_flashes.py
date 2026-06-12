@@ -50,63 +50,69 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+    try:
+        consecutive_empty = 0
+        page_number = 1
+        warnings: list[str] = []
 
-    consecutive_empty = 0
-    page_number = 1
-    warnings: list[str] = []
+        while page_number <= 30:
+            page_url = urljoin(_GODOX_BASE_URL, _build_page_url(page_number))
 
-    while page_number <= 30:
-        page_url = urljoin(_GODOX_BASE_URL, _build_page_url(page_number))
-
-        try:
-            response = loop.run_until_complete(http_client.get(page_url))
-            html = response.text
-        except Exception as exc:
-            raise ValueError(
-                f"network_error: Failed to fetch {page_url}: {exc}"
-            ) from exc
-
-        entries = parse_page_entries(html, str(response.url), page_number)
-
-        if not entries:
-            if page_number == 1:
+            try:
+                response = loop.run_until_complete(http_client.get(page_url))
+                html = response.text
+            except Exception as exc:
                 raise ValueError(
-                    "parse_error: Godox Flashes firmware page structure has"
-                    " changed: no entries found on page 1"
-                )
-            consecutive_empty += 1
-            if consecutive_empty >= 2:
+                    f"network_error: Failed to fetch {page_url}: {exc}"
+                ) from exc
+
+            entries = parse_page_entries(html, str(response.url), page_number)
+
+            if not entries:
+                if page_number == 1:
+                    raise ValueError(
+                        "parse_error: Godox Flashes firmware page structure has"
+                        " changed: no entries found on page 1"
+                    )
+                consecutive_empty += 1
+                if consecutive_empty >= 2:
+                    raise ValueError(
+                        "product_not_found: Godox Flashes product "
+                        f"was not found: {model}"
+                    )
+                warnings.append(f"page {page_number}: no entries (transient gap)")
+            else:
+                consecutive_empty = 0
+                entry = find_firmware_entry(entries, model)
+                if entry is not None:
+                    return {
+                        "latest_version": entry.firmware_version,
+                        "release_date": entry.firmware_date or None,
+                        "download_url": entry.firmware_download_url or page_url,
+                        "product_name": f"Godox {entry.model}",
+                        "product_model": entry.model,
+                        "product_type": "Flash",
+                    }
+
+            # Check page limit BEFORE next-page
+            if page_number >= 30:
                 raise ValueError(
-                    f"product_not_found: Godox Flashes product was not found: {model}"
+                    "page_limit_exceeded: Godox Flashes firmware page limit "
+                    "exceeded after 30 pages"
                 )
-            warnings.append(f"page {page_number}: no entries (transient gap)")
-        else:
-            consecutive_empty = 0
-            entry = find_firmware_entry(entries, model)
-            if entry is not None:
-                return {
-                    "latest_version": entry.firmware_version,
-                    "release_date": entry.firmware_date or None,
-                    "download_url": entry.firmware_download_url or page_url,
-                    "product_name": f"Godox {entry.model}",
-                    "product_model": entry.model,
-                    "product_type": "Flash",
-                }
 
-        # Check page limit BEFORE next-page
-        if page_number >= 30:
-            raise ValueError(
-                "page_limit_exceeded: Godox Flashes firmware page limit "
-                "exceeded after 30 pages"
-            )
+            # Check pagination widget for inert next-link
+            if _has_inert_next_link(html):
+                break
 
-        # Check pagination widget for inert next-link
-        if _has_inert_next_link(html):
-            break
+            page_number += 1
 
-        page_number += 1
-
-    raise ValueError(f"product_not_found: Godox Flashes product was not found: {model}")
+        raise ValueError(
+            "product_not_found: Godox Flashes product "
+            f"was not found: {model}"
+        )
+    finally:
+        loop.close()
 
 
 def parse_page_entries(
