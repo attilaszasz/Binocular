@@ -2,7 +2,6 @@ import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { ModuleUploadForm } from "./ModuleUploadForm";
-import React from "react";
 
 // Mock useUploadModule hook
 const mockMutateAsync = vi.fn();

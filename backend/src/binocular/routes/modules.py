@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import json
-from collections.abc import AsyncGenerator
 import tempfile
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import structlog
@@ -53,7 +53,7 @@ async def upload_module(
 ) -> StreamingResponse:
     """Upload and validate a module file with streaming progress."""
 
-    async def progress_generator() -> AsyncGenerator[str, None]:
+    async def progress_generator() -> AsyncGenerator[str]:
         try:
             # Yield: AST check started
             yield (
