@@ -211,6 +211,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 | ADR-0007 | In-process scheduling with APScheduler and Apprise notifications with notification deduplication | accepted | 2026-06-07 | — | [0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md](adrs/0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md) |
 | ADR-0008 | Trusted-LAN single-user security model with optional basic auth | accepted | 2026-05-31 | — | [0008-trusted-lan-single-user-security-model-with-optional-basic-auth.md](adrs/0008-trusted-lan-single-user-security-model-with-optional-basic-auth.md) |
 | ADR-0009 | Module-Derived Device Type — Remove Standalone Device Type Field, Derive from Linked Module | accepted | 2026-06-04 | — | [0009-module-derived-device-type-remove-standalone-device-type-field.md](adrs/0009-module-derived-device-type-remove-standalone-device-type-field.md) |
+| ADR-0010 | Environment-Variable Based Configuration and Database Seeding | accepted | 2026-06-12 | — | [0010-environment-variable-based-configuration-and-database-seeding.md](adrs/0010-environment-variable-based-configuration-and-database-seeding.md) |
 
 <!-- Rows are managed by the ADR Author subagent. Do not embed full decision prose here. -->
 
@@ -256,3 +257,4 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - The application version is injected into the frontend bundle at Docker build time via a compile-time env var (populated from the latest git tag).
 - Email notifications render as responsive HTML via Jinja2 templates with the application light color scheme.
 - Notification deduplication tracks `last_notified_version` per device to suppress duplicate alerts.
+- Configuration settings for basic authentication (mapped from `BINOCULAR_AUTH_ENABLED`) and notification channels (SMTP and Gotify details/credentials) can be defined via environment variables. If present, they are automatically seeded and synced into the SQLite database at startup.

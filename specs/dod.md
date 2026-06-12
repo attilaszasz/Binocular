@@ -66,6 +66,21 @@ flowchart LR
 - **Networking**: One exposed port (`8000`) on the trusted LAN. TLS, if desired, is provided by the operator's own reverse proxy — out of scope for the image.
 - **Storage infrastructure**: Two persistent volumes — `/app/data` (SQLite `binocular.db`) and `/app/modules` (user extension `.py` files). Operator-managed; backed up by file/volume copy.
 - **Container hardening**: Non-root user configurable via `PUID`/`PGID` environment variables (default `PUID=1000 PGID=1000`), applied at entrypoint via user/group creation and `su-exec`; `no-new-privileges:true`, `cap_drop: [ALL]`; optional `read_only` rootfs with a `tmpfs` for `/tmp`. See {SAD:ADR-0008}, {SAD:ADR-0001}.
+- **Configuration Environment Variables**: The following variables configure the application settings, basic authentication, and notification channels:
+  - `BINOCULAR_HOST`: Server binding address (default: `0.0.0.0`).
+  - `BINOCULAR_PORT`: Server binding port (default: `8000`).
+  - `BINOCULAR_AUTH_ENABLED` / `BINOCULAR_BASIC_AUTH_ENABLED`: Enable basic authentication (default: `false`).
+  - `PUID` / `PGID`: Container user and group ID (default: `1000`).
+  - `GOTIFY_URL` / `BINOCULAR_GOTIFY_URL`: Gotify server URL.
+  - `GOTIFY_TOKEN` / `BINOCULAR_GOTIFY_TOKEN`: Gotify application token.
+  - `SMTP_HOST` / `BINOCULAR_SMTP_HOST`: SMTP server hostname.
+  - `SMTP_PORT` / `BINOCULAR_SMTP_PORT`: SMTP server port (default: `587`).
+  - `SMTP_USE_TLS` / `BINOCULAR_SMTP_USE_TLS`: Enable SMTP TLS (default: `true`).
+  - `SMTP_USERNAME` / `BINOCULAR_SMTP_USERNAME`: SMTP login username.
+  - `SMTP_PASSWORD` / `BINOCULAR_SMTP_PASSWORD`: SMTP login password.
+  - `SMTP_FROM` / `BINOCULAR_SMTP_FROM`: SMTP sender email address.
+  - `SMTP_TO` / `BINOCULAR_SMTP_TO`: SMTP recipient email address.
+
 
 ### Infrastructure Diagram
 
@@ -140,7 +155,7 @@ No external telemetry, metrics backend, or APM — by design.
 - **Container**: non-root user (PUID/PGID configurable), `no-new-privileges`, `cap_drop: [ALL]`, optional read-only rootfs.
 
 ### Secrets Management
-- **Secrets store**: Environment variables, with the `_FILE` convention for Docker/Compose secrets.
+- **Secrets store**: Environment variables, with the `_FILE` convention for Docker/Compose secrets. Sensitive variables (`GOTIFY_TOKEN`, `SMTP_PASSWORD`, and `BASIC_AUTH_PASSWORD`) support both prefixed (e.g. `BINOCULAR_GOTIFY_TOKEN_FILE`) and non-prefixed (e.g. `GOTIFY_TOKEN_FILE`) file-based settings.
 - **Rotation**: Operator-managed; update the secret/env and recreate the container.
 - **Access pattern**: Injected at runtime; never baked into the image.
 

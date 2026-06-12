@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-06-10 | **Status**: Draft
-**Total Epics**: 22 (P1: 14 · P2: 8) | **Waves**: 9
+**Total Epics**: 23 (P1: 15 · P2: 8) | **Waves**: 10
 
 Informed by the prototype retrospective at `specs/prototype-retrospective.md`. Key consolidation decisions: device type is module-derived from the start (no standalone DeviceType entity); notification deduplication and HTML email are part of the initial notification epic; shadcn/ui is the component library from day one; PUID/PGID entrypoint is part of the foundation container epic; collapsible navigation is part of the SPA shell.
 
@@ -80,6 +80,12 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 - [X] E020 [P2] [PRODUCT] {PRD:CAP-014} Official Module Health Monitoring — detect consistently failing official modules, in-app notification [→ Details](plan/E020.md)
 
+### Wave 10 — Environment-Variable Settings & Seeding
+
+> Depends on E001/E002 and E014. Adds capability to pre-configure and seed notification channels and authentication options using environment variables at container startup.
+
+- [ ] E021 [P1] [TECHNICAL] {PRD:CAP-007}{PRD:CAP-009}{SAD:ADR-0010}{DOD:DDR-002} Environment-Based Notification Settings — Pydantic settings parsing, database startup sync, and configuration seeding [→ Details](plan/E021.md)
+
 
 ## Dependency Diagram
 
@@ -111,6 +117,9 @@ graph LR
 
     M6 --> M9["Module health<br>monitoring"]
     M9 -->|"E020"| M9
+
+    M6 --> M10["Environment-based<br>settings seeding"]
+    M10 -->|"E021"| M10
 ```
 
 ## Execution Wave Summary
@@ -126,6 +135,8 @@ graph LR
 | 7 | E017, E018 | Yes | Release pipeline and backup operations. |
 | 8 | E019 | N/A (single) | Module dev kit + AI-assisted authoring UX. |
 | 9 | E020 | N/A (single) | Official module health monitoring. |
+| 10 | E021 | N/A (single) | Environment-based settings seeding. |
+
 
 ## Parallel Execution Guidance
 
@@ -161,9 +172,9 @@ graph LR
 | CAP-004 Automated Scheduled Checking | P1 | E013 |
 | CAP-005 Manual On-Demand Checking | P1 | E012 |
 | CAP-006 Update Detection & Comparison | P1 | E010 |
-| CAP-007 Notification & Alerting | P1 | E014 |
+| CAP-007 Notification & Alerting | P1 | E014, E021 |
 | CAP-008 Responsible Scraping Enforcement | P1 | E005 |
-| CAP-009 Self-Hosted Operability | P1 | E001, E008 |
+| CAP-009 Self-Hosted Operability | P1 | E001, E008, E021 |
 | CAP-010 Activity Logging & Visibility | P2 | E015 |
 | CAP-011 Official Starter Modules | P2 | E011, E016 |
 | CAP-012 Responsive UI & Dark Mode | P2 | E004 |
@@ -183,13 +194,15 @@ graph LR
 | ADR-0007 APScheduler + Apprise | accepted | E013 (scheduling), E014 (notifications) |
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E001, E008 |
 | ADR-0009 Module-derived device type | accepted | E006 |
+| ADR-0010 Environment-Variable Based Configuration and Database Seeding | accepted | E021 |
+
 
 ### DOD DDR Coverage
 
 | DDR | Status | Epic(s) |
 |-----|--------|---------|
 | DDR-001 GitHub Actions → multi-arch GHCR via SemVer | accepted | E003 (CI base), E017 (release/publish) |
-| DDR-002 Minimal homelab ops posture | accepted | E003 (logs/build gate), E008 (healthcheck/operability) |
+| DDR-002 Minimal homelab ops posture | accepted | E003 (logs/build gate), E008 (healthcheck/operability), E021 |
 | DDR-003 SQLite live-safe backups | accepted | E002 (pre-migration snapshot), E018 (scheduled backup + restore) |
 | DDR-004 Linuxserver-style PUID/PGID entrypoint | accepted | E001 |
 
