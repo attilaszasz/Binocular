@@ -120,7 +120,7 @@ async def test_notifier_url_generation(test_app_client: AsyncClient) -> None:
     gotify_url = notifier._get_apprise_url(
         "gotify", {"server_url": "https://gotify.net", "app_token": "tok"}
     )
-    assert gotify_url == "gotifies://gotify.net/tok"
+    assert gotify_url == "gotifys://gotify.net/tok"
 
     # Gotify HTTP url
     gotify_http_url = notifier._get_apprise_url(
@@ -128,8 +128,8 @@ async def test_notifier_url_generation(test_app_client: AsyncClient) -> None:
     )
     assert gotify_http_url == "gotify://gotify.local/tok"
 
-    # Email URL with password
-    email_url = notifier._get_apprise_url(
+    # Email URL with password and STARTTLS (port 587)
+    email_url_starttls = notifier._get_apprise_url(
         "email",
         {
             "smtp_host": "smtp.mail.com",
@@ -141,10 +141,43 @@ async def test_notifier_url_generation(test_app_client: AsyncClient) -> None:
             "smtp_use_tls": True,
         },
     )
-    assert email_url is not None
-    assert "mailto://u:p@smtp.mail.com:587" in email_url
-    assert "from=f%40m.com" in email_url
-    assert "to=t%40m.com" in email_url
+    assert email_url_starttls is not None
+    assert "mailto://u:p@smtp.mail.com:587" in email_url_starttls
+    assert "from=f%40m.com" in email_url_starttls
+    assert "to=t%40m.com" in email_url_starttls
+    assert "mode=starttls" in email_url_starttls
+
+    # Email URL with SSL (port 465)
+    email_url_ssl = notifier._get_apprise_url(
+        "email",
+        {
+            "smtp_host": "smtp.mail.com",
+            "smtp_port": 465,
+            "smtp_user": "u",
+            "smtp_pass": "p",
+            "from_email": "f@m.com",
+            "to_email": "t@m.com",
+            "smtp_use_tls": True,
+        },
+    )
+    assert email_url_ssl is not None
+    assert "mode=ssl" in email_url_ssl
+
+    # Email URL with insecure (no TLS)
+    email_url_insecure = notifier._get_apprise_url(
+        "email",
+        {
+            "smtp_host": "smtp.mail.com",
+            "smtp_port": 25,
+            "smtp_user": "u",
+            "smtp_pass": "p",
+            "from_email": "f@m.com",
+            "to_email": "t@m.com",
+            "smtp_use_tls": False,
+        },
+    )
+    assert email_url_insecure is not None
+    assert "mode=insecure" in email_url_insecure
 
     # Incomplete configs return None
     assert notifier._get_apprise_url("email", {}) is None

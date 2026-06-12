@@ -48,13 +48,11 @@ class NotifierService:
             # Map TLS to Apprise URL parameter
             if config.get("smtp_use_tls", False):
                 if port == 465:
-                    params["secure"] = "yes"
+                    params["mode"] = "ssl"
                 else:
-                    params["secure"] = (
-                        "no"  # Apprise will attempt STARTTLS automatically
-                    )
+                    params["mode"] = "starttls"
             else:
-                params["secure"] = "no"
+                params["mode"] = "insecure"
 
             query = urllib.parse.urlencode(params)
             quoted_user = urllib.parse.quote(user) if user else ""
@@ -79,7 +77,7 @@ class NotifierService:
                 return None
 
             parsed = urllib.parse.urlparse(server_url)
-            scheme = "gotifies" if parsed.scheme == "https" else "gotify"
+            scheme = "gotifys" if parsed.scheme == "https" else "gotify"
             netloc = parsed.netloc
             token = token.strip("/")
 
