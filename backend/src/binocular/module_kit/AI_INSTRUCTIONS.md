@@ -46,6 +46,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
 ```python
 raise ValueError("network_error: Failed to fetch ...")
 raise ValueError("product_not_found: Model not in catalog")
+raise ValueError("download_url_not_found: Download URL not found")
 ```
 
 ## HTTP Client Usage
@@ -81,8 +82,14 @@ Your module will be validated in two phases:
 ### Phase 2: Runtime (Optional)
 - `check_firmware` is callable
 - Accepts 3 positional arguments
-- Returns a `dict` or `CheckResult`
-- Result contains `"latest_version"` key
+- Successful execution:
+  - Returns a `dict` or `CheckResult` containing `"latest_version"` key
+  - OR raises a contract-compliant `ValueError` starting with one of the standard prefixes:
+    - `network_error:`
+    - `product_not_found:`
+    - `firmware_not_available:`
+    - `firmware_index_not_found:`
+    - `download_url_not_found:`
 
 ## If You Get Validation Errors
 

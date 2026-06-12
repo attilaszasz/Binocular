@@ -65,6 +65,7 @@ Raise `ValueError` with a descriptive prefix:
 | `product_not_found:` | Model not in the catalog |
 | `firmware_not_available:` | Model found but no firmware listed |
 | `firmware_index_not_found:` | Page structure changed; catalog not found |
+| `download_url_not_found:` | Direct download URL is missing/unparseable |
 
 ## Optional Elements
 
@@ -90,9 +91,10 @@ Modules are validated in two phases on upload:
 
 ### Phase 2: Runtime (Optional)
 
-- Executes `check_firmware` with mock arguments
-- Verifies it returns a `dict` or `CheckResult`
-- Verifies the result contains `"latest_version"`
+- Executes `check_firmware` with a mock HTTP client, a dummy URL (`https://example.com`), and a dummy model name (`TestModel`)
+- Successful validation occurs if the function:
+  - Returns a `dict` or `CheckResult` containing `"latest_version"`
+  - OR raises a contract-compliant `ValueError` starting with one of the standard prefixes (e.g. `product_not_found:`)
 
 ## Trust Boundary
 

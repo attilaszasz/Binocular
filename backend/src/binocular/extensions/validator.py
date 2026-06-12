@@ -14,6 +14,7 @@ import inspect
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import structlog
 
@@ -276,6 +277,35 @@ class ASTValidator:
 # ---------------------------------------------------------------------------
 
 
+class MockResponse:
+    """Mock HTTP response for runtime validation."""
+
+    def __init__(
+        self,
+        text: str = "<html>mock</html>",
+        status_code: int = 200,
+        headers: dict[str, str] | None = None,
+    ) -> None:
+        self.text = text
+        self.status_code = status_code
+        self.headers = headers or {}
+
+    def json(self) -> Any:
+        import json
+
+        try:
+            return json.loads(self.text)
+        except Exception:
+            return {}
+
+
+class MockScrapeClient:
+    """Mock HTTP client for runtime validation."""
+
+    async def get(self, url: str, **kwargs: Any) -> MockResponse:
+        return MockResponse()
+
+
 class RuntimeValidator:
     """Phase 2: Optional runtime execution proof."""
 
@@ -355,7 +385,7 @@ class RuntimeValidator:
         # Execute with test inputs.
         # Run inside a worker thread to isolate the module's event loop creation
         # from FastAPI's running event loop on the main thread.
-        client = test_client if test_client is not None else object()
+        client = test_client if test_client is not None else MockScrapeClient()
         try:
             import concurrent.futures
 
@@ -363,6 +393,49 @@ class RuntimeValidator:
                 future = executor.submit(func, test_url, test_model, client)
                 result = future.result(timeout=10.0)
         except Exception as exc:
+            # Check if this is a contract-compliant ValueError
+            if isinstance(exc, ValueError):
+                msg = str(exc)
+                prefixes = (
+                    "network_error:",
+                    "product_not_found:",
+                    "firmware_not_available:",
+                    "firmware_index_not_found:",
+                    "download_url_not_found:",
+                )
+                if any(msg.startswith(p) for p in prefixes):
+                    checks.append(
+                        ValidationCheck(
+                            name="execution",
+                            passed=True,
+                            message=(
+                                "Function executed and raised "
+                                f"contract-compliant error: {msg}"
+                            ),
+                        )
+                    )
+                    checks.append(
+                        ValidationCheck(
+                            name="return_type",
+                            passed=True,
+                            message=(
+                                "Skipped return type check because "
+                                "contract-compliant error was raised"
+                            ),
+                        )
+                    )
+                    checks.append(
+                        ValidationCheck(
+                            name="has_latest_version",
+                            passed=True,
+                            message=(
+                                "Skipped latest_version check because "
+                                "contract-compliant error was raised"
+                            ),
+                        )
+                    )
+                    return PhaseResult(phase="runtime", passed=True, checks=checks)
+
             checks.append(
                 ValidationCheck(
                     name="execution",

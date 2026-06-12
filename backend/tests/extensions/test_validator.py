@@ -145,6 +145,28 @@ class TestRuntimeValidator:
         assert result.phase == "runtime"
         assert any(c.name == "execution" and c.passed for c in result.checks)
 
+    @pytest.mark.asyncio
+    async def test_module_raising_compliant_value_error_passes(self, tmp_path: Path) -> None:
+        code = (
+            'MODULE_VERSION = "1.0.0"\n'
+            'SUPPORTED_DEVICE_TYPE = "camera"\n'
+            "def check_firmware(url, model, http_client):\n"
+            "    raise ValueError('product_not_found: Model not in catalog')\n"
+        )
+        module_file = tmp_path / "raising_compliant_module.py"
+        module_file.write_text(code, encoding="utf-8")
+
+        loader = ModuleLoader(tmp_path)
+        load_result = loader.load(module_file)
+        assert load_result.success
+        assert load_result.module is not None
+
+        validator = RuntimeValidator()
+        result = validator.validate(load_result.module)
+        assert result.passed is True
+        assert result.phase == "runtime"
+        assert any(c.name == "execution" and c.passed for c in result.checks)
+
 
 class TestValidateModule:
     """Combined validation pipeline tests."""
