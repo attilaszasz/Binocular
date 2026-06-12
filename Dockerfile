@@ -48,7 +48,7 @@ LABEL maintainer="Binocular" \
 COPY --from=builder /usr/local/bin/su-exec /usr/local/bin/su-exec
 
 # Copy the virtual environment and app source.
-COPY --from=builder /build/backend/.venv /app/.venv
+COPY --from=builder /app/.venv /app/.venv
 COPY backend/src /app/src
 
 # Copy the built frontend assets.
