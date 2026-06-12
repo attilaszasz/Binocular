@@ -353,9 +353,15 @@ class RuntimeValidator:
             )
 
         # Execute with test inputs.
+        # Run inside a worker thread to isolate the module's event loop creation
+        # from FastAPI's running event loop on the main thread.
         client = test_client if test_client is not None else object()
         try:
-            result = func(test_url, test_model, client)
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(func, test_url, test_model, client)
+                result = future.result(timeout=10.0)
         except Exception as exc:
             checks.append(
                 ValidationCheck(

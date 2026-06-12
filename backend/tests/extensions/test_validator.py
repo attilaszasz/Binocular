@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from pathlib import Path
 
 from binocular.extensions.loader import ModuleLoader
@@ -110,6 +111,38 @@ class TestRuntimeValidator:
         result = validator.validate(load_result.module)
         assert result.passed is False
         assert any("return_type" in c.name for c in result.checks if not c.passed)
+
+    @pytest.mark.asyncio
+    async def test_module_with_internal_event_loop_passes(self, tmp_path: Path) -> None:
+        code = (
+            'MODULE_VERSION = "1.0.0"\n'
+            'SUPPORTED_DEVICE_TYPE = "camera"\n'
+            "def check_firmware(url, model, http_client):\n"
+            "    import asyncio\n"
+            "    loop = asyncio.new_event_loop()\n"
+            "    asyncio.set_event_loop(loop)\n"
+            "    try:\n"
+            "        async def fake_get():\n"
+            "            await asyncio.sleep(0.01)\n"
+            "            return 'done'\n"
+            "        loop.run_until_complete(fake_get())\n"
+            "        return {'latest_version': '1.2.3'}\n"
+            "    finally:\n"
+            "        loop.close()\n"
+        )
+        module_file = tmp_path / "custom_loop_module.py"
+        module_file.write_text(code, encoding="utf-8")
+
+        loader = ModuleLoader(tmp_path)
+        load_result = loader.load(module_file)
+        assert load_result.success
+        assert load_result.module is not None
+
+        validator = RuntimeValidator()
+        result = validator.validate(load_result.module)
+        assert result.passed is True
+        assert result.phase == "runtime"
+        assert any(c.name == "execution" and c.passed for c in result.checks)
 
 
 class TestValidateModule:
