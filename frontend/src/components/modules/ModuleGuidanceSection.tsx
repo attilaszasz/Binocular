@@ -30,7 +30,7 @@ interface KitListResponse {
 }
 
 export function ModuleGuidanceSection() {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [kitFiles, setKitFiles] = useState<KitFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
