@@ -34,9 +34,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       )}
     >
       {/* Brand */}
-      <div className="flex h-14 items-center border-b border-sidebar-border px-3">
+      <div
+        className={cn(
+          "flex h-14 items-center border-b border-sidebar-border px-3",
+          collapsed && "justify-center px-0",
+        )}
+      >
         <Brand collapsed={collapsed} />
       </div>
+
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-3">
