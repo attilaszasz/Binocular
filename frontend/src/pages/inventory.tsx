@@ -3,7 +3,7 @@
  * and add/edit form.
  */
 import { useState } from "react";
-import { ArrowUpCircle, CheckCircle, Monitor, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,7 +15,6 @@ import {
 import { DeviceCard } from "@/components/inventory/device-card";
 import { DeviceForm } from "@/components/inventory/device-form";
 import { EmptyState } from "@/components/inventory/empty-state";
-import { StatCard } from "@/components/inventory/stat-card";
 import {
   useConfirmUpdate,
   useCreateDevice,
@@ -93,7 +92,16 @@ export function InventoryPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Inventory</h1>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Inventory</h1>
+          {!isLoading && totalDevices > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {totalDevices} {totalDevices === 1 ? "device" : "devices"} •{" "}
+              {updatesAvailable} {updatesAvailable === 1 ? "update" : "updates"} available •{" "}
+              {checkedDevices} of {totalDevices} checked
+            </p>
+          )}
+        </div>
         {totalDevices > 0 && formMode.type === "closed" && (
           <div className="flex items-center gap-2">
             <Button
@@ -111,28 +119,6 @@ export function InventoryPage() {
           </div>
         )}
       </div>
-
-      {/* Summary stats */}
-      {!isLoading && totalDevices > 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard
-            title="Devices"
-            value={totalDevices}
-            icon={Monitor}
-          />
-          <StatCard
-            title="Updates Available"
-            value={updatesAvailable}
-            icon={ArrowUpCircle}
-          />
-          <StatCard
-            title="Checked"
-            value={checkedDevices}
-            icon={CheckCircle}
-            description={`of ${totalDevices} devices`}
-          />
-        </div>
-      )}
 
       {/* Add / Edit form */}
       {formMode.type !== "closed" && (
