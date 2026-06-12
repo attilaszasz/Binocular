@@ -100,7 +100,9 @@ async def test_scrape_client_closed() -> None:
 
 @pytest.mark.asyncio
 async def test_scrape_client_cross_event_loop() -> None:
-    """Test that GET requests are correctly routed to the creator loop if called from a different event loop."""
+    """Test that GET requests are correctly routed to the creator loop
+    if called from a different event loop.
+    """
     client = ScrapeClient()
     client.client = httpx.AsyncClient(
         transport=httpx.MockTransport(mock_handler),

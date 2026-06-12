@@ -7,9 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 import httpx
+import pytest
 
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.runner import ModuleRunner

@@ -49,6 +49,7 @@ class ScrapeClient:
         self.robots = RobotsChecker(user_agent=self.user_agent)
         self.limiter = RateLimiter(default_delay=default_delay)
         self._closed = False
+        self._loop: asyncio.AbstractEventLoop | None
         try:
             self._loop = asyncio.get_running_loop()
         except RuntimeError:
