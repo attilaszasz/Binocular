@@ -311,7 +311,6 @@ async def test_official_module_health_monitoring(
     cursor = await conn.execute(
         "INSERT INTO modules (name, device_type, file_path, is_official) "
         "VALUES (?, ?, ?, ?)",
-
         ("Sony Camera", "Camera", valid_module_path, 1),
     )
     module_id = cursor.lastrowid
@@ -420,7 +419,6 @@ async def test_official_module_health_monitoring(
     cursor = await conn.execute(
         "INSERT INTO modules (name, device_type, file_path, is_official) "
         "VALUES (?, ?, ?, ?)",
-
         ("Custom Camera", "Camera", "nonexistent.py", 0),
     )
     custom_module_id = cursor.lastrowid

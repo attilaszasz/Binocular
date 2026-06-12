@@ -188,5 +188,3 @@ class TestNotificationSettingsAliases:
         s = Settings()
         assert s.smtp_password == "file_smtp_pass"  # noqa: S105
         assert s.gotify_token == "file_gotify_token"  # noqa: S105
-
-
