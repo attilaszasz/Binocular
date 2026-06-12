@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-06-10 | **Status**: Draft
-**Total Epics**: 23 (P1: 15 · P2: 8) | **Waves**: 10
+**Total Epics**: 22 (P1: 15 · P2: 7) | **Waves**: 11
 
 Informed by the prototype retrospective at `specs/prototype-retrospective.md`. Key consolidation decisions: device type is module-derived from the start (no standalone DeviceType entity); notification deduplication and HTML email are part of the initial notification epic; shadcn/ui is the component library from day one; PUID/PGID entrypoint is part of the foundation container epic; collapsible navigation is part of the SPA shell.
 
@@ -86,6 +86,12 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 - [X] E021 [P1] [TECHNICAL] {PRD:CAP-007}{PRD:CAP-009}{SAD:ADR-0010}{DOD:DDR-002} Environment-Based Notification Settings — Pydantic settings parsing, database startup sync, and configuration seeding [→ Details](plan/E021.md)
 
+### Wave 11 — Upload Progress Feedback
+
+> Depends on E007 and E009. Adds real-time step-by-step progress reporting during custom module upload and validation to improve operator UX.
+
+- [ ] E022 [P1] [PRODUCT] [P] {PRD:CAP-003}{SAD:ADR-0011} Module Upload Progress Feedback — Implement streaming validation progress in the frontend and backend [→ Details](plan/E022.md)
+
 
 ## Dependency Diagram
 
@@ -120,6 +126,9 @@ graph LR
 
     M6 --> M10["Environment-based<br>settings seeding"]
     M10 -->|"E021"| M10
+
+    M6 --> M11["Module upload<br>progress feedback"]
+    M11 -->|"E022"| M11
 ```
 
 ## Execution Wave Summary
@@ -136,6 +145,7 @@ graph LR
 | 8 | E019 | N/A (single) | Module dev kit + AI-assisted authoring UX. |
 | 9 | E020 | N/A (single) | Official module health monitoring. |
 | 10 | E021 | N/A (single) | Environment-based settings seeding. |
+| 11 | E022 | N/A (single) | Module upload progress feedback. |
 
 
 ## Parallel Execution Guidance
@@ -168,7 +178,7 @@ graph LR
 |------------|----------|---------|
 | CAP-001 Device Inventory & Lifecycle | P1 | E006 |
 | CAP-002 Extension Module Engine & Authoring Contract | P1 | E007 |
-| CAP-003 Module Lifecycle Management | P1 | E009, E019 |
+| CAP-003 Module Lifecycle Management | P1 | E009, E019, E022 |
 | CAP-004 Automated Scheduled Checking | P1 | E013 |
 | CAP-005 Manual On-Demand Checking | P1 | E012 |
 | CAP-006 Update Detection & Comparison | P1 | E010 |
@@ -195,6 +205,7 @@ graph LR
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E001, E008 |
 | ADR-0009 Module-derived device type | accepted | E006 |
 | ADR-0010 Environment-Variable Based Configuration and Database Seeding | accepted | E021 |
+| ADR-0011 Real-Time Module Validation and Upload Progress Streaming | accepted | E022 |
 
 
 ### DOD DDR Coverage
@@ -218,7 +229,7 @@ graph LR
 |--------|---------------|-------------|
 | Device (module_id FK) | E006 | E010, E012, E014 |
 | Device (last_notified_version) | E014 | E010, E014 |
-| Module, ModuleValidationResult | E007 | E009, E010, E011, E016, E019 |
+| Module, ModuleValidationResult | E007 | E009, E010, E011, E016, E019, E022 |
 | CheckResult / detection event | E010 | E012, E013, E014, E015 |
 | NotificationChannel | E014 | E014 |
 | ActivityLogEntry | E015 | E015 |
@@ -230,7 +241,7 @@ graph LR
 |---------|---------------|-------------|
 | `/healthz` | E001 | Container HEALTHCHECK, E003 |
 | `/api/v1/devices` (module-linked) | E006 | E012 |
-| `/api/v1/modules` | E009 | E006, E013, E019 |
+| `/api/v1/modules` | E009 | E006, E013, E019, E022 |
 | `/api/v1/checks` | E012 | UI |
 | `/api/v1/notifications` | E014 | UI config |
 | `/api/v1/activity` | E015 | UI |
@@ -244,7 +255,7 @@ graph LR
 | App factory + router aggregator, structlog config | E001 | All |
 | DB connection, migration runner, repository base | E002 | E006, E007, E009, E010, E013, E014, E015, E018 |
 | ScrapeClient | E005 | E007, E011, E016, E019 |
-| Module engine + authoring contract | E007 | E009, E010, E011, E016, E019 |
+| Module engine + authoring contract | E007 | E009, E010, E011, E016, E019, E022 |
 | Scheduler service | E013 | E014, E015, E018 |
 | Notifier service (with HTML email + dedup) | E014 | E020 |
 | Secret/`_FILE` loader + basic-auth middleware | E008 | E014, E018 |

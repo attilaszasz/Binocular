@@ -83,7 +83,7 @@ The product scope equals the full product brief: a complete detect â†’ compare â
 ### In-Scope Capabilities
 
 - Device inventory and lifecycle management, with each device linked to an extension module that determines its device type, stored current versions, and one-click update confirmation.
-- A pluggable extension-module engine with a strict authoring contract, plus full module lifecycle management (upload, update, delete) through the UI.
+- A pluggable extension-module engine with a strict authoring contract, plus full module lifecycle management (upload, update, delete) through the UI with real-time visual progress reporting during validation and upload.
 - Automated scheduled checking with per-module frequency (user-configurable per device), plus manual on-demand checks (single and bulk) with side-by-side version comparison.
 - Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify. Only one notification is sent per detected version; a follow-up notification is dispatched only when a version newer than the last-notified version appears. Both notification channels can also be initialized and automatically updated from container environment variables.
 - Responsible-scraping enforcement (robots.txt, identifiable User-Agent, rate limiting, backoff) provided centrally by the host.
@@ -111,7 +111,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 |---------------|------------|----------|---------|
 | CAP-001 | Device Inventory & Lifecycle | P1 | Users maintain an inventory of devices each linked to an extension module, with stored versions and one-click update confirmation. |
 | CAP-002 | Extension Module Engine & Authoring Contract | P1 | A strict, documented contract lets modules supply device-specific firmware-checking intelligence in a standardized format. |
-| CAP-003 | Module Lifecycle Management | P1 | Users upload, update, and delete modules through the UI to control which device types are supported. |
+| CAP-003 | Module Lifecycle Management | P1 | Users upload, update, and delete modules through the UI to control which device types are supported, with real-time visual progress reporting during the validation and upload process. |
 | CAP-004 | Automated Scheduled Checking | P1 | The system checks sources unattended on a per-module frequency, user-configurable per device. |
 | CAP-005 | Manual On-Demand Checking | P1 | Users trigger immediate single or bulk checks and compare stored vs. latest versions side by side. |
 | CAP-006 | Update Detection & Comparison | P1 | The system reliably determines whether a newer version exists than the user's recorded version. |
