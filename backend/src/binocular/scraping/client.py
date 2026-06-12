@@ -49,6 +49,10 @@ class ScrapeClient:
         self.robots = RobotsChecker(user_agent=self.user_agent)
         self.limiter = RateLimiter(default_delay=default_delay)
         self._closed = False
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = None
         logger.debug("scrape_client_initialized", user_agent=self.user_agent)
 
     async def get(self, url: str, **kwargs: Any) -> httpx.Response:
@@ -59,6 +63,21 @@ class ScrapeClient:
         if self._closed:
             raise ScrapeError("Client is closed.")
 
+        if self._loop is not None:
+            try:
+                current_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                current_loop = None
+
+            if current_loop is not None and current_loop is not self._loop:
+                fut = asyncio.run_coroutine_threadsafe(
+                    self._get_impl(url, **kwargs), self._loop
+                )
+                return await asyncio.wrap_future(fut)
+
+        return await self._get_impl(url, **kwargs)
+
+    async def _get_impl(self, url: str, **kwargs: Any) -> httpx.Response:
         logger.debug("scrape_client_get", url=url)
         try:
             # Check robots.txt and acquire rate limit unless we are

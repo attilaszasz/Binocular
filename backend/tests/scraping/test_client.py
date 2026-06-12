@@ -96,3 +96,29 @@ async def test_scrape_client_closed() -> None:
 
     with pytest.raises(ScrapeError, match="Client is closed"):
         await client.get("http://example.com/success")
+
+
+@pytest.mark.asyncio
+async def test_scrape_client_cross_event_loop() -> None:
+    """Test that GET requests are correctly routed to the creator loop if called from a different event loop."""
+    client = ScrapeClient()
+    client.client = httpx.AsyncClient(
+        transport=httpx.MockTransport(mock_handler),
+        headers={"User-Agent": client.user_agent},
+    )
+
+    def run_in_thread() -> httpx.Response:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(client.get("http://example.com/success"))
+        finally:
+            loop.close()
+
+    import asyncio
+
+    response = await asyncio.to_thread(run_in_thread)
+    assert response.status_code == 200
+    assert response.text == "Success"
+
+    await client.close()
