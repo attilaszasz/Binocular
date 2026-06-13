@@ -1,7 +1,7 @@
-# 🔭 Binocular
+# <img src="frontend/public/favicon.svg" width="32" height="32" /> Binocular
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker Image Size](https://img.shields.io/docker/image-size/ghcr.io/attilaszasz/binocular/latest?color=blue)](https://github.com/attilaszasz/binocular)
+[![Docker Image Size](https://ghcr-badge.egpl.dev/attilaszasz/binocular/size?color=blue)](https://github.com/attilaszasz/Binocular/pkgs/container/binocular)
 [![Mypy Strict](https://img.shields.io/badge/mypy-strict-green.svg)](https://mypy.readthedocs.io/en/stable/getting_started.html#strict-mode)
 [![TypeScript Strict](https://img.shields.io/badge/TypeScript-strict-blue.svg)](https://www.typescriptlang.org/tsconfig#strict)
 
