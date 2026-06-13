@@ -173,7 +173,7 @@ class SchedulerService:
     async def reschedule_module(self, module_id: int, interval_hours: int) -> None:
         """Reschedule checking interval for a module dynamically."""
         now = datetime.now(UTC)
-        next_run = now + timedelta(hours=interval_hours)
+        next_run = now
 
         # Update DB schedule
         await self._db.execute(
@@ -237,6 +237,16 @@ class SchedulerService:
 
         tasks = [check_service.check_device(device_id) for device_id in device_ids]
         results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for device_id, result in zip(device_ids, results, strict=True):
+            if isinstance(result, Exception):
+                logger.error(
+                    "device_check_failed_in_scheduler",
+                    device_id=device_id,
+                    module_id=module_id,
+                    error=str(result),
+                    exc_info=result,
+                )
 
         logger.info(
             "run_module_check_end", module_id=module_id, results_count=len(results)
