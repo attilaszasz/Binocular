@@ -96,8 +96,6 @@ services:
       - ./data:/app/data
       - ./modules:/app/modules
     environment:
-      # Timezone config
-      - TZ=Europe/Budapest
       # Linuxserver-style permissions matching your host UID/GID
       - PUID=1000
       - PGID=1000
