@@ -163,7 +163,6 @@ async def upload_module(
                             temp_path,
                             loaded_module=load_result.module,
                             run_phase2=True,
-                            test_client=request.app.state.scrape_client,
                         )
                     else:
                         validation_result = validate_module(
