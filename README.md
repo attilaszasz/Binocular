@@ -15,16 +15,17 @@ Designed specifically for homelab operators, self-hosters, and power users who v
 
 ## 📸 Screenshots & Interface
 
-*Below are placeholder sections representing the responsive light/dark UI of the application:*
-
 ### Dashboard & Device Inventory
-> *[Placeholder: Main Dashboard displaying device cards, active firmware versions, and update alerts in dark mode]*
+![Dashboard & Device Inventory](docs/binocular_inventory.png)
 
 ### Module Manager & Validator
-> *[Placeholder: Real-time validation progress updates stream for uploaded custom modules]*
+![Module Manager & Validator](docs/binocular_module_manager.png)
 
 ### Bounded Activity Log
-> *[Placeholder: In-app log displaying rate-limited scrape statuses and Apprise alert completions]*
+![Bounded Activity Log](docs/binocular_logs.png)
+
+### HTML Email Notification
+![HTML Email Notification](docs/binocular_email_notification.png)
 
 ---
 
@@ -38,8 +39,9 @@ flowchart TB
         subgraph Container["Binocular Container"]
             Uvicorn["Uvicorn Web Server<br>(FastAPI Backend + React SPA)"]
             Scheduler["APScheduler<br>(Background Worker)"]
-            Engine["Module Engine<br>(Extension loader)"]
-            Client["Polite HTTP Client<br>(Scraper Client)"]
+            CheckService["Check Service<br>(Core Controller)"]
+            Engine["Module Engine<br>(Loader & Runner)"]
+            Client["Polite HTTP Client<br>(Central Scraper)"]
         end
         Database[("SQLite Database<br>(binocular.db)")]
         ModulesDir["Modules Volume<br>(/app/modules)"]
@@ -47,11 +49,14 @@ flowchart TB
     
     Operator["Operator Browser<br>(LAN)"] --> Uvicorn
     Uvicorn --> Database
-    Uvicorn --> ModulesDir
-    Scheduler --> Engine
+    Uvicorn --> CheckService
+    Scheduler --> CheckService
+    CheckService --> Database
+    CheckService --> Engine
+    Engine --> ModulesDir
     Engine --> Client
     Client -- "polite scraping" --> Vendor["Manufacturer Pages"]
-    Scheduler -- "alerts" --> Apprise["Gotify / SMTP (Email)"]
+    CheckService -- "alerts" --> Apprise["Gotify / SMTP (Email)"]
 ```
 
 ### Core Architecture Components
