@@ -122,3 +122,44 @@ async def test_check_bulk_empty(client: AsyncClient) -> None:
     resp = await client.post("/api/v1/checks/bulk")
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+@pytest.mark.asyncio
+async def test_search_version_success(client: AsyncClient) -> None:
+    with patch(
+        "binocular.routes.checks.CheckService.search_version",
+        new_callable=AsyncMock,
+        return_value="3.0.0",
+    ) as mock_search:
+        resp = await client.post(
+            "/api/v1/checks/search-version",
+            json={"module_id": 1, "model": "ILCE-7M4"},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"version": "3.0.0"}
+        mock_search.assert_called_once_with(1, "ILCE-7M4")
+
+
+@pytest.mark.asyncio
+async def test_search_version_empty_model(client: AsyncClient) -> None:
+    resp = await client.post(
+        "/api/v1/checks/search-version",
+        json={"module_id": 1, "model": "   "},
+    )
+    assert resp.status_code == 400
+    assert "Model name cannot be empty" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_search_version_failure(client: AsyncClient) -> None:
+    with patch(
+        "binocular.routes.checks.CheckService.search_version",
+        new_callable=AsyncMock,
+        side_effect=ValueError("Module 1 has no file_path configured"),
+    ):
+        resp = await client.post(
+            "/api/v1/checks/search-version",
+            json={"module_id": 1, "model": "ILCE-7M4"},
+        )
+        assert resp.status_code == 400
+        assert "Module 1 has no file_path configured" in resp.json()["detail"]

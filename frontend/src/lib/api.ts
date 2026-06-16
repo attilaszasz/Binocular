@@ -158,6 +158,11 @@ export const checksApi = {
     apiFetch<DeviceCheckResult>(`/checks/device/${id}`, { method: "POST" }),
   checkBulk: () =>
     apiFetch<DeviceCheckResult[]>("/checks/bulk", { method: "POST" }),
+  searchVersion: (moduleId: number, model: string) =>
+    apiFetch<{ version: string }>("/checks/search-version", {
+      method: "POST",
+      body: JSON.stringify({ module_id: moduleId, model }),
+    }),
 };
 
 

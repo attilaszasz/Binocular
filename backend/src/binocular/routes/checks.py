@@ -27,6 +27,19 @@ class DeviceCheckResultResponse(BaseModel):
     error_message: str | None = None
 
 
+class SearchVersionRequest(BaseModel):
+    """Request model for ad-hoc version search."""
+
+    module_id: int
+    model: str
+
+
+class SearchVersionResponse(BaseModel):
+    """Response model for ad-hoc version search."""
+
+    version: str
+
+
 def _check_service(db: DBDep, request: Request) -> CheckService:
     settings = request.app.state.settings
     return CheckService(
@@ -36,6 +49,25 @@ def _check_service(db: DBDep, request: Request) -> CheckService:
         runner_timeout=settings.module_timeout,
         health_threshold=settings.module_health_threshold,
     )
+
+
+@router.post("/checks/search-version", response_model=SearchVersionResponse)
+async def search_version(
+    body: SearchVersionRequest,
+    db: DBDep,
+    request: Request,
+) -> SearchVersionResponse:
+    """Perform a version search using the selected module for the set Model."""
+    if not body.model.strip():
+        raise HTTPException(status_code=400, detail="Model name cannot be empty")
+    service = _check_service(db, request)
+    try:
+        version = await service.search_version(body.module_id, body.model)
+        return SearchVersionResponse(version=version)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {exc}") from exc
 
 
 @router.post("/checks/device/{device_id}", response_model=DeviceCheckResultResponse)

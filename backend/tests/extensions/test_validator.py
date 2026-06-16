@@ -146,9 +146,7 @@ class TestRuntimeValidator:
         assert any(c.name == "execution" and c.passed for c in result.checks)
 
     @pytest.mark.asyncio
-    async def test_raising_compliant_val_error_passes(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_raising_compliant_val_error_passes(self, tmp_path: Path) -> None:
         code = (
             'MODULE_VERSION = "1.0.0"\n'
             'SUPPORTED_DEVICE_TYPE = "camera"\n'

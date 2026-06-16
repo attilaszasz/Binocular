@@ -96,6 +96,46 @@ class CheckService:
                                 )
         return result
 
+    async def search_version(self, module_id: int, model: str) -> str:
+        """Perform a stateless version search for a model using a module.
+
+        Returns:
+            The detected firmware version string.
+        """
+        module_repo = ModuleRepository(self._db)
+        module_row = await module_repo.get_by_id(module_id)
+        if module_row is None:
+            raise ValueError(f"Module {module_id} not found")
+
+        module_info = dict(module_row)
+        file_path = module_info.get("file_path", "")
+        if not file_path:
+            raise ValueError(f"Module {module_id} has no file_path configured")
+
+        loader = ModuleLoader(self._modules_dir)
+        load_result = loader.load(Path(file_path))
+        if not load_result.success or load_result.module is None:
+            raise ValueError(f"Failed to load module file: {load_result.errors}")
+
+        runner = ModuleRunner(timeout=self._runner_timeout)
+        run_result = await runner.run(
+            module=load_result.module,
+            url="",
+            model=model,
+            http_client=self._scrape_client,
+        )
+
+        if not run_result.success or run_result.result is None:
+            raise ValueError(
+                run_result.error or "Module runner failed without error message"
+            )
+
+        latest_version = run_result.result.latest_version
+        if not latest_version:
+            raise ValueError("No version returned by the module for this model")
+
+        return latest_version
+
     async def _check_device_inner(self, device_id: int) -> DeviceCheckResult:
         """Run update detection check for a device by its ID.
 

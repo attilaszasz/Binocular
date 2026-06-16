@@ -96,7 +96,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Depends on E006, E007, E012. Adds the ability to search/detect the current version of a model using a module during device creation.
 
-- [ ] E023 [P1] [PRODUCT] On-Demand Version Search during Device Creation — Add check version search button, backend API, and integration [→ Details](plan/E023.md)
+- [X] E023 [P1] [PRODUCT] On-Demand Version Search during Device Creation — Add check version search button, backend API, and integration [→ Details](plan/E023.md)
 
 
 ## Dependency Diagram

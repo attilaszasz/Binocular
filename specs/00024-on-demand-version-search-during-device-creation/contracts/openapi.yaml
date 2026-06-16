@@ -1,0 +1,61 @@
+openapi: "3.1.0"
+info:
+  title: Binocular On-Demand Version Search API
+  version: "1.0.0"
+  description: On-demand firmware version search API using modules
+
+paths:
+  /api/v1/checks/search-version:
+    post:
+      operationId: searchVersion
+      summary: Perform a firmware version search for a model using a module
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchVersionRequest"
+      responses:
+        "200":
+          description: Search successful and version returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchVersionResponse"
+        "400":
+          description: Search failed or module execution error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    SearchVersionRequest:
+      type: object
+      required:
+        - module_id
+        - model
+      properties:
+        module_id:
+          type: integer
+          description: The ID of the module to run the search
+        model:
+          type: string
+          description: The name/identifier of the model to search for
+    SearchVersionResponse:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+          description: The detected firmware version
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Detailed error message

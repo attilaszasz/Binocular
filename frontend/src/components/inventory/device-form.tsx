@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useModules } from "@/hooks/use-modules";
-import type { Device, DeviceCreate, DeviceUpdate } from "@/lib/api";
+import { checksApi, type Device, type DeviceCreate, type DeviceUpdate } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 interface DeviceFormProps {
   /** When provided, the form is in edit mode. */
@@ -40,6 +41,26 @@ export function DeviceForm({
     device?.current_version ?? "",
   );
   const [error, setError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearchVersion = async () => {
+    if (!moduleId || !model.trim()) return;
+    setIsSearching(true);
+    setError(null);
+    try {
+      const result = await checksApi.searchVersion(Number(moduleId), model.trim());
+      if (result.version) {
+        setCurrentVersion(result.version);
+      } else {
+        throw new Error("No version returned by module");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred during version search";
+      setError(message);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -108,22 +129,35 @@ export function DeviceForm({
 
       <div className="space-y-2">
         <Label htmlFor="device-module">Module</Label>
-        <Select
-          value={moduleId}
-          onValueChange={setModuleId}
-          disabled={noModules}
-        >
-          <SelectTrigger id="device-module">
-            <SelectValue placeholder="Select a module" />
-          </SelectTrigger>
-          <SelectContent>
-            {modules?.map((m) => (
-              <SelectItem key={m.id} value={m.id.toString()}>
-                {m.name} ({m.device_type})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Select
+              value={moduleId}
+              onValueChange={setModuleId}
+              disabled={noModules}
+            >
+              <SelectTrigger id="device-module">
+                <SelectValue placeholder="Select a module" />
+              </SelectTrigger>
+              <SelectContent>
+                {modules?.map((m) => (
+                  <SelectItem key={m.id} value={m.id.toString()}>
+                    {m.name} ({m.device_type})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!moduleId || !model.trim() || isSearching}
+            onClick={handleSearchVersion}
+          >
+            {isSearching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSearching ? "Searching..." : "Search Version"}
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">

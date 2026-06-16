@@ -108,8 +108,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
             page_number += 1
 
         raise ValueError(
-            "product_not_found: Godox Flashes product "
-            f"was not found: {model}"
+            f"product_not_found: Godox Flashes product was not found: {model}"
         )
     finally:
         loop.close()
