@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-06-10 | **Status**: Draft
-**Total Epics**: 22 (P1: 15 · P2: 7) | **Waves**: 11
+**Total Epics**: 23 (P1: 15 · P2: 8) | **Waves**: 13
 
 Informed by the prototype retrospective at `specs/prototype-retrospective.md`. Key consolidation decisions: device type is module-derived from the start (no standalone DeviceType entity); notification deduplication and HTML email are part of the initial notification epic; shadcn/ui is the component library from day one; PUID/PGID entrypoint is part of the foundation container epic; collapsible navigation is part of the SPA shell.
 
@@ -98,6 +98,12 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 - [X] E023 [P1] [PRODUCT] On-Demand Version Search during Device Creation — Add check version search button, backend API, and integration [→ Details](plan/E023.md)
 
+### Wave 13 — UI Refinements
+
+> Refines UI components based on real-world multi-device module usage.
+
+- [ ] E024 [P2] [PRODUCT] [P] {PRD:CAP-001} Compact Device Inventory Layout — Remove device type badge and make card elements more compact [→ Details](plan/E024.md)
+
 
 ## Dependency Diagram
 
@@ -138,6 +144,8 @@ graph LR
 
     M6 --> M12["Version Search<br>on Creation"]
     M12 -->|"E023"| M12
+    M12 --> M13["UI Refinements"]
+    M13 -->|"E024"| M13
 ```
 
 ## Execution Wave Summary
@@ -156,6 +164,7 @@ graph LR
 | 10 | E021 | N/A (single) | Environment-based settings seeding. |
 | 11 | E022 | N/A (single) | Module upload progress feedback. |
 | 12 | E023 | N/A (single) | On-demand version search during device creation. |
+| 13 | E024 | N/A (single) | Compact inventory card layout and type badge removal. |
 
 
 ## Parallel Execution Guidance
@@ -186,7 +195,7 @@ graph LR
 
 | Capability | Priority | Epic(s) |
 |------------|----------|---------|
-| CAP-001 Device Inventory & Lifecycle | P1 | E006, E023 |
+| CAP-001 Device Inventory & Lifecycle | P1 | E006, E023, E024 |
 | CAP-002 Extension Module Engine & Authoring Contract | P1 | E007 |
 | CAP-003 Module Lifecycle Management | P1 | E009, E019, E022 |
 | CAP-004 Automated Scheduled Checking | P1 | E013 |

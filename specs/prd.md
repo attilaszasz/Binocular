@@ -205,7 +205,7 @@ Context that downstream architecture design or governance work must preserve.
 - **Scope boundaries to respect**: No marketplace/registry, no multi-user, no telemetry, no automatic firmware flashing; local module upload/import/export only; modules run as an explicit user-vetted trust boundary (not sandboxed).
 - **Critical constraints**: Self-contained storage (no external DB), single-container/single-volume/zero-config/non-root operability with PUID/PGID, primary Docker distribution with host-runtime fallback, polite-scraping defaults are mandatory.
 - **Open decisions needing technical input**: Mechanism for detecting and alerting on consistently failing official modules (CAP-014).
-- **Prototype learnings to incorporate**: Device type derived from linked module (not standalone entity); start with shadcn/ui component library from the outset; notification deduplication is essential; HTML email notifications are required; PUID/PGID entrypoint needed for homelab volume permissions; schema should be consolidated from the start to avoid fix migrations.
+- **Prototype learnings to incorporate**: Device type derived from linked module (not standalone entity); start with shadcn/ui component library from the outset; notification deduplication is essential; HTML email notifications are required; PUID/PGID entrypoint needed for homelab volume permissions; schema should be consolidated from the start to avoid fix migrations. On the Inventory page, device cards must have a compact layout and exclude the derived device_type badge to prevent confusing display when a module supports multiple device types.
 
 ## Project Context Baseline Updates
 
