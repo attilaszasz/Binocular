@@ -102,7 +102,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Refines UI components based on real-world multi-device module usage.
 
-- [ ] E024 [P2] [PRODUCT] [P] {PRD:CAP-001} Compact Device Inventory Layout — Remove device type badge and make card elements more compact [→ Details](plan/E024.md)
+- [X] E024 [P2] [PRODUCT] [P] {PRD:CAP-001} Compact Device Inventory Layout — Remove device type badge and make card elements more compact [→ Details](plan/E024.md)
 
 
 ## Dependency Diagram
