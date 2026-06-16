@@ -260,3 +260,4 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Email notifications render as responsive HTML via Jinja2 templates with the application light color scheme.
 - Notification deduplication tracks `last_notified_version` per device to suppress duplicate alerts.
 - Configuration settings for basic authentication (mapped from `BINOCULAR_AUTH_ENABLED`) and notification channels (SMTP and Gotify details/credentials) can be defined via environment variables. If present, they are automatically seeded and synced into the SQLite database at startup.
+- The backend provides an on-demand version search endpoint `/api/v1/checks/search-version` that executes the module runner to return the latest version for a given module and model name without persisting state or triggering notifications.

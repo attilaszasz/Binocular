@@ -92,6 +92,12 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 - [X] E022 [P1] [PRODUCT] [P] {PRD:CAP-003}{SAD:ADR-0011} Module Upload Progress Feedback — Implement streaming validation progress in the frontend and backend [→ Details](plan/E022.md)
 
+### Wave 12 — Version Search on Creation
+
+> Depends on E006, E007, E012. Adds the ability to search/detect the current version of a model using a module during device creation.
+
+- [ ] E023 [P1] [PRODUCT] On-Demand Version Search during Device Creation — Add check version search button, backend API, and integration [→ Details](plan/E023.md)
+
 
 ## Dependency Diagram
 
@@ -129,6 +135,9 @@ graph LR
 
     M6 --> M11["Module upload<br>progress feedback"]
     M11 -->|"E022"| M11
+
+    M6 --> M12["Version Search<br>on Creation"]
+    M12 -->|"E023"| M12
 ```
 
 ## Execution Wave Summary
@@ -146,6 +155,7 @@ graph LR
 | 9 | E020 | N/A (single) | Official module health monitoring. |
 | 10 | E021 | N/A (single) | Environment-based settings seeding. |
 | 11 | E022 | N/A (single) | Module upload progress feedback. |
+| 12 | E023 | N/A (single) | On-demand version search during device creation. |
 
 
 ## Parallel Execution Guidance
@@ -176,7 +186,7 @@ graph LR
 
 | Capability | Priority | Epic(s) |
 |------------|----------|---------|
-| CAP-001 Device Inventory & Lifecycle | P1 | E006 |
+| CAP-001 Device Inventory & Lifecycle | P1 | E006, E023 |
 | CAP-002 Extension Module Engine & Authoring Contract | P1 | E007 |
 | CAP-003 Module Lifecycle Management | P1 | E009, E019, E022 |
 | CAP-004 Automated Scheduled Checking | P1 | E013 |
@@ -243,6 +253,7 @@ graph LR
 | `/api/v1/devices` (module-linked) | E006 | E012 |
 | `/api/v1/modules` | E009 | E006, E013, E019, E022 |
 | `/api/v1/checks` | E012 | UI |
+| `/api/v1/checks/search-version` | E023 | UI |
 | `/api/v1/notifications` | E014 | UI config |
 | `/api/v1/activity` | E015 | UI |
 | `/api/v1/schedules` | E013 | UI |
