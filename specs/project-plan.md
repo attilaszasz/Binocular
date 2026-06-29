@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-06-10 | **Status**: Draft
-**Total Epics**: 23 (P1: 15 · P2: 8) | **Waves**: 13
+**Total Epics**: 24 (P1: 15 · P2: 9) | **Waves**: 14
 
 Informed by the prototype retrospective at `specs/prototype-retrospective.md`. Key consolidation decisions: device type is module-derived from the start (no standalone DeviceType entity); notification deduplication and HTML email are part of the initial notification epic; shadcn/ui is the component library from day one; PUID/PGID entrypoint is part of the foundation container epic; collapsible navigation is part of the SPA shell.
 
@@ -104,6 +104,12 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 - [X] E024 [P2] [PRODUCT] [P] {PRD:CAP-001} Compact Device Inventory Layout — Remove device type badge and make card elements more compact [→ Details](plan/E024.md)
 
+### Wave 14 — Additional Official Viltrox Lenses Module
+
+> Depends on E007 and E011. Adds the Viltrox Lenses official module to the shipped starter set, following the same two-phase module contract as the existing official modules.
+
+- [ ] E025 [P2] [PRODUCT] {PRD:CAP-011}{SAD:ADR-0005} Official Viltrox Lenses Module — Ship a viltrox_lenses official module (SUPPORTED_DEVICE_TYPE = "lens") for Viltrox lens firmware pages, with fixture tests [→ Details](plan/E025.md)
+
 
 ## Dependency Diagram
 
@@ -146,6 +152,9 @@ graph LR
     M12 -->|"E023"| M12
     M12 --> M13["UI Refinements"]
     M13 -->|"E024"| M13
+
+    M6 --> M14["Viltrox Lenses<br>module"]
+    M14 -->|"E025"| M14
 ```
 
 ## Execution Wave Summary
@@ -165,6 +174,7 @@ graph LR
 | 11 | E022 | N/A (single) | Module upload progress feedback. |
 | 12 | E023 | N/A (single) | On-demand version search during device creation. |
 | 13 | E024 | N/A (single) | Compact inventory card layout and type badge removal. |
+| 14 | E025 | N/A (single) | Viltrox Lenses official module (Shopify-hosted firmware pages, two-step index/lens page flow). |
 
 
 ## Parallel Execution Guidance
@@ -205,7 +215,7 @@ graph LR
 | CAP-008 Responsible Scraping Enforcement | P1 | E005 |
 | CAP-009 Self-Hosted Operability | P1 | E001, E008, E021 |
 | CAP-010 Activity Logging & Visibility | P2 | E015 |
-| CAP-011 Official Starter Modules | P2 | E011, E016 |
+| CAP-011 Official Starter Modules | P2 | E011, E016, E025 |
 | CAP-012 Responsive UI & Dark Mode | P2 | E004 |
 | CAP-013 Module Authoring Guidance & AI-Assisted Dev Kit | P2 | E019 |
 | CAP-014 Official Module Health Monitoring | P2 | E020 |
@@ -218,7 +228,7 @@ graph LR
 | ADR-0002 Python 3.13 + FastAPI backend | accepted | E001 |
 | ADR-0003 React/Vite/Tailwind SPA with shadcn/ui | accepted | E004 |
 | ADR-0004 SQLite + aiosqlite + raw SQL | accepted | E002 |
-| ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E007, E016 |
+| ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E007, E016, E025 |
 | ADR-0006 Centralized responsible-scraping client | accepted | E005 |
 | ADR-0007 APScheduler + Apprise | accepted | E013 (scheduling), E014 (notifications) |
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E001, E008 |
@@ -248,7 +258,7 @@ graph LR
 |--------|---------------|-------------|
 | Device (module_id FK) | E006 | E010, E012, E014 |
 | Device (last_notified_version) | E014 | E010, E014 |
-| Module, ModuleValidationResult | E007 | E009, E010, E011, E016, E019, E022 |
+| Module, ModuleValidationResult | E007 | E009, E010, E011, E016, E019, E022, E025 |
 | CheckResult / detection event | E010 | E012, E013, E014, E015 |
 | NotificationChannel | E014 | E014 |
 | ActivityLogEntry | E015 | E015 |
@@ -274,8 +284,8 @@ graph LR
 |--------|---------------|-------------|
 | App factory + router aggregator, structlog config | E001 | All |
 | DB connection, migration runner, repository base | E002 | E006, E007, E009, E010, E013, E014, E015, E018 |
-| ScrapeClient | E005 | E007, E011, E016, E019 |
-| Module engine + authoring contract | E007 | E009, E010, E011, E016, E019, E022 |
+| ScrapeClient | E005 | E007, E011, E016, E019, E025 |
+| Module engine + authoring contract | E007 | E009, E010, E011, E016, E019, E022, E025 |
 | Scheduler service | E013 | E014, E015, E018 |
 | Notifier service (with HTML email + dedup) | E014 | E020 |
 | Secret/`_FILE` loader + basic-auth middleware | E008 | E014, E018 |
