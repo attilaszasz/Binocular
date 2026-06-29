@@ -108,7 +108,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Depends on E007 and E011. Adds the Viltrox Lenses official module to the shipped starter set, following the same two-phase module contract as the existing official modules.
 
-- [ ] E025 [P2] [PRODUCT] {PRD:CAP-011}{SAD:ADR-0005} Official Viltrox Lenses Module — Ship a viltrox_lenses official module (SUPPORTED_DEVICE_TYPE = "lens") for Viltrox lens firmware pages, with fixture tests [→ Details](plan/E025.md)
+- [X] E025 [P2] [PRODUCT] {PRD:CAP-011}{SAD:ADR-0005} Official Viltrox Lenses Module — Ship a viltrox_lenses official module (SUPPORTED_DEVICE_TYPE = "lens") for Viltrox lens firmware pages, with fixture tests [→ Details](plan/E025.md)
 
 
 ## Dependency Diagram
