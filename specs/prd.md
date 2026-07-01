@@ -88,7 +88,7 @@ The product scope equals the full product brief: a complete detect → compare �
 - Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify. Only one notification is sent per detected version; a follow-up notification is dispatched only when a version newer than the last-notified version appears. Both notification channels can also be initialized and automatically updated from container environment variables.
 - Responsible-scraping enforcement (robots.txt, identifiable User-Agent, rate limiting, backoff) provided centrally by the host.
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
-- Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, Godox Flashes, and Viltrox Lenses that are automatically seeded and registered in the database on startup as working examples and templates.
+- Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, Godox Flashes, Viltrox Lenses, and Nikon Z-Series that are automatically seeded and registered in the database on startup as working examples and templates.
 - Self-hosted operability: Docker distribution, single data volume, zero-config startup, non-root execution, configurable container UID/GID (PUID/PGID), responsive UI with dark mode and collapsible navigation.
 - Local module sharing enablement: an authoring contract and import/export, plus authoring guidance for module creators — including a downloadable AI Module Kit and AI-friendly validation error output for assisted module creation.
 - Official module health monitoring: in-app notification when a shipped official module consistently fails scraping, signaling the need for a project update.
@@ -119,7 +119,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-008 | Responsible Scraping Enforcement | P1 | All outbound checks honor robots.txt, identifiable User-Agent, rate limits, and backoff by default. |
 | CAP-009 | Self-Hosted Operability | P1 | Single-container, single-volume, zero-config, non-root deployment with PUID/PGID support that survives restarts and upgrades with no data loss. Settings, authentication, and notification channels can be configured or updated via container environment variables. |
 | CAP-010 | Activity Logging & Visibility | P2 | All check activity and errors are recorded in a size-bounded, in-UI viewable log. |
-| CAP-011 | Official Starter Modules | P2 | Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, Godox Flashes, and Viltrox Lenses modules are automatically registered and seeded in the database on startup, serving as immediate value and templates. |
+| CAP-011 | Official Starter Modules | P2 | Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, Godox Flashes, Viltrox Lenses, and Nikon Z-Series modules are automatically registered and seeded in the database on startup, serving as immediate value and templates. |
 | CAP-012 | Responsive UI & Dark Mode | P2 | The interface is fully usable on mobile and desktop with first-class dark mode and collapsible navigation with version display. |
 | CAP-013 | Module Authoring Guidance & AI-Assisted Dev Kit | P2 | Authoring docs, a downloadable AI Module Kit (prompt instructions, contract reference, templates, examples), an in-UI "Create a Module" guidance section, and AI-friendly validation error copy-paste empower users — especially those working with AI coding assistants — to create and iterate on valid modules with zero prior codebase knowledge. |
 | CAP-014 | Official Module Health Monitoring | P2 | When a shipped official module consistently fails scraping, an in-app notification alerts the operator to check for a project update with a fixed module. |
@@ -157,7 +157,7 @@ Success is defined by **reliability and correctness**, validated before release 
 
 ## Dependencies
 
-- Manufacturer firmware pages' structure and availability (Sony Alpha, Panasonic Lumix, Godox Flashes, Viltrox, and any user-added sources).
+- Manufacturer firmware pages' structure and availability (Sony Alpha, Panasonic Lumix, Godox Flashes, Viltrox, Nikon Z-Series, and any user-added sources).
 - An SMTP server and/or a Gotify instance for notification delivery.
 - A Docker/OCI-compatible runtime and a persistent volume for data and modules.
 - Network egress from the trusted LAN to manufacturer sites.
@@ -180,7 +180,7 @@ Success is defined by **reliability and correctness**, validated before release 
 
 Validation is correctness-first and pre-release, since the product collects no field telemetry:
 
-- **Fixture-based correctness**: Captured real-page snapshots for the official Sony, Panasonic, Godox, and Viltrox modules verify that detected latest versions match the actual published versions, with regression coverage when sources change.
+- **Fixture-based correctness**: Captured real-page snapshots for the official Sony, Panasonic, Godox, Viltrox, and Nikon modules verify that detected latest versions match the actual published versions, with regression coverage when sources change.
 - **End-to-end alert-path smoke test**: Exercise the full detect → compare → notify loop for both notification channels (Email/SMTP and Gotify).
 - **Operability smoke test**: Verify zero-config startup, single-volume persistence, non-root execution, and no data loss across restarts and upgrades.
 - **Responsible-scraping verification**: Confirm robots.txt respect, identifiable User-Agent, rate limiting, and backoff behavior before release.
