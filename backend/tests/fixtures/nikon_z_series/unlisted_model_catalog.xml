@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<categoryList>
+  <category layer="main">
+    <name>Mirrorless Cameras</name>
+    <categoryList>
+      <category layer="sub">
+        <name>Z Series</name>
+        <product name="Z 30" href="/en/products/603/Z_30.html"/>
+        <product name="Z 5" href="/en/products/401/Z_5.html"/>
+        <product name="Z 50" href="/en/products/348/Z_50.html"/>
+        <product name="Z 6" href="/en/products/319/Z_6.html"/>
+      </category>
+    </categoryList>
+  </category>
+</categoryList>

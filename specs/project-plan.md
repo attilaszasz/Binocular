@@ -114,7 +114,7 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Depends on E007 and E011. Adds the Nikon Z-Series official camera module to the shipped starter set, following the same authoring contract as the existing official modules.
 
-- [ ] E026 [P2] [PRODUCT] {PRD:CAP-011}{SAD:ADR-0005} Official Nikon Z-Series Module — Ship a nikon_z_series official module (SUPPORTED_DEVICE_TYPE = "camera") for the Nikon Download Center Z-Series firmware pages, with fixture tests [→ Details](plan/E026.md)
+- [X] E026 [P2] [PRODUCT] {PRD:CAP-011}{SAD:ADR-0005} Official Nikon Z-Series Module — Ship a nikon_z_series official module (SUPPORTED_DEVICE_TYPE = "camera") for the Nikon Download Center Z-Series firmware pages, with fixture tests [→ Details](plan/E026.md)
 
 
 ## Dependency Diagram

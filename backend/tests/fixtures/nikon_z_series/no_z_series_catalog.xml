@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<categoryList>
+  <category layer="main">
+    <name>Mirrorless Cameras</name>
+    <categoryList>
+      <category layer="sub">
+        <name>D Series</name>
+        <product name="Nope" href="/en/products/999/Z_Something.html"/>
+      </category>
+    </categoryList>
+  </category>
+  <category layer="main">
+    <name>Digital SLR Cameras</name>
+    <categoryList>
+      <category layer="sub">
+        <name>D Series</name>
+        <product name="D6" href="/en/products/321/D_6.html"/>
+      </category>
+    </categoryList>
+  </category>
+</categoryList>
