@@ -1,43 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<categoryList>
-  <category layer="main">
-    <name>Mirrorless Cameras</name>
-    <categoryList>
-      <category layer="sub">
-        <name>Z Series</name>
-        <product name="Z 30" href="/en/products/603/Z_30.html"/>
-        <product name="Z 5" href="/en/products/401/Z_5.html"/>
-        <product name="Z 50" href="/en/products/348/Z_50.html"/>
-        <product name="Z 6" href="/en/products/319/Z_6.html"/>
-        <product name="Z 6II" href="/en/products/611/Z_6II.html"/>
-        <product name="Z 7" href="/en/products/321/Z_7.html"/>
-        <product name="Z 7II" href="/en/products/623/Z_7II.html"/>
-        <product name="Z 8" href="/en/products/657/Z_8.html"/>
-        <product name="Z 9" href="/en/products/534/Z_9.html"/>
-        <product name="Z f" href="/en/products/619/Z_f.html"/>
-        <product name="Z fc" href="/en/products/404/Z_fc.html"/>
-        <product name="Z50II" href="/en/products/719/Z_50II.html"/>
-        <product name="Z5II" href="/en/products/721/Z_5II.html"/>
-        <product name="Z6III" href="/en/products/722/Z_6III.html"/>
-      </category>
-    </categoryList>
+<products>
+  <params>
+    <imageDirectory>/image/view/</imageDirectory>
+  </params>
+  <archive name="Archive" href="/en/archive.html" />
+  <category layer="main" name="Mirrorless Cameras" queryKey="Mirrorless Cameras" image="67e38d61-6e7c-4ec5-8777-09a70a804e07.png">
+    <category layer="sub" name="Z Series" queryKey="Z Series" image="5b9a0974-d3a8-4bd0-ba74-1c080a804e06.png">
+      <product name="Z 30" href="/en/products/603/Z_30.html" rss="/en/rss/603.xml" prefix=""/>
+      <product name="Z 5" href="/en/products/552/Z_5.html" rss="/en/rss/552.xml" prefix=""/>
+      <product name="Z 50" href="/en/products/526/Z_50.html" rss="/en/rss/526.xml" prefix=""/>
+      <product name="Z 6" href="/en/products/493/Z_6.html" rss="/en/rss/493.xml" prefix=""/>
+      <product name="Z 6II" href="/en/products/556/Z_6II.html" rss="/en/rss/556.xml" prefix=""/>
+      <product name="Z 7" href="/en/products/492/Z_7.html" rss="/en/rss/492.xml" prefix=""/>
+      <product name="Z 7II" href="/en/products/558/Z_7II.html" rss="/en/rss/558.xml" prefix=""/>
+      <product name="Z 8" href="/en/products/616/Z_8.html" rss="/en/rss/616.xml" prefix=""/>
+      <product name="Z 9" href="/en/products/589/Z_9.html" rss="/en/rss/589.xml" prefix=""/>
+      <product name="Z f" href="/en/products/624/Z_f.html" rss="/en/rss/624.xml" prefix=""/>
+      <product name="Z fc" href="/en/products/574/Z_fc.html" rss="/en/rss/574.xml" prefix=""/>
+      <product name="Z50II" href="/en/products/637/Z50II.html" rss="/en/rss/637.xml" prefix=""/>
+      <product name="Z5II" href="/en/products/648/Z5II.html" rss="/en/rss/648.xml" prefix=""/>
+      <product name="Z6III" href="/en/products/629/Z6III.html" rss="/en/rss/629.xml" prefix=""/>
+    </category>
   </category>
-  <category layer="main">
-    <name>Digital SLR Cameras</name>
-    <categoryList>
-      <category layer="sub">
-        <name>D Series</name>
-        <product name="D6" href="/en/products/321/D_6.html"/>
-      </category>
-    </categoryList>
+  <category layer="main" name="Digital SLR Cameras" queryKey="Digital SLR Cameras" image="5bab33d6.png">
+    <category layer="sub" name="D Series" queryKey="D Series" image="5b9a09.png">
+      <product name="D6" href="/en/products/545/D6.html" rss="/en/rss/545.xml" prefix=""/>
+    </category>
   </category>
-  <category layer="main">
-    <name>Lenses</name>
-    <categoryList>
-      <category layer="sub">
-        <name>Z Mount Lenses</name>
-        <product name="NIKKOR Z 50mm f/1.2 S" href="/en/products/456/NIKKOR_Z_50mm_f_12_S.html"/>
-      </category>
-    </categoryList>
+  <category layer="main" name="Speedlights" queryKey="Speedlights" image="545c80d1.png">
+    <product name="SB-5000" href="/en/products/322/SB-5000.html" rss="/en/rss/322.xml" prefix=""/>
   </category>
-</categoryList>
+</products>

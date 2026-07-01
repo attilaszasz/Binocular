@@ -121,16 +121,27 @@ def _select_z_series_products(catalog_xml: str) -> list[tuple[str, str]]:
 def _find_category(
     parent: ET.Element, layer: str, expected_name: str
 ) -> ET.Element | None:
-    """Return the first ``<category>`` descendant with ``layer`` and ``<name>``."""
+    """Return the first ``<category>`` descendant with ``layer`` and matching name.
+
+    The name may appear as either an attribute (``name="..."`` — the live
+    Nikon Download Center format) or a child element (``<name>...</name>`` —
+    a fixture format used in tests).  The ``queryKey`` attribute on the live
+    site is a secondary name match.
+    """
     expected = expected_name.upper()
     for category in parent.iter("category"):
         if category.get("layer") != layer:
             continue
+        # Production (attribute) form — name as a ``<category>`` attribute.
+        for attr in ("name", "queryKey"):
+            if attr_val := (category.get(attr) or "").strip().upper():
+                if attr_val == expected:
+                    return category
+        # Fixture (child-element) form — ``<category><name>...</name></category>``.
         name_elem = category.find("name")
-        if name_elem is None or not name_elem.text:
-            continue
-        if name_elem.text.strip().upper() == expected:
-            return category
+        if name_elem is not None and name_elem.text:
+            if name_elem.text.strip().upper() == expected:
+                return category
     return None
 
 
