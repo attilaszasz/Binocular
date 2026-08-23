@@ -53,7 +53,7 @@ You will receive:
 - **CI Quality Gate Verification**: Always verify that the CI quality gates pass by executing:
   - Backend (in `backend/` using `uv`): `uv run ruff check .`, `uv run mypy .`, `uv run pytest --cov=binocular --cov-report=term-missing`, `uv run pip-audit`.
   - Frontend (in `frontend/` if `frontend/package.json` exists): `npm run lint`, `npm run typecheck`, `npm test -- --run`.
-  - Docker Image Build (if `Dockerfile` exists at root): `docker build -t binocular:qc-check -f Dockerfile .`.
+  - Docker Image Build (if `Dockerfile` exists at root): `docker build --load -t binocular:qc-check -f Dockerfile .`.
 </rules>
 
 <workflow>
@@ -90,7 +90,7 @@ You will receive:
    c. **Type Checking** (execute `uv run mypy .` for backend, and `npm run typecheck` for frontend if it exists; compilation or strict type errors = ERROR, blocks tests)
    d. **Security Scanning** (execute `uv run pip-audit` for backend)
    e. **Unit & Integration Tests** (execute `uv run pytest --cov=binocular --cov-report=term-missing` for backend, and `npm test -- --run` for frontend if it exists)
-   f. **Docker Build Check** (if `Dockerfile` exists at repo root, execute `docker build -t binocular:qc-check -f Dockerfile .` to verify that image build passes; if docker is not installed or running, mark check as SKIPPED and escalate to WARNING, do not fail overall QC)
+   f. **Docker Build Check** (if `Dockerfile` exists at repo root, execute `docker build --load -t binocular:qc-check -f Dockerfile .` to verify that image build passes; if docker is not installed or running, mark check as SKIPPED and escalate to WARNING, do not fail overall QC)
    - Missing tool or command failure (other than missing Docker daemon/tool) → mark the check failed or prompt/install/skip per provisioning rules.
 
 3. **Collect Coverage** — append coverage flags when running tests:

@@ -41,6 +41,11 @@ RUN uv sync --frozen --no-dev
 
 FROM python:3.13-slim
 
+# Apply available Debian security updates without retaining package metadata.
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/*
+
 LABEL maintainer="Binocular" \
       description="Self-hosted firmware-update watcher"
 

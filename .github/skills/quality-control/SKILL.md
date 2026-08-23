@@ -164,7 +164,7 @@ To guarantee that the CI pipeline quality gates pass in GitHub Actions, the loca
    - **Tests**: `npm test -- --run`
 3. **Docker Build Check**:
    - If a `Dockerfile` exists at the root of the repository, verify that the image builds cleanly by executing:
-     `docker build -t binocular:qc-check -f Dockerfile .`
+     `docker build --load -t binocular:qc-check -f Dockerfile .`
    - If Docker is not installed or not running in the local environment, the check must be reported as SKIPPED (escalated to WARNING severity), and MUST NOT fail the overall QC verdict.
 
 Any warning or failure from these command runs (excluding a SKIPPED Docker check due to missing environment) must be captured in the output and will result in a FAILED verdict for the respective category.
