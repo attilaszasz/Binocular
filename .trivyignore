@@ -1,0 +1,4 @@
+# Stale python:3.13-slim SBOM entries. Neither package exists in the base
+# filesystem; the application venv contains fixed msgpack 1.2.1.
+GHSA-6v7p-g79w-8964
+CVE-2025-47273
