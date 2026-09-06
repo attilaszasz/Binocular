@@ -14,6 +14,9 @@ jobs:
     name: Scan published image
     runs-on: ubuntu-latest
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
@@ -28,6 +31,7 @@ jobs:
           vuln-type: os,library
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          trivyignores: .trivyignore
           exit-code: "1"
           format: table
           version: latest
