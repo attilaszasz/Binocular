@@ -73,11 +73,27 @@ class ModuleRunner:
                         asyncio.to_thread(func, url, model, scoped_client)
                     )
                     scoped_client.scope.own(worker, cancellable=False)
-                    done, _pending = await asyncio.wait(
-                        {worker}, timeout=self._timeout
-                    )
-                    if not done:
-                        raise TimeoutError
+                    while not worker.done():
+                        deadline_changed = asyncio.create_task(
+                            scoped_client.scope.wait_for_deadline_change()
+                        )
+                        done, _pending = await asyncio.wait(
+                            {worker, deadline_changed},
+                            timeout=scoped_client.scope.remaining,
+                            return_when=asyncio.FIRST_COMPLETED,
+                        )
+                        if worker in done:
+                            deadline_changed.cancel()
+                            await asyncio.gather(
+                                deadline_changed, return_exceptions=True
+                            )
+                            break
+                        if deadline_changed not in done:
+                            deadline_changed.cancel()
+                            await asyncio.gather(
+                                deadline_changed, return_exceptions=True
+                            )
+                            raise TimeoutError
                     raw = worker.result()
             else:
                 # Validator/tests may provide a non-network mock implementing

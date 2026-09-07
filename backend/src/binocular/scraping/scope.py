@@ -50,6 +50,7 @@ class CheckScope:
         self._cleanup_grace = cleanup_grace
         self._trace = trace
         self.credit = 0.0
+        self._deadline_changed = asyncio.Event()
         self._active = True
         self.reason: str | None = None
         self._owned: dict[asyncio.Task[object], bool] = {}
@@ -74,6 +75,14 @@ class CheckScope:
         return self._active
 
     @property
+    def remaining(self) -> float:
+        return max(0.0, self.deadline - float(self._clock()))
+
+    async def wait_for_deadline_change(self) -> None:
+        await self._deadline_changed.wait()
+        self._deadline_changed.clear()
+
+    @property
     def owned_count(self) -> int:
         return len(self._owned)
 
@@ -96,6 +105,7 @@ class CheckScope:
         if eligible_at >= candidate_deadline:
             raise ScopeExpiredError("reservation eligibility reaches check deadline")
         self.credit += amount
+        self._deadline_changed.set()
         self._emit(
             "scope_credit_committed",
             scope_id=self.id,

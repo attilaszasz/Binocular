@@ -123,6 +123,24 @@ class TestModuleRunnerTimeout:
         assert run_result.success is False
         assert run_result.error_type == "timeout"
 
+    async def test_source_delay_credit_extends_runner_deadline(self) -> None:
+        module = ModuleType("source_aware")
+
+        def check_firmware(url: str, model: str, http_client: object) -> dict[str, str]:
+            scope = http_client.scope  # type: ignore[attr-defined]
+            scope.authorize(scope.started_at + 0.08, scope.started_at)
+            threading.Event().wait(0.04)
+            return {"latest_version": "1.0.0"}
+
+        module.check_firmware = check_firmware  # type: ignore[attr-defined]
+        client = ScrapeClient(default_delay=0)
+        result = await ModuleRunner(timeout=0.01).run(module, "", "x", client)
+
+        assert result.success is True
+        assert result.result is not None
+        assert result.result.latest_version == "1.0.0"
+        await client.close()
+
     async def test_surviving_worker_cannot_send_after_timeout(self) -> None:
         entered = threading.Event()
         release = threading.Event()
