@@ -51,6 +51,7 @@ async def test_list_modules(client: AsyncClient) -> None:
     assert data[0]["version"] == "1.0.0"
     assert data[0]["author"] == "Official"
     assert data[0]["status"] == "active"
+    assert data[0]["source_url"] == ""
 
 
 @pytest.mark.asyncio
@@ -58,6 +59,7 @@ async def test_upload_valid_module_ast(client: AsyncClient) -> None:
     valid_code = """
 MODULE_VERSION = "2.3.4"
 SUPPORTED_DEVICE_TYPE = "lens"
+SOURCE_URL = "https://example.com/lenses"
 
 def check_firmware(url, model, http_client):
     return {"latest_version": "1.0.0"}
@@ -87,6 +89,7 @@ def check_firmware(url, model, http_client):
     assert data["device_type"] == "lens"
     assert data["version"] == "2.3.4"
     assert data["status"] == "active"
+    assert data["source_url"] == "https://example.com/lenses"
 
 
 @pytest.mark.asyncio

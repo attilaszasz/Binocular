@@ -11,6 +11,7 @@ import bs4
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "lens"
+SOURCE_URL = "https://viltrox.com/pages/download-center-1"
 
 _VILTROX_INDEX_URL = "https://viltrox.com/pages/download-center-1"
 _VILTROX_NETLOC = "viltrox.com"

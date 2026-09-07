@@ -5,8 +5,8 @@ import { DeviceForm } from "./device-form";
 
 // Mock useModules hook
 const mockModules = [
-  { id: 1, name: "Sony Alpha Module", device_type: "camera" },
-  { id: 2, name: "Panasonic Lumix Module", device_type: "camera" },
+  { id: 1, name: "Sony Alpha Module", device_type: "camera", source_url: "https://example.com/sony" },
+  { id: 2, name: "Panasonic Lumix Module", device_type: "camera", source_url: "" },
 ];
 const mockUseModules = vi.fn().mockReturnValue({
   data: mockModules,
@@ -69,6 +69,61 @@ describe("DeviceForm", () => {
     // Fill model but no module
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "ILCE-7M4" } });
     expect(searchBtn).toBeDisabled();
+  });
+
+  it("renders a source link only for the selected module with a URL", () => {
+    render(
+      <DeviceForm
+        device={{
+          id: 1,
+          name: "My Camera",
+          model: "ILCE-7M4",
+          module_id: 1,
+          module_name: "Sony Alpha Module",
+          device_type: "camera",
+          current_version: "1.0.0",
+          has_update: false,
+          latest_detected_version: null,
+          last_checked: null,
+          last_notified_version: null,
+          created_at: "",
+          updated_at: "",
+        }}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const link = screen.getByRole("link", { name: "View module source page" });
+    expect(link).toHaveAttribute("href", "https://example.com/sony");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noreferrer");
+  });
+
+  it("does not render a source link when the selected module has no URL", () => {
+    render(
+      <DeviceForm
+        device={{
+          id: 2,
+          name: "My Lens",
+          model: "Lumix",
+          module_id: 2,
+          module_name: "Panasonic Lumix Module",
+          device_type: "camera",
+          current_version: "1.0.0",
+          has_update: false,
+          latest_detected_version: null,
+          last_checked: null,
+          last_notified_version: null,
+          created_at: "",
+          updated_at: "",
+        }}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("link", { name: "View module source page" })).not.toBeInTheDocument();
   });
 
   it("enables Search Version button when initial device has model and module", () => {

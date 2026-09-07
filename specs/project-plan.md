@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-06-10 | **Status**: Draft
-**Total Epics**: 29 (P1: 17 · P2: 12) | **Waves**: 17
+**Total Epics**: 30 (P1: 17 · P2: 13) | **Waves**: 18
 
 Informed by the prototype retrospective at `specs/prototype-retrospective.md`. Key consolidation decisions: device type is module-derived from the start (no standalone DeviceType entity); notification deduplication and HTML email are part of the initial notification epic; shadcn/ui is the component library from day one; PUID/PGID entrypoint is part of the foundation container epic; collapsible navigation is part of the SPA shell.
 
@@ -129,6 +129,12 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 - [X] E028 [P2] [PRODUCT] [P] {PRD:CAP-015}{SAD:ADR-0005}{SAD:ADR-0012} Official Canon RF Cameras — exact EOS R catalogue lookup, discovered firmware actions, deduplicated releases, automatic seeding, and visible failures [→ Details](plan/E028.md)
 - [X] E029 [P2] [PRODUCT] [P] {PRD:CAP-015}{SAD:ADR-0005}{SAD:ADR-0012} Official Canon RF Lenses — classified RF/RF-S catalogue lookup, accessory exclusion, deduplicated releases, automatic seeding, and visible failures [→ Details](plan/E029.md)
 
+### Wave 18 — Module Source Link on Add Device
+
+> Depends on E006, E007, E009. Surfaces the module-declared source URL as a clickable link on the Add Device form so users can look up the exact model name a module expects.
+
+- [X] E030 [P2] [PRODUCT] {PRD:CAP-001}{PRD:CAP-002}{SAD:ADR-0013} Add Device Module Source Link — module-declared `SOURCE_URL` constant, persisted `modules.source_url`, and clickable link in the Add Device form [→ Details](plan/E030.md)
+
 
 ## Dependency Diagram
 
@@ -183,6 +189,9 @@ graph LR
 
     M16 --> M17["Canon RF<br>official modules"]
     M17 -->|"E028 · E029"| M17
+
+    M6 --> M18["Module source<br>link on add device"]
+    M18 -->|"E030"| M18
 ```
 
 ## Execution Wave Summary
@@ -206,6 +215,7 @@ graph LR
 | 15 | E026 | N/A (single) | Nikon Z-Series official camera module (Nikon Download Center XML catalog + per-product firmware page, C:Ver. prefix stripping). |
 | 16 | E027 | N/A (single) | Central HTTP client extension for source-declared delays, shared origin pacing, bounded retries/budgets, and cancellation safety. |
 | 17 | E028, E029 | Yes | Independent Canon camera and lens modules using Canon Asia catalogues and distinct captured fixtures; both consume shared Canon-origin pacing. |
+| 18 | E030 | N/A (single) | Module-declared `SOURCE_URL` constant, `modules.source_url` column, and a clickable source link on the Add Device form. |
 
 
 ## Parallel Execution Guidance
@@ -242,8 +252,8 @@ graph LR
 
 | Capability | Priority | Epic(s) |
 |------------|----------|---------|
-| CAP-001 Device Inventory & Lifecycle | P1 | E006, E023, E024 |
-| CAP-002 Extension Module Engine & Authoring Contract | P1 | E007 |
+| CAP-001 Device Inventory & Lifecycle | P1 | E006, E023, E024, E030 |
+| CAP-002 Extension Module Engine & Authoring Contract | P1 | E007, E030 |
 | CAP-003 Module Lifecycle Management | P1 | E009, E019, E022 |
 | CAP-004 Automated Scheduled Checking | P1 | E013 |
 | CAP-005 Manual On-Demand Checking | P1 | E012 |
@@ -274,6 +284,7 @@ graph LR
 | ADR-0010 Environment-Variable Based Configuration and Database Seeding | accepted | E021 |
 | ADR-0011 Real-Time Module Validation and Upload Progress Streaming | accepted | E022 |
 | ADR-0012 Source-aware centralized scraping with shared per-origin pacing and bounded cancellation | accepted | E027, E028, E029 |
+| ADR-0013 Module-Declared Source URL for Device-Creation Lookup | accepted | E030 |
 
 
 ### DOD DDR Coverage
@@ -297,7 +308,7 @@ graph LR
 |--------|---------------|-------------|
 | Device (module_id FK) | E006 | E010, E012, E014 |
 | Device (last_notified_version) | E014 | E010, E014 |
-| Module, ModuleValidationResult | E007 | E009, E010, E011, E016, E019, E022, E025, E026, E028, E029 |
+| Module, ModuleValidationResult | E007 | E009, E010, E011, E016, E019, E022, E025, E026, E028, E029, E030 |
 | CheckResult / detection event | E010 | E012, E013, E014, E015 |
 | NotificationChannel | E014 | E014 |
 | ActivityLogEntry | E015 | E015 |
@@ -309,7 +320,7 @@ graph LR
 |---------|---------------|-------------|
 | `/healthz` | E001 | Container HEALTHCHECK, E003 |
 | `/api/v1/devices` (module-linked) | E006 | E012 |
-| `/api/v1/modules` | E009 | E006, E013, E019, E022 |
+| `/api/v1/modules` | E009 | E006, E013, E019, E022, E030 |
 | `/api/v1/checks` | E012 | UI |
 | `/api/v1/checks/search-version` | E023 | UI |
 | `/api/v1/notifications` | E014 | UI config |

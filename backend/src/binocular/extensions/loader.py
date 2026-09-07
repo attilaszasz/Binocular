@@ -18,6 +18,7 @@ import structlog
 from binocular.extensions.contract import (
     CHECK_FIRMWARE_FUNC,
     MODULE_VERSION_ATTR,
+    SOURCE_URL_ATTR,
     SUPPORTED_DEVICE_TYPE_ATTR,
 )
 
@@ -53,6 +54,7 @@ class LoadResult:
     module_name: str = ""
     device_type: str = ""
     version: str = ""
+    source_url: str = ""
 
 
 class ModuleLoader:
@@ -186,12 +188,14 @@ class ModuleLoader:
 
         version = str(getattr(module, MODULE_VERSION_ATTR, ""))
         device_type = str(getattr(module, SUPPORTED_DEVICE_TYPE_ATTR, ""))
+        source_url = str(getattr(module, SOURCE_URL_ATTR, "") or "")
 
         logger.info(
             "module_loaded",
             name=mod_name,
             device_type=device_type,
             version=version,
+            source_url=source_url,
         )
 
         return LoadResult(
@@ -201,6 +205,7 @@ class ModuleLoader:
             module_name=mod_name,
             device_type=device_type,
             version=version,
+            source_url=source_url,
         )
 
     def load_all(self) -> list[LoadResult]:

@@ -95,6 +95,7 @@ export function DeviceForm({
   };
 
   const noModules = !modulesLoading && (!modules || modules.length === 0);
+  const selectedModule = modules?.find((module) => module.id === Number(moduleId));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -158,6 +159,16 @@ export function DeviceForm({
             {isSearching ? "Searching..." : "Search Version"}
           </Button>
         </div>
+        {selectedModule?.source_url && (
+          <a
+            className="text-sm text-primary underline-offset-4 hover:underline"
+            href={selectedModule.source_url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View module source page
+          </a>
+        )}
       </div>
 
       <div className="space-y-2">

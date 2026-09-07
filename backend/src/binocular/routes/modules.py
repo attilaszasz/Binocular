@@ -236,6 +236,7 @@ async def upload_module(
                 name = load_result.module_name
                 device_type = load_result.device_type
                 version = load_result.version
+                source_url = load_result.source_url
                 author = (
                     getattr(load_result.module, "MODULE_AUTHOR", "")
                     or getattr(load_result.module, "__author__", "")
@@ -257,6 +258,7 @@ async def upload_module(
                         author=author,
                         file_path=str(final_path),
                         status="active",
+                        source_url=source_url,
                     )
                     module_id = existing["id"]
                 else:
@@ -268,6 +270,7 @@ async def upload_module(
                         file_path=str(final_path),
                         is_official=False,
                         status="active",
+                        source_url=source_url,
                     )
 
                 row = await repo.get_by_id(module_id)

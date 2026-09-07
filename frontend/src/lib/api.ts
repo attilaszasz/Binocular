@@ -89,6 +89,7 @@ export interface Module {
   created_at: string;
   consecutive_failures?: number;
   last_success?: string | null;
+  source_url: string;
 }
 
 
@@ -248,7 +249,6 @@ export const activityApi = {
     return apiFetch<ActivityLogListResponse>(`/activity${queryString ? `?${queryString}` : ""}`);
   },
 };
-
 
 
 

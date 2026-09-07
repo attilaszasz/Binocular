@@ -11,6 +11,7 @@ import bs4
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "flash"
+SOURCE_URL = "https://www.godox.com"
 
 _GODOX_BASE_URL = "https://www.godox.com"
 

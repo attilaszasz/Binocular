@@ -10,6 +10,7 @@ from urllib.parse import urljoin, urlparse
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "camera"
+SOURCE_URL = "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index.html"
 
 _PANASONIC_LENSES_URL = (
     "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html"

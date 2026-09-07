@@ -10,6 +10,7 @@ from typing import Any
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "camera"
+SOURCE_URL = "https://alphauniverse.com/firmware/"
 
 _ALPHA_UNIVERSE_FIRMWARE_URL = "https://alphauniverse.com/firmware/"
 _CATALOG_NAMES = ("SONY_CAMERAS", "SONY_LENSES")

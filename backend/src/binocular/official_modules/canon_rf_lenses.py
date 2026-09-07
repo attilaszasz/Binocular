@@ -13,6 +13,7 @@ from bs4.element import Tag
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "lens"
+SOURCE_URL = "https://asia.canon/en/support/models?series=4"
 
 _CATALOG_URLS = (
     "https://asia.canon/en/support/models?series=14",

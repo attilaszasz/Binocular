@@ -11,6 +11,7 @@ from urllib.parse import urljoin
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "camera"
+SOURCE_URL = "https://downloadcenter.nikonimglib.com/en/0/product_data.xml"
 
 _CATALOG_URL = "https://downloadcenter.nikonimglib.com/en/0/product_data.xml"
 _DOWNLOAD_CENTER_BASE = "https://downloadcenter.nikonimglib.com"

@@ -23,7 +23,7 @@ class ModuleRepository(RepositoryBase):
     _SELECT_COLS = (
         "id, name, device_type, version, author,"
         " file_path, is_official, status, created_at,"
-        " consecutive_failures, last_success"
+        " consecutive_failures, last_success, COALESCE(source_url, '') AS source_url"
     )
 
     async def list_all(self) -> list[aiosqlite.Row]:
@@ -51,16 +51,27 @@ class ModuleRepository(RepositoryBase):
         file_path: str = "",
         is_official: bool = False,
         status: str = "active",
+        source_url: str = "",
     ) -> int:
         """Insert a new module and return its ID."""
         sql = """
             INSERT INTO modules
-                (name, device_type, version, author, file_path, is_official, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (name, device_type, version, author, file_path, is_official,
+                 status, source_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
         cursor = await self.execute(
             sql,
-            (name, device_type, version, author, file_path, int(is_official), status),
+            (
+                name,
+                device_type,
+                version,
+                author,
+                file_path,
+                int(is_official),
+                status,
+                source_url,
+            ),
         )
         if cursor.lastrowid is None:  # pragma: no cover
             msg = "INSERT did not return a lastrowid"
@@ -86,6 +97,7 @@ class ModuleRepository(RepositoryBase):
             "status",
             "consecutive_failures",
             "last_success",
+            "source_url",
         }
 
         updates = {k: v for k, v in fields.items() if k in allowed and v is not None}

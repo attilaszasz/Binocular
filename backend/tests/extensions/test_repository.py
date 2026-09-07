@@ -34,6 +34,7 @@ async def repo(tmp_path: object) -> AsyncGenerator[ModuleRepository]:
             CHECK(status IN ('active', 'inactive', 'error'));
         ALTER TABLE modules ADD COLUMN consecutive_failures INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE modules ADD COLUMN last_success TEXT NULL;
+        ALTER TABLE modules ADD COLUMN source_url TEXT NULL;
 
         """
     )
@@ -52,6 +53,7 @@ class TestModuleRepository:
             version="1.0.0",
             author="test",
             file_path="/app/modules/sony_alpha.py",
+            source_url="https://example.com/sony",
         )
         assert mid > 0
 
@@ -61,6 +63,7 @@ class TestModuleRepository:
         assert row["device_type"] == "camera"
         assert row["version"] == "1.0.0"
         assert row["status"] == "active"
+        assert row["source_url"] == "https://example.com/sony"
 
     async def test_get_by_name(self, repo: ModuleRepository) -> None:
         await repo.create(name="nikon_z", device_type="camera")
@@ -92,6 +95,15 @@ class TestModuleRepository:
         assert row is not None
         assert row["name"] == "new_name"
         assert row["version"] == "2.0.0"
+
+    async def test_missing_source_url_is_normalized(
+        self, repo: ModuleRepository
+    ) -> None:
+        module_id = await repo.create(name="legacy", device_type="camera")
+        await repo.update(module_id, source_url="https://example.com/legacy")
+        row = await repo.get_by_id(module_id)
+        assert row is not None
+        assert row["source_url"] == "https://example.com/legacy"
 
     async def test_update_is_official(self, repo: ModuleRepository) -> None:
         mid = await repo.create(name="official_mod", device_type="camera")

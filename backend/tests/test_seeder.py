@@ -14,12 +14,17 @@ from binocular.services.seeder import OfficialModuleSeeder
 
 
 def _make_temp_module(
-    dir_path: Path, filename: str, version: str, device_type: str = "camera"
+    dir_path: Path,
+    filename: str,
+    version: str,
+    device_type: str = "camera",
+    source_url: str = "",
 ) -> Path:
     file_path = dir_path / filename
     content = f"""# Mock module
 MODULE_VERSION = "{version}"
 SUPPORTED_DEVICE_TYPE = "{device_type}"
+SOURCE_URL = "{source_url}"
 
 def check_firmware(url, model, http_client):
     return {{
@@ -55,7 +60,12 @@ async def test_seeder_first_run_populates_db_and_files(tmp_path: Path) -> None:
     # Set up mock official modules dir
     mock_official_dir = tmp_path / "mock_official"
     mock_official_dir.mkdir()
-    _make_temp_module(mock_official_dir, "sony_alpha.py", "1.0.0")
+    _make_temp_module(
+        mock_official_dir,
+        "sony_alpha.py",
+        "1.0.0",
+        source_url="https://example.com/sony",
+    )
     _make_temp_module(mock_official_dir, "panasonic_lumix.py", "1.1.0")
 
     try:
@@ -69,7 +79,7 @@ async def test_seeder_first_run_populates_db_and_files(tmp_path: Path) -> None:
 
         # Assert database records
         cursor = await conn.execute(
-            "SELECT name, device_type, version, is_official, status "
+            "SELECT name, device_type, version, is_official, status, source_url "
             "FROM modules ORDER BY name"
         )
         rows = [dict(row) for row in await cursor.fetchall()]
@@ -86,6 +96,7 @@ async def test_seeder_first_run_populates_db_and_files(tmp_path: Path) -> None:
         assert rows[1]["version"] == "1.0.0"
         assert bool(rows[1]["is_official"]) is True
         assert rows[1]["status"] == "active"
+        assert rows[1]["source_url"] == "https://example.com/sony"
 
         # Assert files copied
         assert (settings.modules_dir / "sony_alpha.py").exists()

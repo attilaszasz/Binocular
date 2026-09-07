@@ -87,6 +87,7 @@ class OfficialModuleSeeder:
         name = load_result.module_name
         device_type = load_result.device_type
         bundled_version = load_result.version
+        source_url = load_result.source_url
         bundled_hash = self._hash_file(bundled_path)
         author = "Binocular"
 
@@ -150,6 +151,7 @@ class OfficialModuleSeeder:
                 file_path=str(active_path),
                 is_official=True,
                 status="active",
+                source_url=source_url,
             )
         else:
             await self._repository.update(
@@ -160,6 +162,7 @@ class OfficialModuleSeeder:
                 file_path=str(active_path),
                 is_official=True,
                 status="active",
+                source_url=source_url,
             )
 
         await self._connection.commit()

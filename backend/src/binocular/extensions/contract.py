@@ -24,6 +24,9 @@ MODULE_VERSION_ATTR: str = "MODULE_VERSION"
 SUPPORTED_DEVICE_TYPE_ATTR: str = "SUPPORTED_DEVICE_TYPE"
 """Expected attribute name for the supported device type constant."""
 
+SOURCE_URL_ATTR: str = "SOURCE_URL"
+"""Optional canonical source-page URL declared by a module."""
+
 CHECK_FIRMWARE_FUNC: str = "check_firmware"
 """Expected function name for the firmware-check entry point."""
 

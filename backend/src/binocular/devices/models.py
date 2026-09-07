@@ -58,6 +58,7 @@ class ModuleResponse(BaseModel):
     created_at: str = ""
     consecutive_failures: int = 0
     last_success: str | None = None
+    source_url: str = ""
 
 
 class ModuleUpdate(BaseModel):

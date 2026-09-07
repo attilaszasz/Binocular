@@ -56,6 +56,7 @@ Evidence is observational and domain-driven rather than formal market research, 
 ## User Needs / Jobs To Be Done
 
 - When I acquire or already own devices, I want to record them and their current firmware version so I have a single inventory of what I need to keep current.
+- When I'm adding a device, I want to see the page the selected module scrapes so I can look up the exact model name the module expects.
 - When a manufacturer releases new firmware, I want to be told automatically so I don't have to remember to check.
 - When I physically update a device, I want to confirm the new version in one click so alerts reset cleanly.
 - When I'm unsure, I want to trigger an immediate check for one device or all devices and compare stored vs. latest side by side.
@@ -82,7 +83,7 @@ The product scope equals the full product brief: a complete detect â†’ compare â
 
 ### In-Scope Capabilities
 
-- Device inventory and lifecycle management, with each device linked to an extension module that determines its device type, stored current versions, one-click update confirmation, and on-demand version search during device creation.
+- Device inventory and lifecycle management, with each device linked to an extension module that determines its device type, stored current versions, one-click update confirmation, and on-demand version search during device creation. The Add Device form surfaces a clickable link to the source page the selected module scrapes, helping users find the exact model name to enter.
 - A pluggable extension-module engine with a strict authoring contract, plus full module lifecycle management (upload, update, delete) through the UI with real-time visual progress reporting during validation and upload.
 - Automated scheduled checking with per-module frequency (user-configurable per device), plus manual on-demand checks (single and bulk) with side-by-side version comparison.
 - Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify. Only one notification is sent per detected version; a follow-up notification is dispatched only when a version newer than the last-notified version appears. Both notification channels can also be initialized and automatically updated from container environment variables.
@@ -110,8 +111,8 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 
 | Capability ID | Capability | Priority | Outcome |
 |---------------|------------|----------|---------|
-| CAP-001 | Device Inventory & Lifecycle | P1 | Users maintain an inventory of devices each linked to an extension module, with stored versions, one-click update confirmation, and on-demand version search during device creation. |
-| CAP-002 | Extension Module Engine & Authoring Contract | P1 | A strict, documented contract lets modules supply device-specific firmware-checking intelligence in a standardized format. |
+| CAP-001 | Device Inventory & Lifecycle | P1 | Users maintain an inventory of devices each linked to an extension module, with stored versions, one-click update confirmation, and on-demand version search during device creation. The Add Device form surfaces a clickable link to the source page the selected module scrapes, so users can look up the exact model name to enter. |
+| CAP-002 | Extension Module Engine & Authoring Contract | P1 | A strict, documented contract lets modules supply device-specific firmware-checking intelligence in a standardized format. Modules may declare the source page they scrape, which is surfaced as a clickable link during device creation. |
 | CAP-003 | Module Lifecycle Management | P1 | Users upload, update, and delete modules through the UI to control which device types are supported, with real-time visual progress reporting during the validation and upload process. |
 | CAP-004 | Automated Scheduled Checking | P1 | The system checks sources unattended on a per-module frequency, user-configurable per device. |
 | CAP-005 | Manual On-Demand Checking | P1 | Users trigger immediate single or bulk checks and compare stored vs. latest versions side by side. |

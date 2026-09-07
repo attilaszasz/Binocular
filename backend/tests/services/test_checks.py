@@ -33,6 +33,7 @@ async def conn() -> AsyncGenerator[aiosqlite.Connection]:
             status      TEXT    NOT NULL DEFAULT 'active',
             consecutive_failures INTEGER NOT NULL DEFAULT 0,
             last_success TEXT,
+            source_url TEXT,
             created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
         );
         CREATE TABLE devices (

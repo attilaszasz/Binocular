@@ -40,7 +40,23 @@ class TestModuleLoaderLoad:
         assert result.module_name == "valid_module"
         assert result.device_type == "camera"
         assert result.version == "1.0.0"
+        assert result.source_url == ""
         assert result.errors == []
+
+    def test_load_extracts_optional_source_url(self, tmp_path: Path) -> None:
+        module_path = tmp_path / "source_module.py"
+        module_path.write_text(
+            'MODULE_VERSION = "1.0"\n'
+            'SUPPORTED_DEVICE_TYPE = "camera"\n'
+            'SOURCE_URL = "https://example.com/support"\n'
+            "def check_firmware(url, model, http_client):\n"
+            '    return {"latest_version": "1.0"}\n'
+        )
+
+        result = ModuleLoader(tmp_path).load(module_path)
+
+        assert result.success is True
+        assert result.source_url == "https://example.com/support"
 
     def test_load_missing_function(self) -> None:
         loader = ModuleLoader(FIXTURES)
