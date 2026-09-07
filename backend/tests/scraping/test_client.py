@@ -1,6 +1,7 @@
 """Unit tests for ScrapeClient."""
 
 import asyncio
+from itertools import pairwise
 
 import httpx
 import pytest
@@ -332,4 +333,48 @@ async def test_scrape_client_cross_event_loop() -> None:
     assert response.status_code == 200
     assert response.text == "Success"
 
+    await client.close()
+
+
+@pytest.mark.asyncio
+async def test_canon_origin_delay_is_shared_across_retry_and_module_work() -> None:
+    """Canon camera/lens attempts share the robots-declared 30-second timeline."""
+    now = 0.0
+    attempts: list[float] = []
+    camera_calls = 0
+
+    def clock() -> float:
+        return now
+
+    async def sleep(delay: float) -> None:
+        nonlocal now
+        now += delay
+        await asyncio.sleep(0)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal camera_calls
+        if request.url.path == "/robots.txt":
+            return httpx.Response(
+                200, text="User-agent: *\nCrawl-delay: 30\nDisallow:"
+            )
+        attempts.append(now)
+        if request.url.path == "/camera" and camera_calls == 0:
+            camera_calls += 1
+            return httpx.Response(500)
+        return httpx.Response(200, text="ok")
+
+    client = ScrapeClient(
+        default_delay=1,
+        clock=clock,
+        sleep=sleep,
+        jitter=lambda: 0,
+        transport=httpx.MockTransport(handler),
+    )
+    async with client.scope(timeout=30) as scoped:
+        camera = await scoped.get("https://asia.canon/camera")
+        lens = await scoped.get("https://asia.canon/lens")
+
+    assert camera.status_code == lens.status_code == 200
+    assert len(attempts) == 3
+    assert all(later - earlier >= 30 for earlier, later in pairwise(attempts))
     await client.close()

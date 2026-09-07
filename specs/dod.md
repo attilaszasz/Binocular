@@ -1,6 +1,6 @@
 # Deployment & Operations Document: Binocular
 
-> Date: 2026-09-06 | Status: Draft
+> Date: 2026-09-07 | Status: Draft
 
 ## Deployment Summary and Context
 
@@ -54,7 +54,7 @@ flowchart LR
 ```
 
 - **Pipeline tooling**: GitHub Actions.
-- **Quality gates (PRs and pushes)**: Ruff + mypy `--strict` (backend), Biome/ESLint + `tsc` (frontend); `pytest` + `pytest-asyncio`, Vitest + React Testing Library, one Playwright smoke test, golden/fixture module-correctness tests, and deterministic HTTP-client tests for source-delay selection, per-origin pacing, retries, concurrency, bounded execution, timeout, and cancellation using injected timing and scripted transports rather than real sleeps or live sources.
+- **Quality gates (PRs and pushes)**: Ruff + mypy `--strict` (backend), Biome/ESLint + `tsc` (frontend); `pytest` + `pytest-asyncio`, Vitest + React Testing Library, one Playwright smoke test, golden/fixture module-correctness tests, and deterministic HTTP-client tests for source-delay selection, per-origin pacing, retries, concurrency, bounded execution, timeout, and cancellation using injected timing and scripted transports rather than real sleeps or live sources. Canon module gates additionally exercise captured EOS R, RF, and RF-S catalogue/product/firmware fragments; exact and near-name matching; lens/accessory classification; OS-package deduplication; release-page links; independent module seeding/execution; explicit no-firmware and structural failures; and shared 30-second Canon-origin pacing.
 - **Build stack**: `docker/setup-qemu-action` → `docker/setup-buildx-action` → `docker/login-action` (GHCR via `GITHUB_TOKEN`, `permissions: packages: write`) → `docker/metadata-action` → `docker/build-push-action` with `platforms: linux/amd64,linux/arm64`.
 - **Publish condition**: Images are pushed only on SemVer tag refs; PR builds build-but-do-not-push. Layer caching via `type=gha` (`mode=max`).
 - **Secrets in pipeline**: Only the built-in `GITHUB_TOKEN` for GHCR; no application secrets are baked into the image or passed as build args.
@@ -143,6 +143,8 @@ No external telemetry, metrics backend, or APM — by design.
 - A restore from backup has been verified at least once.
 - SMTP and/or Gotify notification channels validated end-to-end.
 - Deterministic HTTP-client validation confirms delay selection, cross-origin independence, same-origin concurrency pacing, every retry, finite source-aware budgets, and no request issuance after timeout/cancellation.
+- Canon camera and lens captured-fixture suites pass independently and through the existing version-search/check integration path, proving model-only lookup, exact matching, release deduplication, official release-page links, automatic seeding, and visible failure outcomes without live-source dependence.
+- Release documentation states that Canon coverage is based on Canon Asia English EOS R and RF/RF-S catalogues, excludes adapters/extenders/unrelated mounts, explicitly excludes Cinema EOS/EOS R5 C pending a verified flow, and does not claim a positive RF-S firmware release.
 - Operator has pinned a specific SemVer tag.
 
 ## Security and Compliance in Operations
@@ -168,7 +170,7 @@ No external telemetry, metrics backend, or APM — by design.
 
 - **Ownership model**: The self-hosting operator is the sole owner and operator. Project maintainers own the image, CI, and release tags.
 - **Change management**: PR-based with CI quality gates; releases cut by tagging a SemVer version.
-- **Documentation expectations**: A `compose.yaml` example, `.env.example`, README run/upgrade instructions, and a module dev/test kit.
+- **Documentation expectations**: A `compose.yaml` example, `.env.example`, README run/upgrade instructions, a module dev/test kit, and per-official-module regional coverage notes. Canon notes identify source catalogue URLs, supported families, model-only usage, official release-link/date semantics, 30-second pacing, failure behavior, Cinema EOS/EOS R5 C exclusion, and the absence of a verified positive RF-S firmware release.
 
 ### Update Workflow
 
@@ -224,6 +226,7 @@ flowchart LR
 - Operator never configures or tests backups — mitigated by shipping a built-in scheduled backup job and verified-restore documentation.
 - Multi-arch QEMU build flakiness — mitigated by caching and optional native arm64 runners.
 - Long source-declared crawl delays can exceed a multi-request check's finite cap — mitigated by automatic bounded budget accommodation and visible failure rather than unbounded background work or policy violation.
+- Canon Asia can change catalogue membership, form actions, regional publication timing, or robots policy — mitigated by captured-fixture release gates, current-policy review, and explicit regional limitations rather than fallback-region rotation.
 
 ### Assumptions
 

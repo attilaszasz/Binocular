@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-06-10 | **Status**: Draft
-**Total Epics**: 27 (P1: 17 · P2: 10) | **Waves**: 16
+**Total Epics**: 29 (P1: 17 · P2: 12) | **Waves**: 17
 
 Informed by the prototype retrospective at `specs/prototype-retrospective.md`. Key consolidation decisions: device type is module-derived from the start (no standalone DeviceType entity); notification deduplication and HTML email are part of the initial notification epic; shadcn/ui is the component library from day one; PUID/PGID entrypoint is part of the foundation container epic; collapsible navigation is part of the SPA shell.
 
@@ -120,7 +120,14 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 > Depends on the existing scraping client, module engine, and manual/scheduled check paths. Extends the centralized enforcement point without modifying completed epic definitions.
 
-- [ ] E027 [P1] [TECHNICAL] {PRD:CAP-008}{SAD:ADR-0012} Source-Aware HTTP Pacing — shared per-origin crawl-delay pacing, bounded retries, budgets, and cancellation [→ Details](plan/E027.md)
+- [X] E027 [P1] [TECHNICAL] {PRD:CAP-008}{SAD:ADR-0012} Source-Aware HTTP Pacing — shared per-origin crawl-delay pacing, bounded retries, budgets, and cancellation [→ Details](plan/E027.md)
+
+### Wave 17 — Official Canon RF Modules
+
+> Depends on the completed module contract, automatic seeding, health visibility, model-only version search, and source-aware pacing. Camera and lens modules are independently selectable and can be delivered in parallel against distinct fixture sets.
+
+- [X] E028 [P2] [PRODUCT] [P] {PRD:CAP-015}{SAD:ADR-0005}{SAD:ADR-0012} Official Canon RF Cameras — exact EOS R catalogue lookup, discovered firmware actions, deduplicated releases, automatic seeding, and visible failures [→ Details](plan/E028.md)
+- [X] E029 [P2] [PRODUCT] [P] {PRD:CAP-015}{SAD:ADR-0005}{SAD:ADR-0012} Official Canon RF Lenses — classified RF/RF-S catalogue lookup, accessory exclusion, deduplicated releases, automatic seeding, and visible failures [→ Details](plan/E029.md)
 
 
 ## Dependency Diagram
@@ -173,6 +180,9 @@ graph LR
 
     M6 --> M16["Source-aware<br>HTTP pacing"]
     M16 -->|"E027"| M16
+
+    M16 --> M17["Canon RF<br>official modules"]
+    M17 -->|"E028 · E029"| M17
 ```
 
 ## Execution Wave Summary
@@ -195,6 +205,7 @@ graph LR
 | 14 | E025 | N/A (single) | Viltrox Lenses official module (Shopify-hosted firmware pages, two-step index/lens page flow). |
 | 15 | E026 | N/A (single) | Nikon Z-Series official camera module (Nikon Download Center XML catalog + per-product firmware page, C:Ver. prefix stripping). |
 | 16 | E027 | N/A (single) | Central HTTP client extension for source-declared delays, shared origin pacing, bounded retries/budgets, and cancellation safety. |
+| 17 | E028, E029 | Yes | Independent Canon camera and lens modules using Canon Asia catalogues and distinct captured fixtures; both consume shared Canon-origin pacing. |
 
 
 ## Parallel Execution Guidance
@@ -207,6 +218,7 @@ graph LR
 - **Wave 5**: E012 (manual-check path), E013 (scheduler) are isolated.
 - **Wave 6**: E014 (notifier), E015 (activity log), E016 (module seeding + additional modules) are isolated.
 - **Wave 7**: E017 (release workflows), E018 (backup job/runbook) are isolated.
+- **Wave 17**: E028 (EOS R cameras) and E029 (RF/RF-S lenses) use separate module files and fixture matrices; coordinate only the shared Canon regional-coverage documentation.
 
 ### Integration Risks
 
@@ -215,6 +227,8 @@ graph LR
 - **Check-result contract (E010)**: E012, E013, E014, E015 all consume the detection result/event shape. Freeze that contract in E010.
 - **Container build inputs**: E017 extends the same Dockerfile/workflow surface E003 introduces; sequence E017 after E003.
 - **Cancellation ownership (E027)**: The client deadline and module-runner timeout must compose without detached tasks or swallowed cancellation; verify both manual and scheduled check callers.
+- **Canon origin coordination (E028/E029)**: Concurrent camera and lens checks share one Canon Asia origin timeline; integration tests must prove the 30-second interval applies across both modules and every retry without real sleeps.
+- **Canon coverage semantics (E028/E029)**: Catalogue membership, product classification, firmware availability, and regional parity are distinct. Exact matching and visible no-firmware/unsupported outcomes must prevent inferred Cinema EOS/EOS R5 C or positive RF-S coverage.
 
 ### Shared Resource Conflicts
 
@@ -222,6 +236,7 @@ graph LR
 - App factory / router aggregator — single owner per change; coordinate additions.
 - `Dockerfile` and `.github/workflows/` — E001 seeds, E003 wires CI, E017 extends to multi-arch publish; sequential on these files.
 - `backend/src/binocular/scraping/` and check timeout boundaries — E027 is the sole owner while extending shared pacing and cancellation behavior.
+- Canon module source and fixtures are independent between E028 and E029; shared regional-coverage documentation requires one coordinated owner during parallel delivery.
 
 ## PRD Capability Coverage
 
@@ -241,6 +256,7 @@ graph LR
 | CAP-012 Responsive UI & Dark Mode | P2 | E004 |
 | CAP-013 Module Authoring Guidance & AI-Assisted Dev Kit | P2 | E019 |
 | CAP-014 Official Module Health Monitoring | P2 | E020 |
+| CAP-015 Official Canon RF Modules | P2 | E028, E029 |
 
 ### SAD ADR Coverage
 
@@ -250,14 +266,14 @@ graph LR
 | ADR-0002 Python 3.13 + FastAPI backend | accepted | E001 |
 | ADR-0003 React/Vite/Tailwind SPA with shadcn/ui | accepted | E004 |
 | ADR-0004 SQLite + aiosqlite + raw SQL | accepted | E002 |
-| ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E007, E016, E025, E026 |
+| ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E007, E016, E025, E026, E028, E029 |
 | ADR-0006 Centralized responsible-scraping client | superseded | E005 |
 | ADR-0007 APScheduler + Apprise | accepted | E013 (scheduling), E014 (notifications) |
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E001, E008 |
 | ADR-0009 Module-derived device type | accepted | E006 |
 | ADR-0010 Environment-Variable Based Configuration and Database Seeding | accepted | E021 |
 | ADR-0011 Real-Time Module Validation and Upload Progress Streaming | accepted | E022 |
-| ADR-0012 Source-aware centralized scraping with shared per-origin pacing and bounded cancellation | accepted | E027 |
+| ADR-0012 Source-aware centralized scraping with shared per-origin pacing and bounded cancellation | accepted | E027, E028, E029 |
 
 
 ### DOD DDR Coverage
@@ -281,7 +297,7 @@ graph LR
 |--------|---------------|-------------|
 | Device (module_id FK) | E006 | E010, E012, E014 |
 | Device (last_notified_version) | E014 | E010, E014 |
-| Module, ModuleValidationResult | E007 | E009, E010, E011, E016, E019, E022, E025, E026 |
+| Module, ModuleValidationResult | E007 | E009, E010, E011, E016, E019, E022, E025, E026, E028, E029 |
 | CheckResult / detection event | E010 | E012, E013, E014, E015 |
 | NotificationChannel | E014 | E014 |
 | ActivityLogEntry | E015 | E015 |
@@ -307,8 +323,10 @@ graph LR
 |--------|---------------|-------------|
 | App factory + router aggregator, structlog config | E001 | All |
 | DB connection, migration runner, repository base | E002 | E006, E007, E009, E010, E013, E014, E015, E018 |
-| ScrapeClient | E005; extended by E027 | E007, E011, E012, E013, E016, E019, E023, E025, E026 |
-| Module engine + authoring contract | E007 | E009, E010, E011, E016, E019, E022, E025, E026 |
+| ScrapeClient | E005; extended by E027 | E007, E011, E012, E013, E016, E019, E023, E025, E026, E028, E029 |
+| Module engine + authoring contract | E007 | E009, E010, E011, E016, E019, E022, E025, E026, E028, E029 |
+| Canon RF Cameras module + fixtures | E028 | E020, manual/scheduled checks, version search |
+| Canon RF Lenses module + fixtures | E029 | E020, manual/scheduled checks, version search |
 | Scheduler service | E013 | E014, E015, E018 |
 | Notifier service (with HTML email + dedup) | E014 | E020 |
 | Secret/`_FILE` loader + basic-auth middleware | E008 | E014, E018 |

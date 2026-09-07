@@ -85,3 +85,27 @@
 | 03:35:51 | QC | phase_complete | Requirements, project instructions, and checklist verification | PASS: 3/3 objectives; 8/8 SC; 0 gaps | T032-T036 resolve all prior findings with deterministic evidence | [qc-report.md](qc-report.md), [tasks.md](tasks.md) |
 | 03:35:51 | Implement+QC | gate_check | Release-readiness marker gate | PASS | Report verdict is PASS, all 36 tasks are checked, and mandatory Trivy scan found 0 HIGH/CRITICAL vulnerabilities | [.completed](.completed), [.qc-passed](.qc-passed), [qc-report.md](qc-report.md) |
 | 06:37:22 | Autopilot | phase_complete | E027 Source-Aware HTTP Pacing pipeline | PASS: release-ready | Specify, Clarify, Plan, 100/100 checklist items, 36 tasks, Analyze, two Implement+QC iterations, 395 backend tests at 87.22%, 33 frontend tests, Docker, and Trivy all pass | [spec.md](spec.md), [plan.md](plan.md), [tasks.md](tasks.md), [qc-report.md](qc-report.md), [.qc-passed](.qc-passed) |
+
+## Autopilot Re-run: 2026-09-07
+
+| Timestamp | Phase | Event | Detail | Outcome | Rationale | Artifacts |
+|-----------|-------|-------|--------|---------|-----------|-----------|
+| 07:04:36 | Gate | epic_update | Auto-selected epic E027 | Source-Aware HTTP Pacing | First unchecked epic in document order | [specs/project-plan.md](../project-plan.md) |
+| 07:04:36 | Gate | gate_check | Autopilot configuration enabled | PASS | Registered configuration enables unattended execution | [.github/sddp-config.md](../../.github/sddp-config.md) |
+| 07:04:36 | Gate | gate_check | Product Document existence and sufficiency | PASS: 5/5 categories | Registered document is readable and substantive | [specs/prd.md](../prd.md) |
+| 07:04:36 | Gate | gate_check | Technical Context Document existence and sufficiency | PASS: 5/5 categories | Registered document is readable and substantive | [specs/sad.md](../sad.md) |
+| 07:06:03 | Gate | decision | Context Gatherer retried at top level | PASS | Direct delegation resolved the nested orchestrator depth limitation | [autopilot-log.md](autopilot-log.md) |
+| 10:14:00 | Gate | decision | Canonical E027 workspace recovered | specs/00030-my-feature | Epic frontmatter and repository history identify the fallback-named completed workspace | [spec.md](spec.md), [autopilot-log.md](autopilot-log.md), [specs/plan/E027.md](../plan/E027.md) |
+| 10:14:00 | Gate | gate_check | Feature complete check | FAIL: already complete | Existing workspace contains a QC pass marker backed by a PASS report | [.qc-passed](.qc-passed), [qc-report.md](qc-report.md) |
+| 10:14:00 | Gate | halt | Feature already complete | Pipeline halted before Specify | Mandatory halt condition prevents rerunning completed implementation and QC | [.qc-passed](.qc-passed), [qc-report.md](qc-report.md), [specs/project-plan.md](../project-plan.md) |
+
+## Run Summary
+
+| Phase | Status | Key Artifact |
+|-------|--------|--------------|
+| Gate | ✗ HALTED | [.qc-passed](.qc-passed) |
+
+**Result**: HALTED at Gate — E027 already has a QC pass marker backed by a PASS report
+**Epic**: E027 — completed workspace found; project-plan checkbox remains stale ([specs/project-plan.md](../project-plan.md))
+**Duration**: 07:04:36 → 10:14:00
+| 10:28:52 | Post-Pipeline | epic_update | Epic E027 marked complete | `- [ ]` changed to `- [X]` | Existing QC pass marker and PASS report verify completion | [specs/project-plan.md](../project-plan.md), [.qc-passed](.qc-passed), [qc-report.md](qc-report.md) |

@@ -1,6 +1,6 @@
 # Product Requirements Document: Binocular
 
-> Date: 2026-09-06 | Status: Draft
+> Date: 2026-09-07 | Status: Draft
 
 ## Product Overview
 
@@ -88,7 +88,7 @@ The product scope equals the full product brief: a complete detect → compare �
 - Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify. Only one notification is sent per detected version; a follow-up notification is dispatched only when a version newer than the last-notified version appears. Both notification channels can also be initialized and automatically updated from container environment variables.
 - Responsible-scraping enforcement provided centrally by the host: robots.txt and valid source-declared crawl delays, identifiable User-Agent, shared per-origin pacing across concurrent requests and retries, and exponential backoff. Multi-request checks adapt without required user configuration, remain bounded, and stop outbound work after timeout or cancellation; sources without a longer declared delay retain default pacing and execution budgets.
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
-- Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, Godox Flashes, Viltrox Lenses, and Nikon Z-Series that are automatically seeded and registered in the database on startup as working examples and templates.
+- Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, Godox Flashes, Viltrox Lenses, Nikon Z-Series, Canon EOS R catalogue cameras, and Canon RF/RF-S catalogue lenses that are automatically seeded and registered in the database on startup as working examples and templates. The two Canon modules are independently selectable, accept model-only input, and use exact catalogue matching against Canon Asia's English support region.
 - Self-hosted operability: Docker distribution, single data volume, zero-config startup, non-root execution, configurable container UID/GID (PUID/PGID), responsive UI with dark mode and collapsible navigation.
 - Local module sharing enablement: an authoring contract and import/export, plus authoring guidance for module creators — including a downloadable AI Module Kit and AI-friendly validation error output for assisted module creation.
 - Official module health monitoring: in-app notification when a shipped official module consistently fails scraping, signaling the need for a project update.
@@ -102,6 +102,7 @@ The product scope equals the full product brief: a complete detect → compare �
 - Support for always-online devices that already auto-update through vendor ecosystems.
 - External/managed database servers (Postgres, MySQL) or cloud-hosted SaaS deployment.
 - Sandboxed/isolated execution of extension modules (explicitly a user-vetted trust boundary).
+- Canon coverage outside the verified Canon Asia English EOS R, RF, and RF-S catalogues, including Cinema EOS/EOS R5 C, cinema lenses, adapters, extenders, unrelated mounts, regional fallback, and firmware-binary retrieval. EOS R5 C may be added only after a separate official catalogue/product/firmware-action flow is verified.
 
 ## Product Capability Map
 
@@ -123,6 +124,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-012 | Responsive UI & Dark Mode | P2 | The interface is fully usable on mobile and desktop with first-class dark mode and collapsible navigation with version display. |
 | CAP-013 | Module Authoring Guidance & AI-Assisted Dev Kit | P2 | Authoring docs, a downloadable AI Module Kit (prompt instructions, contract reference, templates, examples), an in-UI "Create a Module" guidance section, and AI-friendly validation error copy-paste empower users — especially those working with AI coding assistants — to create and iterate on valid modules with zero prior codebase knowledge. |
 | CAP-014 | Official Module Health Monitoring | P2 | When a shipped official module consistently fails scraping, an in-app notification alerts the operator to check for a project update with a fixed module. |
+| CAP-015 | Official Canon RF Modules | P2 | Independently selectable Canon camera and lens modules monitor exact EOS R and RF/RF-S catalogue models from Canon Asia, deduplicate OS-specific packages into releases, link to official release pages, seed automatically, and fail visibly when a model or firmware cannot be verified. |
 
 ## Success Metrics / KPIs / Desired Outcomes
 
@@ -158,7 +160,7 @@ Success is defined by **reliability and correctness**, validated before release 
 
 ## Dependencies
 
-- Manufacturer firmware pages' structure and availability (Sony Alpha, Panasonic Lumix, Godox Flashes, Viltrox, Nikon Z-Series, and any user-added sources).
+- Manufacturer firmware pages' structure and availability (Sony Alpha, Panasonic Lumix, Godox Flashes, Viltrox, Nikon Z-Series, Canon Asia EOS R/RF/RF-S catalogues, and any user-added sources).
 - An SMTP server and/or a Gotify instance for notification delivery.
 - A Docker/OCI-compatible runtime and a persistent volume for data and modules.
 - Network egress from the trusted LAN to manufacturer sites.
@@ -173,6 +175,7 @@ Success is defined by **reliability and correctness**, validated before release 
 - **Notification-channel failures** (SMTP/Gotify misconfiguration or outage) going unnoticed — mitigated by activity-log visibility and delivery validation.
 - **Aggressive or inconsistent polling** harming sources or the project's reputation — mitigated by conservative default pacing, source-declared crawl-delay support, shared per-origin enforcement across concurrency and retries, and backoff.
 - **Long source-declared delays** causing multi-request checks to exceed their useful execution window — mitigated by automatic bounded budgets, visible failure when work cannot complete, and cancellation that prevents further background requests without changing budgets for unaffected sources.
+- **Regional catalogue gaps** causing apparent Canon RF coverage to exceed verified support — mitigated by documenting Canon Asia as the authority, matching only exact catalogue products, and explicitly excluding Cinema EOS/EOS R5 C until its product and firmware flow is verified. RF-S catalogue support must not imply that a positive RF-S firmware release has been observed.
 
 ## Open Questions
 
@@ -182,7 +185,9 @@ Success is defined by **reliability and correctness**, validated before release 
 
 Validation is correctness-first and pre-release, since the product collects no field telemetry:
 
-- **Fixture-based correctness**: Captured real-page snapshots for the official Sony, Panasonic, Godox, Viltrox, and Nikon modules verify that detected latest versions match the actual published versions, with regression coverage when sources change.
+- **Fixture-based correctness**: Captured real-page snapshots for every official module verify that detected latest versions match actual published versions, with regression coverage when sources change. Canon coverage includes catalogue-to-product-to-firmware-action discovery, exact near-name rejection, adapter/extender exclusion, OS-package deduplication, official release-page links, and explicit no-firmware fixtures where no positive RF-S release is verified.
+- **Official-module integration**: Canon camera and lens modules are validated independently through model-only lookup, automatic seeding, manual/version-search execution, visible failure paths, shared 30-second Canon-origin pacing, and bounded timeout/cancellation behavior without live sleeps.
+- **Regional coverage documentation**: Release documentation identifies Canon Asia English as the verified region, lists EOS R and RF/RF-S catalogue boundaries, excludes unrelated mounts and non-lens accessories, explicitly marks Cinema EOS/EOS R5 C unsupported pending verification, and states that no positive RF-S firmware release was verified.
 - **End-to-end alert-path smoke test**: Exercise the full detect → compare → notify loop for both notification channels (Email/SMTP and Gotify).
 - **Operability smoke test**: Verify zero-config startup, single-volume persistence, non-root execution, and no data loss across restarts and upgrades.
 - **Responsible-scraping verification**: Deterministically confirm delay selection, robots.txt respect, identifiable User-Agent, shared per-origin pacing across concurrent requests and every retry, exponential backoff, bounded multi-request execution, preserved default budgets, and no requests after timeout or cancellation.

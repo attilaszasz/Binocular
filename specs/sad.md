@@ -1,6 +1,6 @@
 # Software Architecture Document: Binocular
 
-> Date: 2026-09-06 | Status: Draft
+> Date: 2026-09-07 | Status: Draft
 
 ## Purpose and Scope
 
@@ -13,7 +13,7 @@ The system boundary is a single deployable application running on a private, tru
 **Language/Version**: Python 3.13+ (backend); TypeScript 5.x / React 19 (frontend)  
 **Primary Dependencies**: FastAPI, Uvicorn, aiosqlite, Pydantic, APScheduler, Apprise, httpx, structlog, Jinja2, BeautifulSoup4 (backend); React, Vite, Tailwind CSS 4.x (CSS-first config via `@tailwindcss/vite`), shadcn/ui, Radix UI primitives, React Router, TanStack Query, React Hook Form, class-variance-authority, clsx, tailwind-merge, tw-animate-css, lucide-react (frontend)  
 **Storage**: SQLite single file (`binocular.db`) via aiosqlite with raw SQL and a numbered-migration runner; no ORM, no external DB server  
-**Testing**: pytest + pytest-asyncio, httpx.AsyncClient and MockTransport, injected monotonic clocks/sleepers (backend); Vitest + React Testing Library, one Playwright smoke test (frontend); golden/fixture-based module correctness tests
+**Testing**: pytest + pytest-asyncio, httpx.AsyncClient and MockTransport, injected monotonic clocks/sleepers (backend); Vitest + React Testing Library, one Playwright smoke test (frontend); golden/fixture-based module correctness and integration tests, including multi-page Canon catalogue/product/firmware flows
 **Target Platform**: Linux Docker container (`python:3.13-slim`), single port 8000; also runnable directly on a host with Python/Node runtimes  
 **Project Type**: Web application — Python/FastAPI backend + React SPA, single-process monolith  
 **Performance Goals**: Responsive UI on mobile and desktop; concurrent cross-origin checks via async I/O without blocking the UI; source-specific pacing across same-origin work; modest homelab hardware footprint
@@ -184,6 +184,8 @@ All state in SQLite (`binocular.db`) on the `/app/data` volume; backup = copy th
 
 Outbound only: manufacturer firmware pages are scraped through the host-provided polite HTTP client, the single enforcement point for robots.txt, identifiable User-Agent, shared per-origin pacing, source-declared crawl delays, bounded retries/backoff, and cancellation; notifications dispatch through Apprise — Email/SMTP (as responsive, light-themed HTML via Jinja2 templates with mobile-friendly layout) and Gotify at launch. No inbound integrations or third-party APIs. See {SAD:ADR-0012}, {SAD:ADR-0007}.
 
+The Canon Asia integration uses two independent official modules over one shared Canon origin. Each starts from its fixed public catalogue (EOS R for cameras; RF and RF-S for lenses), exact-matches the model, follows the catalogue's product link verbatim, discovers that product page's firmware form action, and parses the returned HTML firmware rows. It groups duplicate operating-system packages by model and firmware version and returns the matching official release-detail page rather than a binary-download route. Camera coverage is limited to verified EOS R catalogue membership: Cinema EOS and EOS R5 C are explicitly unsupported until a separate official catalogue/product/action flow is verified. Lens classification admits RF/RF-S lenses only and rejects adapters, extenders, cinema lenses, and unrelated mounts; RF-S catalogue membership is supported without claiming a positive RF-S firmware release. Unknown models, explicit no-firmware responses, ambiguous matches, changed structures, denied requests, deadlines, and cancellation all surface through the existing visible failure boundary.
+
 ### Operations
 
 Distributed primarily as a Docker image (single port, two volumes, non-root with PUID/PGID configurable user via entrypoint, healthcheck), with a host-runtime fallback. Zero-config startup with sensible defaults; `BINOCULAR_DB_PATH` configurable. Dependencies pinned (lock file with hashes). A standalone module dev/test kit lets authors validate modules locally against the same polite HTTP client. A downloadable AI Module Kit (contract reference, starter template, working example, structured AI prompt) is served as static files by the backend.
@@ -197,7 +199,7 @@ Distributed primarily as a Docker image (single port, two volumes, non-root with
 | Security | No hardcoded secrets; non-root container; parameterized SQL | Static analysis + image inspection | ACE trust boundary accepted by design |
 | Maintainability | mypy --strict (backend) and tsc strict (frontend) pass; pinned deps | CI type-check + lint (Ruff/Biome) | Single-maintainer OSS |
 | Scalability | Single-user, single-instance workload served comfortably | Manual load on representative inventory | No horizontal scaling goal |
-| Correctness | Detected latest == actual published latest; zero false positives/negatives for shipped modules | Golden/fixture-based module tests per release | No field telemetry available |
+| Correctness | Detected latest == actual published latest; zero false positives/negatives for shipped modules | Golden/fixture-based module tests per release, including exact Canon model/classification and OS-package deduplication matrices | No field telemetry available; explicit no-firmware is distinct from unknown/unparseable |
 
 ## Architecture Decision Records
 
@@ -230,6 +232,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Notification-channel misconfiguration/outage goes unnoticed — mitigated by activity-log visibility.
 - Scheduler shares the app process lifecycle — a restart pauses jobs until the next interval.
 - Very long source-declared crawl delays can prevent a multi-request check from completing inside its finite cap — mitigated by visible bounded failure rather than violating source pacing.
+- Canon Asia catalogue taxonomy, product links, form actions, or firmware fragments can drift independently — mitigated by captured fixtures for each stage, exact matching, and visible structural failures rather than inferred coverage.
 
 ### Assumptions
 
@@ -237,6 +240,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - A persistent volume is available for `/app/data` and `/app/modules`.
 - The operator has or can configure SMTP and/or Gotify for notifications.
 - Manufacturer firmware pages remain publicly reachable and scrapable.
+- Canon coverage is regional and catalogue-defined: Canon Asia English EOS R plus RF/RF-S only; Cinema EOS/EOS R5 C is not supported without a separately verified official flow, and no positive RF-S firmware release is assumed.
 
 ### Constraints
 
@@ -267,3 +271,4 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Notification deduplication tracks `last_notified_version` per device to suppress duplicate alerts.
 - Configuration settings for basic authentication (mapped from `BINOCULAR_AUTH_ENABLED`) and notification channels (SMTP and Gotify details/credentials) can be defined via environment variables. If present, they are automatically seeded and synced into the SQLite database at startup.
 - The backend provides an on-demand version search endpoint `/api/v1/checks/search-version` that executes the module runner to return the latest version for a given module and model name without persisting state or triggering notifications.
+- Canon official coverage is split into independently selectable camera and lens modules. Both use model-only exact catalogue lookup, verbatim product links, discovered firmware form actions, OS-package deduplication, official release-detail URLs, existing automatic seeding, visible failures, and ADR-0012's shared Canon-origin 30-second pacing with bounded timeout/cancellation. The verified baseline is Canon Asia English EOS R and RF/RF-S catalogues; Cinema EOS/EOS R5 C is explicitly unsupported pending a verified flow, and no positive RF-S firmware release is claimed.
