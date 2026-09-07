@@ -184,7 +184,7 @@ environment:
 
 ## 🧩 Custom Extension Modules
 
-Users can upload custom modules in Python to scrape firmware updates for unsupported devices. The custom modules run in-process with full application privileges (they are not sandboxed). Only run modules you trust!
+Users can upload custom modules in Python to scrape firmware updates for unsupported devices. Extensions are user-vetted code: they run unsandboxed, in-process, with full application privileges. The centralized HTTP client enforces policy for cooperative modules but does not contain malicious code, alternate sockets, subprocesses, or non-cooperative kernel I/O. Only install modules you trust. Binocular supports a trusted-LAN, single-user deployment; exposure to untrusted networks is outside the supported threat model.
 
 ### V1 Module Contract
 

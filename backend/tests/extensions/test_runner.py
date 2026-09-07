@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
+import threading
 from pathlib import Path
+from types import ModuleType
 from unittest.mock import MagicMock
 
+import httpx
 import pytest
 
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.runner import ModuleRunner
+from binocular.scraping.client import ScrapeClient
+from binocular.scraping.scope import ScopeExpiredError
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -116,6 +122,58 @@ class TestModuleRunnerTimeout:
         )
         assert run_result.success is False
         assert run_result.error_type == "timeout"
+
+    async def test_surviving_worker_cannot_send_after_timeout(self) -> None:
+        entered = threading.Event()
+        release = threading.Event()
+        transport_starts = 0
+
+        def handler(_request: httpx.Request) -> httpx.Response:
+            nonlocal transport_starts
+            transport_starts += 1
+            return httpx.Response(200)
+
+        module = ModuleType("survivor")
+
+        def check_firmware(url: str, model: str, http_client: object) -> dict[str, str]:
+            entered.set()
+            release.wait(2)
+            with pytest.raises(ScopeExpiredError, match="inactive"):
+                asyncio.run(http_client.get("https://example.com/late"))  # type: ignore[attr-defined]
+            return {"latest_version": "late"}
+
+        module.check_firmware = check_firmware  # type: ignore[attr-defined]
+        client = ScrapeClient(
+            default_delay=0,
+            transport=httpx.MockTransport(handler),
+        )
+        run_task = asyncio.create_task(
+            ModuleRunner(timeout=0.01).run(module, "", "x", client)
+        )
+        await asyncio.to_thread(entered.wait, 1)
+        result = await run_task
+        release.set()
+        await asyncio.sleep(0.05)
+        assert not result.success
+        assert result.error_type == "timeout"
+        assert transport_starts == 0
+        await client.close()
+
+    async def test_caller_cancellation_propagates_after_cleanup(self) -> None:
+        module = ModuleType("cancelled")
+
+        def check_firmware(url: str, model: str, http_client: object) -> dict[str, str]:
+            threading.Event().wait(0.2)
+            return {"latest_version": "late"}
+
+        module.check_firmware = check_firmware  # type: ignore[attr-defined]
+        client = ScrapeClient(default_delay=0)
+        task = asyncio.create_task(ModuleRunner(timeout=2).run(module, "", "x", client))
+        await asyncio.sleep(0)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        await client.close()
 
 
 class TestModuleRunnerContractErrors:

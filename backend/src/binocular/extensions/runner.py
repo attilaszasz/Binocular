@@ -67,10 +67,25 @@ class ModuleRunner:
         )
 
         try:
-            raw = await asyncio.wait_for(
-                asyncio.to_thread(func, url, model, http_client),
-                timeout=self._timeout,
-            )
+            if type(http_client) is ScrapeClient:
+                async with http_client.scope(timeout=self._timeout) as scoped_client:
+                    worker = asyncio.create_task(
+                        asyncio.to_thread(func, url, model, scoped_client)
+                    )
+                    scoped_client.scope.own(worker, cancellable=False)
+                    done, _pending = await asyncio.wait(
+                        {worker}, timeout=self._timeout
+                    )
+                    if not done:
+                        raise TimeoutError
+                    raw = worker.result()
+            else:
+                # Validator/tests may provide a non-network mock implementing
+                # the same extension-facing contract.
+                raw = await asyncio.wait_for(
+                    asyncio.to_thread(func, url, model, http_client),
+                    timeout=self._timeout,
+                )
         except TimeoutError:
             logger.warning("runner_timeout", module=mod_name, timeout=self._timeout)
             return RunResult(

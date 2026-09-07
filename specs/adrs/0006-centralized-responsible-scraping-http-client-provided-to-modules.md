@@ -1,10 +1,10 @@
 ---
 adr_id: ADR-0006
-status: accepted
+status: superseded
 date: 2026-05-31
 tags: [scraping, http, reliability, governance]
 supersedes: []
-superseded_by: ""
+superseded_by: ADR-0012
 related_artifacts: [specs/prd.md#CAP-008]
 ---
 
@@ -12,7 +12,7 @@ related_artifacts: [specs/prd.md#CAP-008]
 
 ## Status
 
-Accepted.
+Superseded by [ADR-0012](../adrs/0012-source-aware-centralized-scraping-with-shared-per-origin-pacing-and-bounded-cancellation.md).
 
 ## Context
 

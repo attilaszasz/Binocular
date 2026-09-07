@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-06-10 | **Status**: Draft
-**Total Epics**: 24 (P1: 15 · P2: 9) | **Waves**: 14
+**Total Epics**: 27 (P1: 17 · P2: 10) | **Waves**: 16
 
 Informed by the prototype retrospective at `specs/prototype-retrospective.md`. Key consolidation decisions: device type is module-derived from the start (no standalone DeviceType entity); notification deduplication and HTML email are part of the initial notification epic; shadcn/ui is the component library from day one; PUID/PGID entrypoint is part of the foundation container epic; collapsible navigation is part of the SPA shell.
 
@@ -116,6 +116,12 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 - [X] E026 [P2] [PRODUCT] {PRD:CAP-011}{SAD:ADR-0005} Official Nikon Z-Series Module — Ship a nikon_z_series official module (SUPPORTED_DEVICE_TYPE = "camera") for the Nikon Download Center Z-Series firmware pages, with fixture tests [→ Details](plan/E026.md)
 
+### Wave 16 — Source-Aware HTTP Pacing
+
+> Depends on the existing scraping client, module engine, and manual/scheduled check paths. Extends the centralized enforcement point without modifying completed epic definitions.
+
+- [ ] E027 [P1] [TECHNICAL] {PRD:CAP-008}{SAD:ADR-0012} Source-Aware HTTP Pacing — shared per-origin crawl-delay pacing, bounded retries, budgets, and cancellation [→ Details](plan/E027.md)
+
 
 ## Dependency Diagram
 
@@ -164,6 +170,9 @@ graph LR
 
     M6 --> M15["Nikon Z-Series<br>module"]
     M15 -->|"E026"| M15
+
+    M6 --> M16["Source-aware<br>HTTP pacing"]
+    M16 -->|"E027"| M16
 ```
 
 ## Execution Wave Summary
@@ -185,6 +194,7 @@ graph LR
 | 13 | E024 | N/A (single) | Compact inventory card layout and type badge removal. |
 | 14 | E025 | N/A (single) | Viltrox Lenses official module (Shopify-hosted firmware pages, two-step index/lens page flow). |
 | 15 | E026 | N/A (single) | Nikon Z-Series official camera module (Nikon Download Center XML catalog + per-product firmware page, C:Ver. prefix stripping). |
+| 16 | E027 | N/A (single) | Central HTTP client extension for source-declared delays, shared origin pacing, bounded retries/budgets, and cancellation safety. |
 
 
 ## Parallel Execution Guidance
@@ -204,12 +214,14 @@ graph LR
 - **API router registration**: Each product epic mounts a router. Register routers from a single aggregator module.
 - **Check-result contract (E010)**: E012, E013, E014, E015 all consume the detection result/event shape. Freeze that contract in E010.
 - **Container build inputs**: E017 extends the same Dockerfile/workflow surface E003 introduces; sequence E017 after E003.
+- **Cancellation ownership (E027)**: The client deadline and module-runner timeout must compose without detached tasks or swallowed cancellation; verify both manual and scheduled check callers.
 
 ### Shared Resource Conflicts
 
 - `backend/src/db/migrations/` — append-only numbered files; never renumber.
 - App factory / router aggregator — single owner per change; coordinate additions.
 - `Dockerfile` and `.github/workflows/` — E001 seeds, E003 wires CI, E017 extends to multi-arch publish; sequential on these files.
+- `backend/src/binocular/scraping/` and check timeout boundaries — E027 is the sole owner while extending shared pacing and cancellation behavior.
 
 ## PRD Capability Coverage
 
@@ -222,7 +234,7 @@ graph LR
 | CAP-005 Manual On-Demand Checking | P1 | E012 |
 | CAP-006 Update Detection & Comparison | P1 | E010 |
 | CAP-007 Notification & Alerting | P1 | E014, E021 |
-| CAP-008 Responsible Scraping Enforcement | P1 | E005 |
+| CAP-008 Responsible Scraping Enforcement | P1 | E005, E027 |
 | CAP-009 Self-Hosted Operability | P1 | E001, E008, E021 |
 | CAP-010 Activity Logging & Visibility | P2 | E015 |
 | CAP-011 Official Starter Modules | P2 | E011, E016, E025, E026 |
@@ -239,12 +251,13 @@ graph LR
 | ADR-0003 React/Vite/Tailwind SPA with shadcn/ui | accepted | E004 |
 | ADR-0004 SQLite + aiosqlite + raw SQL | accepted | E002 |
 | ADR-0005 Unsandboxed extension engine, two-phase validation | accepted | E007, E016, E025, E026 |
-| ADR-0006 Centralized responsible-scraping client | accepted | E005 |
+| ADR-0006 Centralized responsible-scraping client | superseded | E005 |
 | ADR-0007 APScheduler + Apprise | accepted | E013 (scheduling), E014 (notifications) |
 | ADR-0008 Trusted-LAN security, optional basic auth | accepted | E001, E008 |
 | ADR-0009 Module-derived device type | accepted | E006 |
 | ADR-0010 Environment-Variable Based Configuration and Database Seeding | accepted | E021 |
 | ADR-0011 Real-Time Module Validation and Upload Progress Streaming | accepted | E022 |
+| ADR-0012 Source-aware centralized scraping with shared per-origin pacing and bounded cancellation | accepted | E027 |
 
 
 ### DOD DDR Coverage
@@ -294,7 +307,7 @@ graph LR
 |--------|---------------|-------------|
 | App factory + router aggregator, structlog config | E001 | All |
 | DB connection, migration runner, repository base | E002 | E006, E007, E009, E010, E013, E014, E015, E018 |
-| ScrapeClient | E005 | E007, E011, E016, E019, E025, E026 |
+| ScrapeClient | E005; extended by E027 | E007, E011, E012, E013, E016, E019, E023, E025, E026 |
 | Module engine + authoring contract | E007 | E009, E010, E011, E016, E019, E022, E025, E026 |
 | Scheduler service | E013 | E014, E015, E018 |
 | Notifier service (with HTML email + dedup) | E014 | E020 |

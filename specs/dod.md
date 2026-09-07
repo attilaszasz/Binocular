@@ -1,6 +1,6 @@
 # Deployment & Operations Document: Binocular
 
-> Date: 2026-06-10 | Status: Draft
+> Date: 2026-09-06 | Status: Draft
 
 ## Deployment Summary and Context
 
@@ -54,7 +54,7 @@ flowchart LR
 ```
 
 - **Pipeline tooling**: GitHub Actions.
-- **Quality gates (PRs and pushes)**: Ruff + mypy `--strict` (backend), Biome/ESLint + `tsc` (frontend); `pytest` + `pytest-asyncio`, Vitest + React Testing Library, one Playwright smoke test, and golden/fixture module-correctness tests.
+- **Quality gates (PRs and pushes)**: Ruff + mypy `--strict` (backend), Biome/ESLint + `tsc` (frontend); `pytest` + `pytest-asyncio`, Vitest + React Testing Library, one Playwright smoke test, golden/fixture module-correctness tests, and deterministic HTTP-client tests for source-delay selection, per-origin pacing, retries, concurrency, bounded execution, timeout, and cancellation using injected timing and scripted transports rather than real sleeps or live sources.
 - **Build stack**: `docker/setup-qemu-action` → `docker/setup-buildx-action` → `docker/login-action` (GHCR via `GITHUB_TOKEN`, `permissions: packages: write`) → `docker/metadata-action` → `docker/build-push-action` with `platforms: linux/amd64,linux/arm64`.
 - **Publish condition**: Images are pushed only on SemVer tag refs; PR builds build-but-do-not-push. Layer caching via `type=gha` (`mode=max`).
 - **Secrets in pipeline**: Only the built-in `GITHUB_TOKEN` for GHCR; no application secrets are baked into the image or passed as build args.
@@ -111,7 +111,7 @@ No external telemetry, metrics backend, or APM — by design.
 - **In-app activity log**: A bounded, size-limited recent-events log persisted in SQLite and viewable in the UI.
 
 ### Metrics
-- **Application signals**: Surfaced in the UI, not exported — failed-scrape count, last-success timestamps per device/module, notification dispatch failures.
+- **Application signals**: Surfaced in the UI, not exported — failed-scrape count, last-success timestamps per device/module, bounded deadline/cancellation failures, notification dispatch failures.
 - **Infrastructure signals**: Container health and data-volume disk usage observed via the operator's own Docker tooling.
 
 ### Health Checking
@@ -125,6 +125,7 @@ No external telemetry, metrics backend, or APM — by design.
 ## Reliability Engineering
 
 - **Availability target**: Best-effort homelab availability; `restart: unless-stopped` plus the HEALTHCHECK recover from crashes.
+- **Outbound-work containment**: A check's finite end-to-end budget covers robots lookup, shared per-origin queueing/pacing, retry backoff, redirects, and HTTP attempts. Timeout or cancellation must terminate pending waits and retries and prevent later background requests. Source-specific budget accommodation is automatic and capped; origins without a longer valid crawl delay retain existing budgets.
 - **RPO** (Recovery Point Objective): **≤ 24h** — a nightly backup of `/app/data` to a second host/disk/NAS.
 - **RTO** (Recovery Time Objective): **≤ 1h** — pull the image tag, restore the data file, `docker compose up -d`.
 
@@ -141,6 +142,7 @@ No external telemetry, metrics backend, or APM — by design.
 - Non-root image builds and HEALTHCHECK pass.
 - A restore from backup has been verified at least once.
 - SMTP and/or Gotify notification channels validated end-to-end.
+- Deterministic HTTP-client validation confirms delay selection, cross-origin independence, same-origin concurrency pacing, every retry, finite source-aware budgets, and no request issuance after timeout/cancellation.
 - Operator has pinned a specific SemVer tag.
 
 ## Security and Compliance in Operations
@@ -221,6 +223,7 @@ flowchart LR
 - Operator exposes port 8000 beyond the trusted LAN — mitigated only by documentation and optional basic auth.
 - Operator never configures or tests backups — mitigated by shipping a built-in scheduled backup job and verified-restore documentation.
 - Multi-arch QEMU build flakiness — mitigated by caching and optional native arm64 runners.
+- Long source-declared crawl delays can exceed a multi-request check's finite cap — mitigated by automatic bounded budget accommodation and visible failure rather than unbounded background work or policy violation.
 
 ### Assumptions
 
@@ -232,6 +235,7 @@ flowchart LR
 
 - Single container, single port, single data volume, non-root, zero-config startup.
 - No external database, broker, telemetry, or cloud dependency.
+- Responsible-scraping behavior requires no operator configuration; source-specific timing remains centralized, bounded, and cancellation-safe, with existing budgets preserved for unaffected origins.
 
 ### Open Questions
 

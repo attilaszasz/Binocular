@@ -1,6 +1,6 @@
 # Software Architecture Document: Binocular
 
-> Date: 2026-06-10 | Status: Draft
+> Date: 2026-09-06 | Status: Draft
 
 ## Purpose and Scope
 
@@ -13,11 +13,11 @@ The system boundary is a single deployable application running on a private, tru
 **Language/Version**: Python 3.13+ (backend); TypeScript 5.x / React 19 (frontend)  
 **Primary Dependencies**: FastAPI, Uvicorn, aiosqlite, Pydantic, APScheduler, Apprise, httpx, structlog, Jinja2, BeautifulSoup4 (backend); React, Vite, Tailwind CSS 4.x (CSS-first config via `@tailwindcss/vite`), shadcn/ui, Radix UI primitives, React Router, TanStack Query, React Hook Form, class-variance-authority, clsx, tailwind-merge, tw-animate-css, lucide-react (frontend)  
 **Storage**: SQLite single file (`binocular.db`) via aiosqlite with raw SQL and a numbered-migration runner; no ORM, no external DB server  
-**Testing**: pytest + pytest-asyncio, httpx.AsyncClient (backend); Vitest + React Testing Library, one Playwright smoke test (frontend); golden/fixture-based module correctness tests  
+**Testing**: pytest + pytest-asyncio, httpx.AsyncClient and MockTransport, injected monotonic clocks/sleepers (backend); Vitest + React Testing Library, one Playwright smoke test (frontend); golden/fixture-based module correctness tests
 **Target Platform**: Linux Docker container (`python:3.13-slim`), single port 8000; also runnable directly on a host with Python/Node runtimes  
 **Project Type**: Web application — Python/FastAPI backend + React SPA, single-process monolith  
-**Performance Goals**: Responsive UI on mobile and desktop; concurrent multi-site checks via async I/O without blocking the UI; modest homelab hardware footprint  
-**Constraints**: Self-contained storage (no external DB), single-container/single-volume/zero-config/non-root operability, trusted-LAN single-user, no telemetry, polite-scraping mandatory, unsandboxed extension execution  
+**Performance Goals**: Responsive UI on mobile and desktop; concurrent cross-origin checks via async I/O without blocking the UI; source-specific pacing across same-origin work; modest homelab hardware footprint
+**Constraints**: Self-contained storage (no external DB), single-container/single-volume/zero-config/non-root operability, trusted-LAN single-user, no telemetry, polite-scraping mandatory, bounded cancellation-safe check execution, existing budgets preserved for origins without a longer valid crawl delay, unsandboxed extension execution
 **Scale/Scope**: Single user, single instance; inventory of roughly 5–50+ devices; one background scheduler concurrent with UI reads
 
 ## System Scope and Context
@@ -114,8 +114,9 @@ sequenceDiagram
     participant Notify as Notifier
     Sched->>Svc: Trigger check (device type)
     Svc->>Eng: Run module(url, model, client)
-    Eng->>HTTP: Fetch (robots, UA, rate limit)
-    HTTP->>Vendor: GET firmware page
+    Eng->>HTTP: Fetch (robots, UA, deadline)
+    HTTP->>HTTP: Select delay + reserve origin slot
+    HTTP->>Vendor: GET firmware page / retry
     Vendor-->>HTTP: HTML
     HTTP-->>Eng: Response
     Eng-->>Svc: latest_version
@@ -130,7 +131,9 @@ sequenceDiagram
 
 - Module raises / times out → caught by the per-invocation error boundary (Exception + SystemExit, timeout via `asyncio.wait_for`); recorded as a failed check in the activity log; other modules and the core process continue. See {SAD:ADR-0005}.
 - Vendor page changed / unparseable → module returns no version or errors → surfaced as a visible "scrape failed" status with last-success timestamp; never a silent miss.
-- Vendor returns 429/5xx → scrape client applies exponential backoff and per-domain rate limiting; persistent failure logged. See {SAD:ADR-0006}.
+- Vendor returns 429/5xx → every retry re-enters shared per-origin pacing and exponential backoff within the caller's end-to-end deadline; persistent failure logged. See {SAD:ADR-0012}.
+- Source declares a valid `Crawl-delay` longer than the conservative default → the effective per-origin interval increases automatically and bounded multi-request budget accommodation applies; missing, invalid, or shorter declarations leave default pacing and budgets unchanged.
+- Check times out or is cancelled during robots lookup, pacing, backoff, redirect handling, or I/O → pending waits and retries stop, cancellation propagates after cleanup, and no subsequent background request is issued. See {SAD:ADR-0012}.
 - Notification channel (SMTP/Gotify) failure → dispatch error logged in the activity log for operator visibility; check result still persisted.
 - Already-notified version detected → no duplicate notification; last-notified version tracked per device; a new alert dispatches only when a version newer than the last-notified version appears.
 - SQLite lock contention → `busy_timeout` (5s) wait; WAL allows concurrent reads during scheduler writes. See {SAD:ADR-0004}.
@@ -167,7 +170,7 @@ Trusted-LAN, single-user model: no authentication by default, with optional basi
 
 ### Reliability
 
-Set-and-forget operation: the scheduler runs in-process and resumes on restart; missed windows are retried on the next interval rather than replayed. Per-module error boundaries and timeouts guarantee a broken module cannot crash the host. Honest-failure principle — failures surface as visible status with last-success timestamps, never silent misses. Scrape resilience handled via backoff/rate limiting at the HTTP client. See {SAD:ADR-0006}, {SAD:ADR-0007}.
+Set-and-forget operation: the scheduler runs in-process and resumes on restart; missed windows are retried on the next interval rather than replayed. Per-module error boundaries and end-to-end deadlines guarantee a broken module cannot crash the host or continue outbound work after timeout/cancellation. Honest-failure principle — failures surface as visible status with last-success timestamps, never silent misses. Scrape resilience uses shared normalized-origin pacing, source-declared crawl-delay selection, and retry backoff; source-aware budget accommodation is finite and leaves unaffected origins' budgets unchanged. See {SAD:ADR-0012}, {SAD:ADR-0007}.
 
 ### Observability
 
@@ -179,7 +182,7 @@ All state in SQLite (`binocular.db`) on the `/app/data` volume; backup = copy th
 
 ### Integration Strategy
 
-Outbound only: manufacturer firmware pages are scraped through the host-provided polite HTTP client (the single enforcement point for robots.txt, identifiable User-Agent, per-domain rate limiting, and backoff); notifications dispatch through Apprise — Email/SMTP (as responsive, light-themed HTML via Jinja2 templates with mobile-friendly layout) and Gotify at launch. No inbound integrations or third-party APIs. See {SAD:ADR-0006}, {SAD:ADR-0007}.
+Outbound only: manufacturer firmware pages are scraped through the host-provided polite HTTP client, the single enforcement point for robots.txt, identifiable User-Agent, shared per-origin pacing, source-declared crawl delays, bounded retries/backoff, and cancellation; notifications dispatch through Apprise — Email/SMTP (as responsive, light-themed HTML via Jinja2 templates with mobile-friendly layout) and Gotify at launch. No inbound integrations or third-party APIs. See {SAD:ADR-0012}, {SAD:ADR-0007}.
 
 ### Operations
 
@@ -189,8 +192,8 @@ Distributed primarily as a Docker image (single port, two volumes, non-root with
 
 | Attribute | Target | Measurement | Notes |
 |-----------|--------|-------------|-------|
-| Performance | Concurrent multi-site checks without UI blocking | Async I/O behavior under a multi-device check | I/O-bound workload; GIL not a constraint |
-| Reliability | A broken/timed-out module never crashes the core; no silent missed updates | Fault-injection tests + fixture regression | Honest-failure principle |
+| Performance | Concurrent cross-origin checks without UI blocking; same-origin attempts respect the effective delay | Deterministic virtual-time multi-device checks | Existing timing budget retained when no valid crawl delay longer than the default applies |
+| Reliability | A broken, timed-out, or cancelled module never crashes the core or issues later background requests; no silent missed updates | Fault injection plus deterministic deadline/cancellation and fixture regression tests | End-to-end budget includes pacing and retries |
 | Security | No hardcoded secrets; non-root container; parameterized SQL | Static analysis + image inspection | ACE trust boundary accepted by design |
 | Maintainability | mypy --strict (backend) and tsc strict (frontend) pass; pinned deps | CI type-check + lint (Ruff/Biome) | Single-maintainer OSS |
 | Scalability | Single-user, single-instance workload served comfortably | Manual load on representative inventory | No horizontal scaling goal |
@@ -207,12 +210,13 @@ Project-level architectural decisions are maintained as standalone MADR files un
 | ADR-0003 | React + Vite + Tailwind SPA with shadcn/ui Component Library, served by FastAPI as static files | accepted | 2026-06-08 | — | [0003-react-vite-tailwind-spa-served-by-fastapi-as-static-files.md](adrs/0003-react-vite-tailwind-spa-served-by-fastapi-as-static-files.md) |
 | ADR-0004 | SQLite file storage with aiosqlite and raw SQL (no ORM) | accepted | 2026-05-31 | — | [0004-sqlite-file-storage-with-aiosqlite-and-raw-sql-no-orm.md](adrs/0004-sqlite-file-storage-with-aiosqlite-and-raw-sql-no-orm.md) |
 | ADR-0005 | Unsandboxed extension module engine with two-phase validation | accepted | 2026-05-31 | — | [0005-unsandboxed-extension-module-engine-with-two-phase-validation.md](adrs/0005-unsandboxed-extension-module-engine-with-two-phase-validation.md) |
-| ADR-0006 | Centralized responsible-scraping HTTP client provided to modules | accepted | 2026-05-31 | — | [0006-centralized-responsible-scraping-http-client-provided-to-modules.md](adrs/0006-centralized-responsible-scraping-http-client-provided-to-modules.md) |
+| ADR-0006 | Centralized responsible-scraping HTTP client provided to modules | superseded | 2026-05-31 | — | [0006-centralized-responsible-scraping-http-client-provided-to-modules.md](adrs/0006-centralized-responsible-scraping-http-client-provided-to-modules.md) |
 | ADR-0007 | In-process scheduling with APScheduler and Apprise notifications with notification deduplication | accepted | 2026-06-07 | — | [0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md](adrs/0007-in-process-scheduling-with-apscheduler-and-apprise-notifications.md) |
 | ADR-0008 | Trusted-LAN single-user security model with optional basic auth | accepted | 2026-05-31 | — | [0008-trusted-lan-single-user-security-model-with-optional-basic-auth.md](adrs/0008-trusted-lan-single-user-security-model-with-optional-basic-auth.md) |
 | ADR-0009 | Module-Derived Device Type — Remove Standalone Device Type Field, Derive from Linked Module | accepted | 2026-06-04 | — | [0009-module-derived-device-type-remove-standalone-device-type-field.md](adrs/0009-module-derived-device-type-remove-standalone-device-type-field.md) |
 | ADR-0010 | Environment-Variable Based Configuration and Database Seeding | accepted | 2026-06-12 | — | [0010-environment-variable-based-configuration-and-database-seeding.md](adrs/0010-environment-variable-based-configuration-and-database-seeding.md) |
 | ADR-0011 | Real-Time Module Validation and Upload Progress Streaming | accepted | 2026-06-12 | — | [0011-real-time-module-validation-and-upload-progress-streaming.md](adrs/0011-real-time-module-validation-and-upload-progress-streaming.md) |
+| ADR-0012 | Source-aware centralized scraping with shared per-origin pacing and bounded cancellation | accepted | 2026-09-06 | ADR-0006 | [0012-source-aware-centralized-scraping-with-shared-per-origin-pacing-and-bounded-cancellation.md](adrs/0012-source-aware-centralized-scraping-with-shared-per-origin-pacing-and-bounded-cancellation.md) |
 
 <!-- Rows are managed by the ADR Author subagent. Do not embed full decision prose here. -->
 
@@ -225,6 +229,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - False negatives (missed updates) are invisible without telemetry — mitigated by fixture-based correctness validation at release.
 - Notification-channel misconfiguration/outage goes unnoticed — mitigated by activity-log visibility.
 - Scheduler shares the app process lifecycle — a restart pauses jobs until the next interval.
+- Very long source-declared crawl delays can prevent a multi-request check from completing inside its finite cap — mitigated by visible bounded failure rather than violating source pacing.
 
 ### Assumptions
 
@@ -239,6 +244,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Single container, single port, single data volume, non-root, zero-config startup.
 - No telemetry or central data collection.
 - Modules must use the host-provided HTTP client for all outbound scraping.
+- The scraping client must preserve default pacing and execution budgets unless a longer valid source delay requires bounded accommodation, and timeout/cancellation must prevent subsequent requests.
 
 ### Open Questions
 
@@ -250,7 +256,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 
 - SQLite persistence uses an application-owned startup migration runner with append-only numbered SQL files, `schema_version` tracking, required connection pragmas, and a fatal pre-migration backup gate before pending migrations apply.
 - Domain repositories use a shared raw-SQL repository base with parameter binding and allowlisted dynamic identifiers; no ORM abstraction is introduced.
-- Responsible scraping uses a host-owned async `httpx` client wrapper with robots.txt checks, identifiable User-Agent defaults, per-origin pacing, bounded retry/backoff, and typed diagnostics for visible failures.
+- Responsible scraping uses a host-owned async `httpx` client wrapper with robots.txt checks, identifiable User-Agent defaults, and one normalized-origin pacing timeline shared by concurrent checks and every retry. The effective interval is the greater of the conservative default and a valid applicable source `Crawl-delay`; bounded source-aware end-to-end deadlines include pacing/backoff and propagate cancellation so no later background requests issue, while unaffected origins retain existing budgets. Deterministic tests inject monotonic timing and scripted transports. See {SAD:ADR-0012}.
 - Extension modules use a trusted in-process Python contract with importlib path loading, host ScrapeClient injection, per-invocation timeout/error boundaries, and two-phase static/runtime validation; validation is not a sandbox.
 - Custom module uploads stream real-time validation progress updates (newline-delimited JSON events) to the frontend during the AST (Phase 1) and runtime (Phase 2) validation steps.
 - The Modules page serves as the primary self-service onboarding path for module creation, with a "Create a Module" guidance section and a downloadable AI Module Kit (contract reference, starter template, working example, structured AI instructions) served as static backend assets. Validation error output includes an AI-friendly copy-paste feature.

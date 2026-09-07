@@ -1,1 +1,1 @@
-"""Binocular test suite."""
+"""Binocular test package."""

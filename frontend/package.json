@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
+    "test": "NODE_OPTIONS=--disable-warning=DEP0205 vitest",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 # Product Requirements Document: Binocular
 
-> Date: 2026-06-10 | Status: Draft
+> Date: 2026-09-06 | Status: Draft
 
 ## Product Overview
 
@@ -70,7 +70,7 @@ Evidence is observational and domain-driven rather than formal market research, 
 
 - **Data ownership & portability**: All state lives in one backup-able volume; no external backend, no account, no cloud dependency.
 - **Honest failure**: Never silently miss. Surface last-success timestamps and errors in the activity log; a broken check must be visible, not invisible.
-- **Polite by default**: Identifiable User-Agent, robots.txt respect, and conservative per-source rate limits/backoff are built in, not optional add-ons.
+- **Polite by default**: Identifiable User-Agent, robots.txt respect, source-declared crawl delays, and conservative per-origin pacing/backoff are built in, not optional add-ons. Concurrent checks and retries share the same source pacing automatically, while sources without a longer declared delay retain the default behavior.
 - **Least-privilege & explicit trust boundary**: Non-root container; user-supplied/imported modules are explicitly the user's responsibility to vet — the product does not pretend they are sandboxed.
 - **Set-and-forget reliability**: Zero-config start, survives restarts and upgrades; correctness is valued over feature breadth.
 - **Local extensibility without a marketplace**: A clear authoring contract plus import/export enables sharing; an in-app registry/marketplace is intentionally out of scope. An AI-assisted authoring path (downloadable prompt kit) lowers the barrier to creating valid modules.
@@ -86,7 +86,7 @@ The product scope equals the full product brief: a complete detect → compare �
 - A pluggable extension-module engine with a strict authoring contract, plus full module lifecycle management (upload, update, delete) through the UI with real-time visual progress reporting during validation and upload.
 - Automated scheduled checking with per-module frequency (user-configurable per device), plus manual on-demand checks (single and bulk) with side-by-side version comparison.
 - Update detection, version comparison, and notification dispatch via responsive HTML Email/SMTP (matching the light color scheme) and Gotify. Only one notification is sent per detected version; a follow-up notification is dispatched only when a version newer than the last-notified version appears. Both notification channels can also be initialized and automatically updated from container environment variables.
-- Responsible-scraping enforcement (robots.txt, identifiable User-Agent, rate limiting, backoff) provided centrally by the host.
+- Responsible-scraping enforcement provided centrally by the host: robots.txt and valid source-declared crawl delays, identifiable User-Agent, shared per-origin pacing across concurrent requests and retries, and exponential backoff. Multi-request checks adapt without required user configuration, remain bounded, and stop outbound work after timeout or cancellation; sources without a longer declared delay retain default pacing and execution budgets.
 - Activity logging with in-UI visibility and rolling/size-bounded retention.
 - Officially shipped starter modules for Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, Godox Flashes, Viltrox Lenses, and Nikon Z-Series that are automatically seeded and registered in the database on startup as working examples and templates.
 - Self-hosted operability: Docker distribution, single data volume, zero-config startup, non-root execution, configurable container UID/GID (PUID/PGID), responsive UI with dark mode and collapsible navigation.
@@ -116,7 +116,7 @@ Project-level execution anchors used by `specs/project-plan.md`. These are capab
 | CAP-005 | Manual On-Demand Checking | P1 | Users trigger immediate single or bulk checks and compare stored vs. latest versions side by side. |
 | CAP-006 | Update Detection & Comparison | P1 | The system reliably determines whether a newer version exists than the user's recorded version. |
 | CAP-007 | Notification & Alerting | P1 | Newer-version detections dispatch notifications once per version via configurable responsive HTML Email/SMTP (light-themed, mobile-friendly) and Gotify channels, with re-notification only when a version newer than the last-notified version appears. Both notification channels can be configured and automatically enabled/updated from container environment variables. |
-| CAP-008 | Responsible Scraping Enforcement | P1 | All outbound checks honor robots.txt, identifiable User-Agent, rate limits, and backoff by default. |
+| CAP-008 | Responsible Scraping Enforcement | P1 | All outbound checks automatically honor robots.txt and valid source-declared crawl delays, use an identifiable User-Agent, and share conservative per-origin pacing across concurrent requests and every retry with exponential backoff. Multi-request checks remain bounded and cancellation-safe, while sources without a longer declared delay retain default pacing and execution budgets. |
 | CAP-009 | Self-Hosted Operability | P1 | Single-container, single-volume, zero-config, non-root deployment with PUID/PGID support that survives restarts and upgrades with no data loss. Settings, authentication, and notification channels can be configured or updated via container environment variables. |
 | CAP-010 | Activity Logging & Visibility | P2 | All check activity and errors are recorded in a size-bounded, in-UI viewable log. |
 | CAP-011 | Official Starter Modules | P2 | Sony Alpha, Panasonic Lumix MFT Cameras, Panasonic Lumix Lenses, Godox Flashes, Viltrox Lenses, and Nikon Z-Series modules are automatically registered and seeded in the database on startup, serving as immediate value and templates. |
@@ -134,6 +134,7 @@ Success is defined by **reliability and correctness**, validated before release 
 | Missed-update rate (false negatives) | Zero for supported device types | A silently missed update is the most damaging failure. | Per release, fixture + regression validation |
 | False-alert rate (false positives) | Zero for supported device types | False alerts erode set-and-forget trust. | Per release, fixture + regression validation |
 | Scraper resilience to source changes | Source changes produce a visible "scrape failed" status, never a silent miss | Manufacturer pages change; honest failure is the safeguard. | Per release + when a source breaks |
+| Responsible-scraping correctness | Effective source delay is enforced across concurrent requests and every retry; timed-out or cancelled checks issue no further requests | Source policy and bounded execution must hold under real multi-request behavior, not only isolated requests. | Per release, deterministic pacing/retry/cancellation tests |
 | Notification delivery success | Detected update reliably produces a delivered Email (responsive HTML, light-themed) and Gotify notification | The alert is the entire point of an unattended tool. | Per release, end-to-end alert-path test |
 | Unattended reliability | Runs across restarts/upgrades with no data loss | "Set and forget" is the operability promise. | Per release, restart/upgrade smoke test |
 
@@ -170,7 +171,8 @@ Success is defined by **reliability and correctness**, validated before release 
 - **Legal / ToS exposure** from scraping third-party sites despite favorable public-data case law — mitigated by polite-scraping defaults and clear user guidance; cannot be eliminated.
 - **Invisible false negatives** (missed updates) being undetectable without telemetry — mitigated by fixture-based correctness validation at release.
 - **Notification-channel failures** (SMTP/Gotify misconfiguration or outage) going unnoticed — mitigated by activity-log visibility and delivery validation.
-- **Aggressive default polling** harming sources or the project's reputation — mitigated by conservative default rate limits and backoff.
+- **Aggressive or inconsistent polling** harming sources or the project's reputation — mitigated by conservative default pacing, source-declared crawl-delay support, shared per-origin enforcement across concurrency and retries, and backoff.
+- **Long source-declared delays** causing multi-request checks to exceed their useful execution window — mitigated by automatic bounded budgets, visible failure when work cannot complete, and cancellation that prevents further background requests without changing budgets for unaffected sources.
 
 ## Open Questions
 
@@ -183,7 +185,7 @@ Validation is correctness-first and pre-release, since the product collects no f
 - **Fixture-based correctness**: Captured real-page snapshots for the official Sony, Panasonic, Godox, Viltrox, and Nikon modules verify that detected latest versions match the actual published versions, with regression coverage when sources change.
 - **End-to-end alert-path smoke test**: Exercise the full detect → compare → notify loop for both notification channels (Email/SMTP and Gotify).
 - **Operability smoke test**: Verify zero-config startup, single-volume persistence, non-root execution, and no data loss across restarts and upgrades.
-- **Responsible-scraping verification**: Confirm robots.txt respect, identifiable User-Agent, rate limiting, and backoff behavior before release.
+- **Responsible-scraping verification**: Deterministically confirm delay selection, robots.txt respect, identifiable User-Agent, shared per-origin pacing across concurrent requests and every retry, exponential backoff, bounded multi-request execution, preserved default budgets, and no requests after timeout or cancellation.
 - **Initial release**: Ship the full scope with the official modules as both immediate value and authoring templates; broader device coverage grows through user/community-authored modules.
 
 ## Domain Glossary / Terminology
@@ -195,7 +197,7 @@ Validation is correctness-first and pre-release, since the product collects no f
 - **Check**: An execution (manual or scheduled) that uses a module to determine the latest available version for a device.
 - **Update Confirmation**: The one-click action a user takes after physically updating a device, syncing the stored version and resetting alert status.
 - **Activity Log**: The size-bounded, in-UI record of all check activity and errors.
-- **Responsible / Polite Scraping**: Fetching third-party pages while honoring robots.txt, sending an identifiable User-Agent, and applying rate limits and backoff.
+- **Responsible / Polite Scraping**: Fetching third-party pages while honoring robots.txt and valid source-declared crawl delays, sending an identifiable User-Agent, and applying shared per-origin pacing and backoff within bounded, cancellation-safe checks.
 
 ## Handoff Guidance
 

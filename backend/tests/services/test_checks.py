@@ -337,6 +337,7 @@ async def test_official_module_health_monitoring(
     assert row is not None
     assert row["consecutive_failures"] == 0
     assert row["last_success"] is not None
+    last_success = row["last_success"]
 
     # 3. Simulate failure by changing file_path to nonexistent
     await conn.execute(
@@ -361,6 +362,12 @@ async def test_official_module_health_monitoring(
         row = await cursor.fetchone()
         assert row is not None
         assert row["consecutive_failures"] == 1
+        cursor = await conn.execute(
+            "SELECT last_success FROM modules WHERE id = ?", (module_id,)
+        )
+        success_row = await cursor.fetchone()
+        assert success_row is not None
+        assert success_row["last_success"] == last_success
         mock_send.assert_not_called()
 
         # Second failure

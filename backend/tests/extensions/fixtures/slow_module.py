@@ -7,6 +7,6 @@ SUPPORTED_DEVICE_TYPE = "camera"
 
 
 def check_firmware(url: str, model: str, http_client: object) -> dict[str, str]:
-    """Block for 60 seconds — should be killed by timeout."""
-    time.sleep(60)
+    """Outlive the runner deadline without slowing the test process."""
+    time.sleep(0.6)
     return {"latest_version": "never"}

@@ -9,7 +9,7 @@ The system MUST surface failures visibly and MUST NOT silently miss an update. E
 
 ### II. Polite by Default
 
-All outbound scraping MUST flow through the centralized host-provided HTTP client and MUST honor robots.txt (RFC 9309), send an identifiable User-Agent, and apply per-domain rate limiting and exponential backoff. Modules MUST NOT perform direct outbound requests. — Responsible-scraping behavior protects third-party sources and the project's legal/reputational standing, and a single enforcement point is the only way to guarantee it.
+All outbound scraping MUST flow through the centralized host-provided HTTP client and MUST honor robots.txt (RFC 9309), send an identifiable User-Agent, and apply per-origin pacing and exponential backoff. The client MUST honor valid source-declared crawl delays as non-standard politeness hints without reducing the conservative default for sources that omit or declare a shorter delay. Pacing MUST be shared across concurrent checks and applied before every network attempt, including retries. Modules MUST NOT perform direct outbound requests. — Responsible-scraping behavior protects third-party sources and the project's legal/reputational standing, and a single enforcement point is the only way to guarantee it.
 
 ### III. Data Ownership & Self-Containment
 
@@ -25,7 +25,7 @@ Backend code MUST pass `mypy --strict` and frontend code MUST pass `tsc` in stri
 
 ### VI. Set-and-Forget Reliability
 
-The application MUST start with zero required configuration, persist all state to one defined volume, and survive container restarts and image upgrades with no data loss. A broken or timed-out module MUST NOT crash the core process. — The product promise is unattended operation for months; reliability across restarts/upgrades and fault isolation between modules and core are what make that promise real.
+The application MUST start with zero required configuration, persist all state to one defined volume, and survive container restarts and image upgrades with no data loss. A broken or timed-out module MUST NOT crash the core process. Multi-request checks MUST accommodate source-specific crawl delays automatically within bounded end-to-end execution budgets; timeout or cancellation MUST stop pending waits, retries, and background requests. Sources without a longer valid declared delay MUST retain their existing execution budgets. — The product promise is unattended operation for months; reliability across restarts/upgrades, bounded cancellation-safe work, and fault isolation between modules and core are what make that promise real.
 
 ### VII. Agent Output Style
 
@@ -53,7 +53,7 @@ All agent output MUST be concise and outcome-oriented. This principle supersedes
 
 - **Coverage Target**: 80%
 - **Required QC Categories**: linting, static analysis, security scanning, coverage
-- **Test Strategy**: Test-after — unit + integration (pytest + pytest-asyncio, Vitest + React Testing Library), one Playwright end-to-end smoke test, and golden/fixture-based correctness tests for shipped modules. Security scanning via vulnerability scanning of the built image (Trivy) in CI.
+- **Test Strategy**: Test-after — unit + integration (pytest + pytest-asyncio, Vitest + React Testing Library), one Playwright end-to-end smoke test, and golden/fixture-based correctness tests for shipped modules. HTTP pacing and retry behavior MUST have deterministic tests using injected clocks/sleepers and scripted transports, covering delay selection, shared per-origin concurrency, every retry, bounded execution, timeout, and cancellation without real sleeps. Security scanning via vulnerability scanning of the built image (Trivy) in CI.
 - **Linting / Formatting**: Ruff (backend), Biome/ESLint (frontend), `mypy --strict` and `tsc` strict for static analysis
 
 ## Source Code Layout
@@ -75,4 +75,4 @@ All agent output MUST be concise and outcome-oriented. This principle supersedes
 - Complexity beyond these principles MUST be justified and documented.
 - The trusted-LAN single-user threat model is assumed; exposing the application to untrusted networks is outside the supported security posture and MUST be documented as such wherever relevant.
 
-**Version**: 1.1.1 | **Last Amended**: 2026-06-10
+**Version**: 1.2.0 | **Last Amended**: 2026-09-06
