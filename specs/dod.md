@@ -54,7 +54,7 @@ flowchart LR
 ```
 
 - **Pipeline tooling**: GitHub Actions.
-- **Quality gates (PRs and pushes)**: Ruff + mypy `--strict` (backend), Biome/ESLint + `tsc` (frontend); `pytest` + `pytest-asyncio`, Vitest + React Testing Library, one Playwright smoke test, golden/fixture module-correctness tests, and deterministic HTTP-client tests for source-delay selection, per-origin pacing, retries, concurrency, bounded execution, timeout, and cancellation using injected timing and scripted transports rather than real sleeps or live sources. Canon module gates additionally exercise captured EOS R, RF, and RF-S catalogue/product/firmware fragments; exact and near-name matching; lens/accessory classification; OS-package deduplication; release-page links; independent module seeding/execution; explicit no-firmware and structural failures; and shared 30-second Canon-origin pacing.
+- **Quality gates (PRs and pushes)**: Ruff + mypy `--strict` (backend), Biome/ESLint + `tsc` (frontend); `pytest` + `pytest-asyncio`, Vitest + React Testing Library, one Playwright smoke test, golden/fixture module-correctness tests, and deterministic HTTP-client tests for source-delay selection, per-origin pacing, retries, concurrency, bounded execution, timeout, and cancellation using injected timing and scripted transports rather than real sleeps or live sources. Canon module gates additionally exercise captured EOS R, RF, and RF-S catalogue/product/firmware fragments; exact and near-name matching; lens/accessory classification; OS-package deduplication; release-page links; independent module seeding/execution; explicit no-firmware and structural failures; persisted endpoint-cache migration and restart persistence; 24-hour expiry; endpoint invalidation and full-discovery fallback; concurrent same-model refresh coordination; version search, manual, and scheduled checks; one live cached firmware request; 0-30 second warm latency; and shared 30-second Canon-origin pacing.
 - **Build stack**: `docker/setup-qemu-action` → `docker/setup-buildx-action` → `docker/login-action` (GHCR via `GITHUB_TOKEN`, `permissions: packages: write`) → `docker/metadata-action` → `docker/build-push-action` with `platforms: linux/amd64,linux/arm64`.
 - **Publish condition**: Images are pushed only on SemVer tag refs; PR builds build-but-do-not-push. Layer caching via `type=gha` (`mode=max`).
 - **Secrets in pipeline**: Only the built-in `GITHUB_TOKEN` for GHCR; no application secrets are baked into the image or passed as build args.
@@ -126,6 +126,7 @@ No external telemetry, metrics backend, or APM — by design.
 
 - **Availability target**: Best-effort homelab availability; `restart: unless-stopped` plus the HEALTHCHECK recover from crashes.
 - **Outbound-work containment**: A check's finite end-to-end budget covers robots lookup, shared per-origin queueing/pacing, retry backoff, redirects, and HTTP attempts. Timeout or cancellation must terminate pending waits and retries and prevent later background requests. Source-specific budget accommodation is automatic and capped; origins without a longer valid crawl delay retain existing budgets.
+- **Canon discovery metadata**: The SQLite-backed Canon endpoint cache retains source-discovered mapping metadata, not firmware versions. It is fresh only when less than 24 hours old, survives restart, and coalesces same-model discovery, refresh, and warm-hit live requests. The shared live response still comes through the centralized client, so Canon's shared 30-second delay remains intact. Expired mappings are bypassed; endpoint transport/status/parsing/model-identity failures invalidate the mapping and attempt full paced discovery once. Failed recovery is recorded as a visible failed check, never a stale success. Warm checks target 0-30 seconds; cold/expired discovery may take 90-120 seconds.
 - **RPO** (Recovery Point Objective): **≤ 24h** — a nightly backup of `/app/data` to a second host/disk/NAS.
 - **RTO** (Recovery Time Objective): **≤ 1h** — pull the image tag, restore the data file, `docker compose up -d`.
 
@@ -143,7 +144,7 @@ No external telemetry, metrics backend, or APM — by design.
 - A restore from backup has been verified at least once.
 - SMTP and/or Gotify notification channels validated end-to-end.
 - Deterministic HTTP-client validation confirms delay selection, cross-origin independence, same-origin concurrency pacing, every retry, finite source-aware budgets, and no request issuance after timeout/cancellation.
-- Canon camera and lens captured-fixture suites pass independently and through the existing version-search/check integration path, proving model-only lookup, exact matching, release deduplication, official release-page links, automatic seeding, and visible failure outcomes without live-source dependence.
+- Canon camera and lens captured-fixture suites pass independently and through version search, manual, and scheduled check paths, proving model-only lookup, exact matching, release deduplication, official release-page links, automatic seeding, persisted cache migration/restart behavior, 24-hour freshness, endpoint invalidation, full-discovery fallback, concurrent same-model coordination, one live firmware request on a warm mapping, 0-30 second warm latency, and visible failure outcomes without live-source dependence.
 - Release documentation states that Canon coverage is based on Canon Asia English EOS R and RF/RF-S catalogues, excludes adapters/extenders/unrelated mounts, explicitly excludes Cinema EOS/EOS R5 C pending a verified flow, and does not claim a positive RF-S firmware release.
 - Operator has pinned a specific SemVer tag.
 
@@ -170,7 +171,7 @@ No external telemetry, metrics backend, or APM — by design.
 
 - **Ownership model**: The self-hosting operator is the sole owner and operator. Project maintainers own the image, CI, and release tags.
 - **Change management**: PR-based with CI quality gates; releases cut by tagging a SemVer version.
-- **Documentation expectations**: A `compose.yaml` example, `.env.example`, README run/upgrade instructions, a module dev/test kit, and per-official-module regional coverage notes. Canon notes identify source catalogue URLs, supported families, model-only usage, official release-link/date semantics, 30-second pacing, failure behavior, Cinema EOS/EOS R5 C exclusion, and the absence of a verified positive RF-S firmware release.
+- **Documentation expectations**: A `compose.yaml` example, `.env.example`, README run/upgrade instructions, a module dev/test kit, and per-official-module regional coverage notes. Canon notes identify source catalogue URLs, supported families, model-only usage, official release-link/date semantics, 30-second pacing, 24-hour discovery-mapping freshness, 0-30 second warm and 90-120 second cold latency expectations, cache invalidation/fallback failure behavior, Cinema EOS/EOS R5 C exclusion, and the absence of a verified positive RF-S firmware release.
 
 ### Update Workflow
 

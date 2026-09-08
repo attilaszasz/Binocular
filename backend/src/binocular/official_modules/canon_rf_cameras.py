@@ -5,11 +5,13 @@ from __future__ import annotations
 import asyncio
 import re
 from datetime import datetime
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+
+from binocular.official_modules.canon_endpoint_cache import CanonEndpointCache
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "camera"
@@ -183,7 +185,7 @@ async def _fetch(http_client: Any, url: str, stage: str) -> str:
     return text
 
 
-def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
+def _check_firmware_uncached(url: str, model: str, http_client: Any) -> dict[str, Any]:
     """Resolve an exact Canon Asia EOS R model and return its latest firmware."""
     if not model or not model.strip():
         raise ValueError("product_not_found: Canon EOS R model is empty")
@@ -223,3 +225,78 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
         "product_type": "Camera",
         "source_region": "Canon Asia English",
     }
+
+
+async def _check_firmware_cached(
+    url: str, model: str, http_client: Any, cache: CanonEndpointCache
+) -> dict[str, Any]:
+    async def discover() -> dict[str, Any]:
+        source_url = url or _CATALOG_URL
+        catalog_html = await _fetch(http_client, source_url, "catalogue")
+        product = _resolve_product(_parse_catalog(catalog_html), model)
+        if product is None:
+            raise ValueError(
+                "product_not_found: exact Canon EOS R catalogue model not found: "
+                f"{model}"
+            )
+        product_name, product_href = product
+        product_url = urljoin(_CANON_BASE, product_href)
+        product_html = await _fetch(http_client, product_url, "product page")
+        firmware_url = _parse_firmware_action(product_html, product_url)
+        firmware_html = await _fetch(http_client, firmware_url, "firmware")
+        release = _select_latest(_parse_releases(firmware_html, firmware_url))
+        await cache.upsert_discovery("canon-eos-r", model, firmware_url)
+        return {
+            "latest_version": release.version,
+            "release_date": release.release_date,
+            "download_url": release.detail_url,
+            "release_notes_url": release.detail_url,
+            "product_name": f"Canon {product_name}",
+            "product_model": product_name,
+            "product_type": "Camera",
+            "source_region": "Canon Asia English",
+        }
+
+    async def operation() -> dict[str, Any]:
+        mapping = await cache.get_mapping("canon-eos-r", model)
+        if mapping is None or not mapping.is_fresh(cache._now_ms()):
+            return await discover()
+        try:
+            firmware_html = await _fetch(http_client, mapping.endpoint_url, "firmware")
+            release = _select_latest(
+                _parse_releases(firmware_html, mapping.endpoint_url)
+            )
+            await cache.record_live_validation("canon-eos-r", model)
+            return {
+                "latest_version": release.version,
+                "release_date": release.release_date,
+                "download_url": release.detail_url,
+                "release_notes_url": release.detail_url,
+                "product_name": f"Canon {model}",
+                "product_model": model,
+                "product_type": "Camera",
+                "source_region": "Canon Asia English",
+            }
+        except BaseException as exc:
+            if isinstance(exc, asyncio.CancelledError):
+                raise
+            await cache.invalidate_mapping("canon-eos-r", model, type(exc).__name__)
+            return await discover()
+
+    return await cache.coordinate_live_check("canon-eos-r", model, operation)
+
+
+def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
+    """Resolve firmware with an optional durable endpoint cache."""
+    cache = cast(
+        CanonEndpointCache | None, getattr(http_client, "canon_endpoint_cache", None)
+    )
+    if cache is None:
+        return _check_firmware_uncached(url, model, http_client)
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(
+            _check_firmware_cached(url, model, http_client, cache)
+        )
+    finally:
+        loop.close()

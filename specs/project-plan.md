@@ -9,7 +9,7 @@ dod_source: specs/dod.md
 
 **Product**: Binocular — self-hosted firmware-update watcher for offline devices
 **Created**: 2026-06-10 | **Status**: Draft
-**Total Epics**: 30 (P1: 17 · P2: 13) | **Waves**: 18
+**Total Epics**: 31 (P1: 17 · P2: 14) | **Waves**: 19
 
 Informed by the prototype retrospective at `specs/prototype-retrospective.md`. Key consolidation decisions: device type is module-derived from the start (no standalone DeviceType entity); notification deduplication and HTML email are part of the initial notification epic; shadcn/ui is the component library from day one; PUID/PGID entrypoint is part of the foundation container epic; collapsible navigation is part of the SPA shell.
 
@@ -135,6 +135,12 @@ Informed by the prototype retrospective at `specs/prototype-retrospective.md`. K
 
 - [X] E030 [P2] [PRODUCT] {PRD:CAP-001}{PRD:CAP-002}{SAD:ADR-0013} Add Device Module Source Link — module-declared `SOURCE_URL` constant, persisted `modules.source_url`, and clickable link in the Add Device form [→ Details](plan/E030.md)
 
+### Wave 19 — Canon Endpoint Discovery Cache
+
+> Depends on completed Canon modules, SQLite migrations, version-search/manual/scheduled check paths, and source-aware pacing. Adds persistent discovery metadata without altering the completed Canon feature definitions.
+
+- [X] E031 [P2] [TECHNICAL] {PRD:CAP-015}{SAD:ADR-0012}{SAD:ADR-0014} Canon Endpoint Discovery Cache — persisted fresh mappings, full-discovery fallback, and deterministic verification [→ Details](plan/E031.md)
+
 
 ## Dependency Diagram
 
@@ -192,6 +198,9 @@ graph LR
 
     M6 --> M18["Module source<br>link on add device"]
     M18 -->|"E030"| M18
+
+    M17 --> M19["Canon endpoint<br>discovery cache"]
+    M19 -->|"E031"| M19
 ```
 
 ## Execution Wave Summary
@@ -216,6 +225,7 @@ graph LR
 | 16 | E027 | N/A (single) | Central HTTP client extension for source-declared delays, shared origin pacing, bounded retries/budgets, and cancellation safety. |
 | 17 | E028, E029 | Yes | Independent Canon camera and lens modules using Canon Asia catalogues and distinct captured fixtures; both consume shared Canon-origin pacing. |
 | 18 | E030 | N/A (single) | Module-declared `SOURCE_URL` constant, `modules.source_url` column, and a clickable source link on the Add Device form. |
+| 19 | E031 | N/A (single) | Persisted fresh Canon endpoint mappings, fallback discovery, and deterministic cache validation. |
 
 
 ## Parallel Execution Guidance
@@ -239,6 +249,7 @@ graph LR
 - **Cancellation ownership (E027)**: The client deadline and module-runner timeout must compose without detached tasks or swallowed cancellation; verify both manual and scheduled check callers.
 - **Canon origin coordination (E028/E029)**: Concurrent camera and lens checks share one Canon Asia origin timeline; integration tests must prove the 30-second interval applies across both modules and every retry without real sleeps.
 - **Canon coverage semantics (E028/E029)**: Catalogue membership, product classification, firmware availability, and regional parity are distinct. Exact matching and visible no-firmware/unsupported outcomes must prevent inferred Cinema EOS/EOS R5 C or positive RF-S coverage.
+- **Canon cache integration (E031)**: Cache only discovery metadata, never firmware versions. The migration, cache repository, both Canon modules, and all version-search/manual/scheduled callers must agree that a mapping is fresh only when less than 24 hours old; coalesce same-model discovery, refresh, and warm-hit requests into one paced live firmware request; invalidate endpoints; and visibly recover through full discovery.
 
 ### Shared Resource Conflicts
 
@@ -247,6 +258,7 @@ graph LR
 - `Dockerfile` and `.github/workflows/` — E001 seeds, E003 wires CI, E017 extends to multi-arch publish; sequential on these files.
 - `backend/src/binocular/scraping/` and check timeout boundaries — E027 is the sole owner while extending shared pacing and cancellation behavior.
 - Canon module source and fixtures are independent between E028 and E029; shared regional-coverage documentation requires one coordinated owner during parallel delivery.
+- `backend/src/db/migrations/`, Canon module sources, and check paths — E031 adds a forward-only migration and shared cache seam after the completed Canon epics; do not revise their completed scope definitions.
 
 ## PRD Capability Coverage
 
@@ -266,7 +278,7 @@ graph LR
 | CAP-012 Responsive UI & Dark Mode | P2 | E004 |
 | CAP-013 Module Authoring Guidance & AI-Assisted Dev Kit | P2 | E019 |
 | CAP-014 Official Module Health Monitoring | P2 | E020 |
-| CAP-015 Official Canon RF Modules | P2 | E028, E029 |
+| CAP-015 Official Canon RF Modules | P2 | E028, E029, E031 |
 
 ### SAD ADR Coverage
 
@@ -285,6 +297,7 @@ graph LR
 | ADR-0011 Real-Time Module Validation and Upload Progress Streaming | accepted | E022 |
 | ADR-0012 Source-aware centralized scraping with shared per-origin pacing and bounded cancellation | accepted | E027, E028, E029 |
 | ADR-0013 Module-Declared Source URL for Device-Creation Lookup | accepted | E030 |
+| ADR-0014 Persisted Canon firmware endpoint discovery cache | accepted | E031 |
 
 
 ### DOD DDR Coverage
@@ -313,6 +326,7 @@ graph LR
 | NotificationChannel | E014 | E014 |
 | ActivityLogEntry | E015 | E015 |
 | Schedule | E013 | E013 |
+| CanonFirmwareEndpointMapping | E031 | E028, E029, E023, E012, E013 |
 
 ### API Surfaces
 
@@ -338,6 +352,7 @@ graph LR
 | Module engine + authoring contract | E007 | E009, E010, E011, E016, E019, E022, E025, E026, E028, E029 |
 | Canon RF Cameras module + fixtures | E028 | E020, manual/scheduled checks, version search |
 | Canon RF Lenses module + fixtures | E029 | E020, manual/scheduled checks, version search |
+| Canon endpoint cache + repository | E031 | E028, E029, E023, E012, E013 |
 | Scheduler service | E013 | E014, E015, E018 |
 | Notifier service (with HTML email + dedup) | E014 | E020 |
 | Secret/`_FILE` loader + basic-auth middleware | E008 | E014, E018 |
@@ -355,3 +370,9 @@ Before starting Wave N+1, verify for every epic in Wave N:
 - Dependency contracts required by the next wave are satisfiable (entities, endpoints, and library exports exist with stable shapes).
 - New migrations use non-overlapping numbers and apply cleanly from an empty database.
 - The technical context baseline is updated if an epic changed a shared contract.
+
+## Current Run Summary
+
+| Epic | Status | Validation |
+|------|--------|------------|
+| E031 | ✓ COMPLETE | 441 backend tests, 35 frontend tests, 86.86% coverage, Ruff/mypy, pip-audit, Docker build, and Trivy CRITICAL/HIGH scan passed. |

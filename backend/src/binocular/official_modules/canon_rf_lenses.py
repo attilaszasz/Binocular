@@ -5,11 +5,13 @@ from __future__ import annotations
 import asyncio
 import re
 from datetime import datetime
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+
+from binocular.official_modules.canon_endpoint_cache import CanonEndpointCache
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "lens"
@@ -55,9 +57,7 @@ def _model_key(value: str) -> str:
 def _is_supported_lens(name: str) -> bool:
     """Conservatively classify RF/RF-S lenses and reject accessories."""
     cleaned = _clean(name)
-    return bool(
-        _LENS_NAME_RE.match(cleaned) and not _EXCLUDED_NAME_RE.search(cleaned)
-    )
+    return bool(_LENS_NAME_RE.match(cleaned) and not _EXCLUDED_NAME_RE.search(cleaned))
 
 
 def _parse_catalog(html: str) -> tuple[tuple[str, str], ...]:
@@ -201,7 +201,7 @@ async def _fetch(http_client: Any, url: str, stage: str) -> str:
     return text
 
 
-def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
+def _check_firmware_uncached(url: str, model: str, http_client: Any) -> dict[str, Any]:
     """Resolve an exact classified Canon RF/RF-S lens and its latest firmware."""
     if not model or not model.strip():
         raise ValueError("product_not_found: Canon RF/RF-S lens model is empty")
@@ -244,3 +244,81 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
         "product_type": "Lens",
         "source_region": "Canon Asia English",
     }
+
+
+async def _check_firmware_cached(
+    url: str, model: str, http_client: Any, cache: CanonEndpointCache
+) -> dict[str, Any]:
+    async def discover() -> dict[str, Any]:
+        catalog_urls = (url,) if url else _CATALOG_URLS
+        products: list[tuple[str, str]] = []
+        for catalog_url in catalog_urls:
+            catalog_html = await _fetch(http_client, catalog_url, "catalogue")
+            products.extend(_parse_catalog(catalog_html))
+        product = _resolve_product(tuple(products), model)
+        if product is None:
+            raise ValueError(
+                "product_not_found: exact classified Canon RF/RF-S lens not found: "
+                f"{model}"
+            )
+        product_name, product_href = product
+        product_url = urljoin(_CANON_BASE, product_href)
+        product_html = await _fetch(http_client, product_url, "product page")
+        firmware_url = _parse_firmware_action(product_html, product_url)
+        firmware_html = await _fetch(http_client, firmware_url, "firmware")
+        release = _select_latest(_parse_releases(firmware_html, firmware_url))
+        await cache.upsert_discovery("canon-rf-lens", model, firmware_url)
+        return {
+            "latest_version": release.version,
+            "release_date": release.release_date,
+            "download_url": release.detail_url,
+            "release_notes_url": release.detail_url,
+            "product_name": f"Canon {product_name}",
+            "product_model": product_name,
+            "product_type": "Lens",
+            "source_region": "Canon Asia English",
+        }
+
+    async def operation() -> dict[str, Any]:
+        mapping = await cache.get_mapping("canon-rf-lens", model)
+        if mapping is None or not mapping.is_fresh(cache._now_ms()):
+            return await discover()
+        try:
+            firmware_html = await _fetch(http_client, mapping.endpoint_url, "firmware")
+            release = _select_latest(
+                _parse_releases(firmware_html, mapping.endpoint_url)
+            )
+            await cache.record_live_validation("canon-rf-lens", model)
+            return {
+                "latest_version": release.version,
+                "release_date": release.release_date,
+                "download_url": release.detail_url,
+                "release_notes_url": release.detail_url,
+                "product_name": f"Canon {model}",
+                "product_model": model,
+                "product_type": "Lens",
+                "source_region": "Canon Asia English",
+            }
+        except BaseException as exc:
+            if isinstance(exc, asyncio.CancelledError):
+                raise
+            await cache.invalidate_mapping("canon-rf-lens", model, type(exc).__name__)
+            return await discover()
+
+    return await cache.coordinate_live_check("canon-rf-lens", model, operation)
+
+
+def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
+    """Resolve firmware with an optional durable endpoint cache."""
+    cache = cast(
+        CanonEndpointCache | None, getattr(http_client, "canon_endpoint_cache", None)
+    )
+    if cache is None:
+        return _check_firmware_uncached(url, model, http_client)
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(
+            _check_firmware_cached(url, model, http_client, cache)
+        )
+    finally:
+        loop.close()

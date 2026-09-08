@@ -16,7 +16,7 @@ The system boundary is a single deployable application running on a private, tru
 **Testing**: pytest + pytest-asyncio, httpx.AsyncClient and MockTransport, injected monotonic clocks/sleepers (backend); Vitest + React Testing Library, one Playwright smoke test (frontend); golden/fixture-based module correctness and integration tests, including multi-page Canon catalogue/product/firmware flows
 **Target Platform**: Linux Docker container (`python:3.13-slim`), single port 8000; also runnable directly on a host with Python/Node runtimes  
 **Project Type**: Web application — Python/FastAPI backend + React SPA, single-process monolith  
-**Performance Goals**: Responsive UI on mobile and desktop; concurrent cross-origin checks via async I/O without blocking the UI; source-specific pacing across same-origin work; modest homelab hardware footprint
+**Performance Goals**: Responsive UI on mobile and desktop; concurrent cross-origin checks via async I/O without blocking the UI; source-specific pacing across same-origin work; fresh Canon endpoint mappings permit 0-30 second warm verification while cold discovery may take 90-120 seconds; modest homelab hardware footprint
 **Constraints**: Self-contained storage (no external DB), single-container/single-volume/zero-config/non-root operability, trusted-LAN single-user, no telemetry, polite-scraping mandatory, bounded cancellation-safe check execution, existing budgets preserved for origins without a longer valid crawl delay, unsandboxed extension execution
 **Scale/Scope**: Single user, single instance; inventory of roughly 5–50+ devices; one background scheduler concurrent with UI reads
 
@@ -114,7 +114,8 @@ sequenceDiagram
     participant Notify as Notifier
     Sched->>Svc: Trigger check (device type)
     Svc->>Eng: Run module(url, model, client)
-    Eng->>HTTP: Fetch (robots, UA, deadline)
+    Eng->>DB: Read fresh Canon endpoint mapping
+    Eng->>HTTP: Fetch live firmware endpoint (robots, UA, deadline)
     HTTP->>HTTP: Select delay + reserve origin slot
     HTTP->>Vendor: GET firmware page / retry
     Vendor-->>HTTP: HTML
@@ -133,6 +134,9 @@ sequenceDiagram
 - Vendor page changed / unparseable → module returns no version or errors → surfaced as a visible "scrape failed" status with last-success timestamp; never a silent miss.
 - Vendor returns 429/5xx → every retry re-enters shared per-origin pacing and exponential backoff within the caller's end-to-end deadline; persistent failure logged. See {SAD:ADR-0012}.
 - Source declares a valid `Crawl-delay` longer than the conservative default → the effective per-origin interval increases automatically and bounded multi-request budget accommodation applies; missing, invalid, or shorter declarations leave default pacing and budgets unchanged.
+- Fresh Canon endpoint mapping → the module makes one live firmware request through the same `ScrapeClient`; the shared 30-second Canon origin slot remains authoritative, so warm verification completes in 0-30 seconds depending on queue position. Firmware versions are parsed only from that live response and are never cached as results.
+- Canon endpoint mapping expired after 24 hours or missing → bypass it and perform the full catalogue → product → firmware discovery flow, which may take 90-120 seconds under Canon pacing. A cached endpoint transport, status, parsing, or model-identity failure invalidates the mapping, then permits one full discovery attempt; if recovery cannot produce a live result, the check visibly fails with its last-success timestamp intact.
+- Concurrent Canon checks for the same model → coordinate one discovery, refresh, or warm-hit live firmware operation; waiters consume the validated mapping or shared live response, or the same visible failure. This coalescing is not a firmware-version cache. Distinct models continue to share the one Canon-origin pacing timeline.
 - Check times out or is cancelled during robots lookup, pacing, backoff, redirect handling, or I/O → pending waits and retries stop, cancellation propagates after cleanup, and no subsequent background request is issued. See {SAD:ADR-0012}.
 - Notification channel (SMTP/Gotify) failure → dispatch error logged in the activity log for operator visibility; check result still persisted.
 - Already-notified version detected → no duplicate notification; last-notified version tracked per device; a new alert dispatches only when a version newer than the last-notified version appears.
@@ -178,13 +182,13 @@ Structured logging via `structlog` across migration runner, connection lifecycle
 
 ### Data Management
 
-All state in SQLite (`binocular.db`) on the `/app/data` volume; backup = copy the file. Schema evolves via numbered SQL migrations tracked by a `schema_version` table, auto-applied on startup. WAL journaling, `foreign_keys=ON`, and `busy_timeout` set per connection. The activity log is rolling/size-bounded to prevent unbounded growth. Schema should be consolidated from the start to avoid fix migrations (prototype learning). See {SAD:ADR-0004}.
+All state in SQLite (`binocular.db`) on the `/app/data` volume; backup = copy the file. Schema evolves via numbered SQL migrations tracked by a `schema_version` table, auto-applied on startup. The Canon endpoint cache is introduced by a forward-only, idempotent numbered migration with a composite model/family key, expiry metadata, and a refresh lease suitable for SQLite WAL concurrency; no migration stores firmware versions. WAL journaling, `foreign_keys=ON`, and `busy_timeout` set per connection. The activity log is rolling/size-bounded to prevent unbounded growth. Schema should be consolidated from the start to avoid fix migrations (prototype learning). See {SAD:ADR-0004}, {SAD:ADR-0014}.
 
 ### Integration Strategy
 
 Outbound only: manufacturer firmware pages are scraped through the host-provided polite HTTP client, the single enforcement point for robots.txt, identifiable User-Agent, shared per-origin pacing, source-declared crawl delays, bounded retries/backoff, and cancellation; notifications dispatch through Apprise — Email/SMTP (as responsive, light-themed HTML via Jinja2 templates with mobile-friendly layout) and Gotify at launch. No inbound integrations or third-party APIs. See {SAD:ADR-0012}, {SAD:ADR-0007}.
 
-The Canon Asia integration uses two independent official modules over one shared Canon origin. Each starts from its fixed public catalogue (EOS R for cameras; RF and RF-S for lenses), exact-matches the model, follows the catalogue's product link verbatim, discovers that product page's firmware form action, and parses the returned HTML firmware rows. It groups duplicate operating-system packages by model and firmware version and returns the matching official release-detail page rather than a binary-download route. Camera coverage is limited to verified EOS R catalogue membership: Cinema EOS and EOS R5 C are explicitly unsupported until a separate official catalogue/product/action flow is verified. Lens classification admits RF/RF-S lenses only and rejects adapters, extenders, cinema lenses, and unrelated mounts; RF-S catalogue membership is supported without claiming a positive RF-S firmware release. Unknown models, explicit no-firmware responses, ambiguous matches, changed structures, denied requests, deadlines, and cancellation all surface through the existing visible failure boundary.
+The Canon Asia integration uses two independent official modules over one shared Canon origin. Each exact-matches the model in its fixed public catalogue (EOS R for cameras; RF and RF-S for lenses), follows the catalogue's product link verbatim, discovers that product page's firmware form action, and parses the returned HTML firmware rows. A `canon_firmware_endpoint_cache` SQLite table persists only the exact model identity, catalogue family, firmware action URL, discovery timestamp, and validation metadata; it never stores an authoritative firmware version. A mapping is fresh only when `now - discovered_at < 24 hours`, and survives restart. A fresh mapping sends one live firmware request through `ScrapeClient`; it is neither a robots nor a pacing bypass. Expired mappings are bypassed, and cached-endpoint transport, status, parsing, or model-identity failures invalidate the row and cause one full discovery fallback. Database-backed single-flight coordination coalesces concurrent same-model discovery, refresh, and warm-hit live firmware requests; callers share the live response, not a stored version, and all visibly receive recovery failure if it cannot produce a live result. Cold or expired discovery may take 90-120 seconds under the shared 30-second Canon delay; warm verification takes 0-30 seconds subject to the shared origin slot. Camera coverage is limited to verified EOS R catalogue membership: Cinema EOS and EOS R5 C are explicitly unsupported until a separate official catalogue/product/action flow is verified. Lens classification admits RF/RF-S lenses only and rejects adapters, extenders, cinema lenses, and unrelated mounts; RF-S catalogue membership is supported without claiming a positive RF-S firmware release. Unknown models, explicit no-firmware responses, ambiguous matches, changed structures, denied requests, deadlines, cancellation, and unrecoverable stale mappings all surface through the existing visible failure boundary.
 
 ### Operations
 
@@ -194,12 +198,12 @@ Distributed primarily as a Docker image (single port, two volumes, non-root with
 
 | Attribute | Target | Measurement | Notes |
 |-----------|--------|-------------|-------|
-| Performance | Concurrent cross-origin checks without UI blocking; same-origin attempts respect the effective delay | Deterministic virtual-time multi-device checks | Existing timing budget retained when no valid crawl delay longer than the default applies |
+| Performance | Concurrent cross-origin checks without UI blocking; same-origin attempts respect the effective delay; fresh Canon mappings complete in 0-30 seconds | Deterministic virtual-time multi-device checks | Cold or expired Canon discovery may take 90-120 seconds; no cache bypasses pacing |
 | Reliability | A broken, timed-out, or cancelled module never crashes the core or issues later background requests; no silent missed updates | Fault injection plus deterministic deadline/cancellation and fixture regression tests | End-to-end budget includes pacing and retries |
 | Security | No hardcoded secrets; non-root container; parameterized SQL | Static analysis + image inspection | ACE trust boundary accepted by design |
 | Maintainability | mypy --strict (backend) and tsc strict (frontend) pass; pinned deps | CI type-check + lint (Ruff/Biome) | Single-maintainer OSS |
 | Scalability | Single-user, single-instance workload served comfortably | Manual load on representative inventory | No horizontal scaling goal |
-| Correctness | Detected latest == actual published latest; zero false positives/negatives for shipped modules | Golden/fixture-based module tests per release, including exact Canon model/classification and OS-package deduplication matrices | No field telemetry available; explicit no-firmware is distinct from unknown/unparseable |
+| Correctness | Detected latest == actual published latest; zero false positives/negatives for shipped modules | Golden/fixture-based module tests per release, including exact Canon model/classification, OS-package deduplication, cache expiry/fallback, restart, and same-model concurrency matrices | No field telemetry available; explicit no-firmware is distinct from unknown/unparseable; firmware versions are live-derived, never authoritative cache entries |
 
 ## Architecture Decision Records
 
@@ -220,6 +224,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 | ADR-0011 | Real-Time Module Validation and Upload Progress Streaming | accepted | 2026-06-12 | — | [0011-real-time-module-validation-and-upload-progress-streaming.md](adrs/0011-real-time-module-validation-and-upload-progress-streaming.md) |
 | ADR-0012 | Source-aware centralized scraping with shared per-origin pacing and bounded cancellation | accepted | 2026-09-06 | ADR-0006 | [0012-source-aware-centralized-scraping-with-shared-per-origin-pacing-and-bounded-cancellation.md](adrs/0012-source-aware-centralized-scraping-with-shared-per-origin-pacing-and-bounded-cancellation.md) |
 | ADR-0013 | Module-Declared Source URL for Device-Creation Lookup | accepted | 2026-09-07 | — | [0013-module-declared-source-url-for-device-creation-lookup.md](adrs/0013-module-declared-source-url-for-device-creation-lookup.md) |
+| ADR-0014 | Persisted Canon firmware endpoint discovery cache | accepted | 2026-09-07 | — | [0014-persisted-canon-firmware-endpoint-discovery-cache.md](adrs/0014-persisted-canon-firmware-endpoint-discovery-cache.md) |
 
 <!-- Rows are managed by the ADR Author subagent. Do not embed full decision prose here. -->
 
@@ -234,6 +239,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - Scheduler shares the app process lifecycle — a restart pauses jobs until the next interval.
 - Very long source-declared crawl delays can prevent a multi-request check from completing inside its finite cap — mitigated by visible bounded failure rather than violating source pacing.
 - Canon Asia catalogue taxonomy, product links, form actions, or firmware fragments can drift independently — mitigated by captured fixtures for each stage, exact matching, and visible structural failures rather than inferred coverage.
+- Cached Canon endpoint metadata can expire or drift — mitigated by 24-hour freshness, invalidation on endpoint failure, one paced full-discovery fallback, and visible failure rather than stale result reuse.
 
 ### Assumptions
 
@@ -250,6 +256,7 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - No telemetry or central data collection.
 - Modules must use the host-provided HTTP client for all outbound scraping.
 - The scraping client must preserve default pacing and execution budgets unless a longer valid source delay requires bounded accommodation, and timeout/cancellation must prevent subsequent requests.
+- Canon mappings persist only discovery metadata for 24 hours; cached mappings must make their live request through the centralized client and must invalidate/recover visibly on endpoint failure.
 
 ### Open Questions
 
@@ -274,3 +281,4 @@ Project-level architectural decisions are maintained as standalone MADR files un
 - The backend provides an on-demand version search endpoint `/api/v1/checks/search-version` that executes the module runner to return the latest version for a given module and model name without persisting state or triggering notifications.
 - Extension modules may declare an optional `SOURCE_URL` module-level constant naming the canonical source page they scrape. The loader extracts it (empty when absent), a `modules.source_url` column persists it, the modules API returns it, and the Add Device form renders it as a clickable link to help users look up exact model names. See {SAD:ADR-0013}.
 - Canon official coverage is split into independently selectable camera and lens modules. Both use model-only exact catalogue lookup, verbatim product links, discovered firmware form actions, OS-package deduplication, official release-detail URLs, existing automatic seeding, visible failures, and ADR-0012's shared Canon-origin 30-second pacing with bounded timeout/cancellation. The verified baseline is Canon Asia English EOS R and RF/RF-S catalogues; Cinema EOS/EOS R5 C is explicitly unsupported pending a verified flow, and no positive RF-S firmware release is claimed.
+- Canon modules persist fresh source-discovered model-to-firmware endpoint mappings in SQLite under ADR-0014. Entries expire after 24 hours, survive restart, coordinate same-model refreshes, and reduce a warm version search, manual check, or scheduled check to one live centralized firmware request (0-30 seconds subject to the shared Canon slot). Endpoint failures invalidate and recover through full discovery; versions are never cached as authoritative results, and cold/expired discovery may still take 90-120 seconds.

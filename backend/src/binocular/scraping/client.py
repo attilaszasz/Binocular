@@ -66,9 +66,16 @@ class ScopedScrapeClient:
     async def get(self, url: str, **kwargs: Any) -> httpx.Response:
         return await self._root._dispatch(url, self.scope, **kwargs)
 
+    @property
+    def canon_endpoint_cache(self) -> Any | None:
+        """Expose the optional Canon cache without bypassing this scoped client."""
+        return getattr(self._root, "canon_endpoint_cache", None)
+
 
 class ScrapeClient:
     """Host-owned HTTP client enforcing policy before every transport start."""
+
+    canon_endpoint_cache: Any | None = None
 
     def __init__(
         self,

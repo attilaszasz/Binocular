@@ -13,7 +13,7 @@ All outbound scraping MUST flow through the centralized host-provided HTTP clien
 
 ### III. Data Ownership & Self-Containment
 
-All state MUST live in a single backup-able SQLite volume. The system MUST NOT depend on an external database server, message broker, cloud service, account system, or any telemetry/analytics. — Self-hosters choose this tool for data ownership and privacy; external dependencies or data collection would break that promise.
+All state, including reusable source-discovery metadata, MUST live in a single backup-able SQLite volume. Cached metadata is fresh only when its age is less than 24 hours, and MUST be invalidated on a cached endpoint's transport, status, parsing, or model-identity failure; it MUST NOT be used to return stale authoritative firmware versions. The system MUST NOT depend on an external database server, message broker, cloud service, account system, or any telemetry/analytics. — Self-hosters choose this tool for data ownership and privacy; external dependencies or data collection would break that promise.
 
 ### IV. Least-Privilege & Explicit Trust Boundary
 
@@ -53,7 +53,7 @@ All agent output MUST be concise and outcome-oriented. This principle supersedes
 
 - **Coverage Target**: 80%
 - **Required QC Categories**: linting, static analysis, security scanning, coverage
-- **Test Strategy**: Test-after — unit + integration (pytest + pytest-asyncio, Vitest + React Testing Library), one Playwright end-to-end smoke test, and golden/fixture-based correctness tests for shipped modules. HTTP pacing and retry behavior MUST have deterministic tests using injected clocks/sleepers and scripted transports, covering delay selection, shared per-origin concurrency, every retry, bounded execution, timeout, and cancellation without real sleeps. Security scanning via vulnerability scanning of the built image (Trivy) in CI.
+- **Test Strategy**: Test-after — unit + integration (pytest + pytest-asyncio, Vitest + React Testing Library), one Playwright end-to-end smoke test, and golden/fixture-based correctness tests for shipped modules. HTTP pacing and retry behavior MUST have deterministic tests using injected clocks/sleepers and scripted transports, covering delay selection, shared per-origin concurrency, every retry, bounded execution, timeout, and cancellation without real sleeps. Persistent source-discovery caches MUST have deterministic migration, freshness, restart-persistence, invalidation, cached-endpoint-fallback, and concurrent single-flight tests; cache hits must still traverse the centralized HTTP client for the live authoritative result. Security scanning via vulnerability scanning of the built image (Trivy) in CI.
 - **Linting / Formatting**: Ruff (backend), Biome/ESLint (frontend), `mypy --strict` and `tsc` strict for static analysis
 
 ## Source Code Layout
@@ -75,4 +75,8 @@ All agent output MUST be concise and outcome-oriented. This principle supersedes
 - Complexity beyond these principles MUST be justified and documented.
 - The trusted-LAN single-user threat model is assumed; exposing the application to untrusted networks is outside the supported security posture and MUST be documented as such wherever relevant.
 
-**Version**: 1.2.0 | **Last Amended**: 2026-09-06
+## Amendment Changelog
+
+- 2026-09-07 v1.3.0: Added 24-hour source-discovery cache freshness, invalidation, and deterministic validation policy.
+
+**Version**: 1.3.0 | **Last Amended**: 2026-09-07

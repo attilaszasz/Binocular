@@ -13,6 +13,7 @@ from binocular.devices.repository import DeviceRepository
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.repository import ModuleRepository
 from binocular.extensions.runner import ModuleRunner
+from binocular.official_modules.canon_endpoint_cache import CanonEndpointCache
 from binocular.scraping.client import ScrapeClient
 from binocular.services.version_compare import VersionCompare
 
@@ -49,6 +50,7 @@ class CheckService:
         self._modules_dir = modules_dir
         self._runner_timeout = runner_timeout
         self._health_threshold = health_threshold
+        self._canon_endpoint_cache = CanonEndpointCache(db)
 
     async def check_device(self, device_id: int) -> DeviceCheckResult:
         result = await self._check_device_inner(device_id)
@@ -118,6 +120,7 @@ class CheckService:
             raise ValueError(f"Failed to load module file: {load_result.errors}")
 
         runner = ModuleRunner(timeout=self._runner_timeout)
+        self._scrape_client.canon_endpoint_cache = self._canon_endpoint_cache
         run_result = await runner.run(
             module=load_result.module,
             url="",
@@ -271,6 +274,7 @@ class CheckService:
 
         # 4. Run the module
         runner = ModuleRunner(timeout=self._runner_timeout)
+        self._scrape_client.canon_endpoint_cache = self._canon_endpoint_cache
         try:
             run_result = await runner.run(
                 module=load_result.module,
