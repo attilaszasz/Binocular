@@ -54,6 +54,23 @@ async def test_robots_crawl_delay_floor_status_ttl_and_body_limit() -> None:
 
 
 @pytest.mark.asyncio
+async def test_robots_valid_body_ignores_mismatched_content_length() -> None:
+    checker = RobotsChecker("Binocular")
+
+    async def fetch(url: str) -> httpx.Response:
+        return httpx.Response(
+            200,
+            content=b"User-agent: *\nAllow: /\n",
+            headers={"content-length": "222"},
+            request=httpx.Request("GET", url),
+        )
+
+    policy = await checker.policy("https://example.com/firmware/", fetch)
+
+    assert policy.allowed("https://example.com/firmware/")
+
+
+@pytest.mark.asyncio
 async def test_robots_shared_fetch_final_waiter_cancels_without_cache() -> None:
     checker = RobotsChecker("Bot")
     entered = asyncio.Event()

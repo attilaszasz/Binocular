@@ -193,12 +193,7 @@ class RobotsChecker:
             if 400 <= status < 500:
                 return RobotsPolicy(None, 1.0, now + 86400.0, self.user_agent)
             content = response.content
-            content_length = response.headers.get("content-length")
-            if (
-                not content
-                or len(content) > self._max_body_bytes
-                or (content_length is not None and int(content_length) != len(content))
-            ):
+            if not content or len(content) > self._max_body_bytes:
                 return self._deny(now + deny_ttl)
             text = content.decode(response.encoding or "utf-8", errors="strict")
             if not any(
