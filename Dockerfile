@@ -15,18 +15,12 @@ COPY frontend/ ./
 RUN npm run build
 
 # ── Backend build ─────────────────────────────────────────────
-FROM python:3.13-slim AS builder
+FROM python:3.13-alpine3.23 AS builder
 
 WORKDIR /build
 
-# Install build dependencies for su-exec.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc make libc-dev curl && \
-    curl -fsSL https://github.com/ncopa/su-exec/archive/refs/tags/v0.2.tar.gz | tar xz && \
-    cd su-exec-0.2 && make && cp su-exec /usr/local/bin/su-exec && \
-    apt-get purge -y gcc make libc-dev curl && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/* /build
+# Install build dependencies and the non-root entrypoint helper.
+RUN apk add --no-cache build-base curl su-exec
 
 # Install uv for fast dependency resolution.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
@@ -39,18 +33,16 @@ COPY backend/src /app/src
 RUN uv sync --frozen --no-dev
 
 
-FROM python:3.13-slim
+FROM python:3.13-alpine3.23
 
-# Apply available Debian security updates without retaining package metadata.
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    rm -rf /var/lib/apt/lists/*
+# Install runtime user-management tools and pull current security fixes.
+RUN apk add --no-cache shadow && apk upgrade --no-cache
 
 LABEL maintainer="Binocular" \
       description="Self-hosted firmware-update watcher"
 
 # Copy su-exec from builder.
-COPY --from=builder /usr/local/bin/su-exec /usr/local/bin/su-exec
+COPY --from=builder /sbin/su-exec /sbin/su-exec
 
 # Copy the virtual environment and app source.
 COPY --from=builder /app/.venv /app/.venv
