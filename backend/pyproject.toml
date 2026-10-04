@@ -16,6 +16,8 @@ dependencies = [
     "jinja2>=3.1.0",
     "beautifulsoup4>=4.12,<5.0",
     "httpx>=0.27",
+    "urllib3>=2.8.0,<3",
+    "oauthlib>=4.0.0,<5",
 ]
 
 [project.scripts]

@@ -38,6 +38,9 @@ FROM python:3.13-alpine3.23
 # Install runtime user-management tools and pull current security fixes.
 RUN apk add --no-cache shadow && apk upgrade --no-cache
 
+# Remove unused pip, including its independently vendored urllib3.
+RUN python -m pip uninstall --yes pip
+
 LABEL maintainer="Binocular" \
       description="Self-hosted firmware-update watcher"
 
