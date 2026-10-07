@@ -24,6 +24,7 @@ from binocular.extensions.contract import (
     SUPPORTED_DEVICE_TYPE_ATTR,
     CheckResult,
 )
+from binocular.extensions.guidance import FIELDS, SourceGuidance
 
 logger = structlog.get_logger("binocular.extensions.validator")
 
@@ -268,6 +269,35 @@ class ASTValidator:
                 )
             )
 
+        declarations: dict[str, Any] = {}
+        for node in tree.body:
+            targets = (
+                node.targets
+                if isinstance(node, ast.Assign)
+                else [node.target]
+                if isinstance(node, ast.AnnAssign)
+                else []
+            )
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id in FIELDS:
+                    try:
+                        declarations[target.id] = ast.literal_eval(node.value)  # type: ignore[attr-defined]
+                        SourceGuidance.parse({target.id: declarations[target.id]})
+                    except (ValueError, TypeError, SyntaxError) as exc:
+                        checks.append(
+                            ValidationCheck(
+                                name=target.id,
+                                passed=False,
+                                message=f"{target.id}: {exc}",
+                                line=node.lineno,
+                                fix_suggestion=(
+                                    "Use bounded literals: name 120, notes 1000, "
+                                    "URL 2048; at most 10 nonblank examples "
+                                    "of 120 characters."
+                                ),
+                            )
+                        )
+
         all_passed = all(c.passed for c in checks)
         return PhaseResult(phase="ast", passed=all_passed, checks=checks)
 
@@ -323,6 +353,24 @@ class RuntimeValidator:
         """
         checks: list[ValidationCheck] = []
         func = getattr(module, CHECK_FIRMWARE_FUNC, None)
+
+        try:
+            SourceGuidance.parse(
+                {key: getattr(module, key) for key in FIELDS if hasattr(module, key)}
+            )
+        except ValueError as exc:
+            return PhaseResult(
+                phase="runtime",
+                passed=False,
+                checks=[
+                    ValidationCheck(
+                        name="guidance",
+                        passed=False,
+                        message=str(exc),
+                        fix_suggestion="Use bounded optional V1 metadata literals.",
+                    )
+                ],
+            )
 
         if func is None or not callable(func):
             checks.append(

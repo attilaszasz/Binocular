@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -10,6 +11,13 @@ import pytest
 from binocular.config import Settings
 from binocular.db.connection import close_connection, open_connection
 from binocular.db.migrations import run_migrations
+from binocular.extensions.repository import ModuleRepository
+from binocular.services.official_provenance import (
+    HISTORICAL_SHIPPED,
+    content_hash,
+    guidance_provenance,
+    shipped_path,
+)
 from binocular.services.seeder import OfficialModuleSeeder
 
 
@@ -41,6 +49,80 @@ def _make_corrupted_module(dir_path: Path, filename: str) -> Path:
     file_path = dir_path / filename
     file_path.write_text("this is invalid python syntax !!!", encoding="utf-8")
     return file_path
+
+
+@pytest.mark.parametrize(
+    "case", ["current", "historical", "unknown", "missing", "custom"]
+)
+async def test_provenance_backfill_protects_state_and_bytes(
+    tmp_path: Path, case: str
+) -> None:
+    settings = Settings(data_dir=tmp_path, modules_dir=tmp_path / "modules")
+    settings.modules_dir.mkdir()
+    conn = await open_connection(settings)
+    await run_migrations(conn, settings)
+    repo = ModuleRepository(conn)
+    path = settings.modules_dir / "sony_alpha.py"
+    bundled = shipped_path("sony_alpha")
+    assert bundled is not None
+    if case == "historical":
+        path.write_bytes(
+            subprocess.check_output(
+                [
+                    "/usr/bin/git",
+                    "show",
+                    "b1b8b99:backend/src/binocular/official_modules/sony_alpha.py",
+                ]
+            )
+        )
+        assert content_hash(path) == HISTORICAL_SHIPPED["sony_alpha"][1]
+    elif case == "current":
+        path.write_bytes(bundled.read_bytes())
+    elif case != "missing":
+        path.write_text("# protected divergent bytes")
+    before = path.read_bytes() if path.exists() else None
+    mid = await repo.create(
+        name="sony_alpha",
+        device_type="camera",
+        version="1.0.0",
+        file_path=str(path),
+        status="inactive",
+        registration_origin="custom" if case == "custom" else "legacy",
+    )
+    await conn.execute(
+        "UPDATE modules SET consecutive_failures=3, last_success='saved' WHERE id=?",
+        (mid,),
+    )
+    await conn.execute(
+        "UPDATE schedules SET interval_hours=6, last_run='old', next_run='future' "
+        "WHERE module_id=?",
+        (mid,),
+    )
+    await conn.commit()
+    try:
+        await OfficialModuleSeeder(settings, conn)._seed_module(bundled)
+        stored = await repo.get_by_id(mid)
+        assert stored is not None
+        row = dict(stored)
+        assert row["id"] == mid
+        assert row["status"] == "inactive"
+        assert row["consecutive_failures"] == 3
+        assert row["last_success"] == "saved"
+        cursor = await conn.execute(
+            "SELECT interval_hours,last_run,next_run FROM schedules WHERE module_id=?",
+            (mid,),
+        )
+        schedule = await cursor.fetchone()
+        assert schedule is not None
+        assert tuple(schedule) == (6, "old", "future")
+        if case in {"current", "historical"}:
+            assert row["display_name"] == "Sony Alpha cameras & lenses"
+            assert guidance_provenance(row) == "verified_official"
+        else:
+            assert (path.read_bytes() if path.exists() else None) == before
+            assert guidance_provenance(row) != "verified_official"
+    finally:
+        await close_connection(conn)
 
 
 @pytest.mark.asyncio

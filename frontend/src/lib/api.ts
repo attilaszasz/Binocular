@@ -90,6 +90,18 @@ export interface Module {
   consecutive_failures?: number;
   last_success?: string | null;
   source_url: string;
+  display_name?: string;
+  coverage_notes?: string;
+  model_examples?: string[];
+  help_url?: string;
+  guidance_provenance?: "verified_official" | "custom" | "legacy";
+  linked_device_count?: number;
+}
+
+export interface ScopeResponse {
+  module_id: number;
+  linked_device_count: number;
+  devices: { id: number; name: string; model: string }[];
 }
 
 
@@ -117,6 +129,7 @@ export const devicesApi = {
 /* ── Module API ───────────────────────────────────────────────── */
 
 export const modulesApi = {
+  devices: (id: number) => apiFetch<ScopeResponse>(`/modules/${id}/devices`),
   list: () => apiFetch<Module[]>("/modules"),
   upload: async (file: File, runPhase2: boolean = false): Promise<Response> => {
     const formData = new FormData();
@@ -249,6 +262,4 @@ export const activityApi = {
     return apiFetch<ActivityLogListResponse>(`/activity${queryString ? `?${queryString}` : ""}`);
   },
 };
-
-
 

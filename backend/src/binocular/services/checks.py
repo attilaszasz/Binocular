@@ -15,6 +15,8 @@ from binocular.extensions.repository import ModuleRepository
 from binocular.extensions.runner import ModuleRunner
 from binocular.official_modules.canon_endpoint_cache import CanonEndpointCache
 from binocular.scraping.client import ScrapeClient
+from binocular.services.automatic_admission import AutomaticAdmission
+from binocular.services.official_provenance import guidance_provenance
 from binocular.services.version_compare import VersionCompare
 
 logger = structlog.get_logger("binocular.services.checks")
@@ -32,6 +34,7 @@ class DeviceCheckResult:
     checked_at: str
     success: bool
     error_message: str | None = None
+    skipped: bool = False
 
 
 class CheckService:
@@ -44,6 +47,7 @@ class CheckService:
         modules_dir: Path,
         runner_timeout: float = 30.0,
         health_threshold: int = 5,
+        admission: AutomaticAdmission | None = None,
     ) -> None:
         self._db = db
         self._scrape_client = scrape_client
@@ -51,9 +55,16 @@ class CheckService:
         self._runner_timeout = runner_timeout
         self._health_threshold = health_threshold
         self._canon_endpoint_cache = CanonEndpointCache(db)
+        self._admission = admission
 
-    async def check_device(self, device_id: int) -> DeviceCheckResult:
-        result = await self._check_device_inner(device_id)
+    async def check_device(
+        self, device_id: int, *, automatic_ticket: tuple[int, int] | None = None
+    ) -> DeviceCheckResult:
+        result = await self._check_device_inner(
+            device_id, automatic_ticket=automatic_ticket
+        )
+        if result.skipped:
+            return result
         if result.module_id:
             module_repo = ModuleRepository(self._db)
             module_row = await module_repo.get_by_id(result.module_id)
@@ -83,9 +94,14 @@ class CheckService:
 
                                 notifier = NotifierService(self._db)
                                 module_name = module_info.get("name", "Unknown Module")
-                                title = f"Official Module Failing: {module_name}"
+                                verified = (
+                                    guidance_provenance(module_info)
+                                    == "verified_official"
+                                )
+                                label = "Official module" if verified else "Source"
+                                title = f"{label} Failing: {module_name}"
                                 body = (
-                                    f"Official module '{module_name}' has failed "
+                                    f"{label} '{module_name}' has failed "
                                     f"{new_failures} consecutive checks. "
                                     "Please inspect the logs."
                                 )
@@ -139,7 +155,9 @@ class CheckService:
 
         return latest_version
 
-    async def _check_device_inner(self, device_id: int) -> DeviceCheckResult:
+    async def _check_device_inner(
+        self, device_id: int, *, automatic_ticket: tuple[int, int] | None = None
+    ) -> DeviceCheckResult:
         """Run update detection check for a device by its ID.
 
         Returns:
@@ -154,6 +172,24 @@ class CheckService:
 
         # 1. Fetch device
         device_row = await device_repo.get_by_id(device_id)
+
+        def skipped() -> DeviceCheckResult:
+            return DeviceCheckResult(
+                device_id=device_id,
+                module_id=automatic_ticket[0] if automatic_ticket else 0,
+                latest_version=None,
+                current_version="",
+                has_update=False,
+                checked_at="",
+                success=False,
+                skipped=True,
+            )
+
+        if automatic_ticket is not None:
+            if device_row is None or device_row["module_id"] != automatic_ticket[0]:
+                return skipped()
+            if self._admission is None or not self._admission.claim(*automatic_ticket):
+                return skipped()
         if device_row is None:
             raise ValueError(f"Device {device_id} not found")
 
@@ -200,6 +236,8 @@ class CheckService:
             )
 
         module_info = dict(module_row)
+        if automatic_ticket is not None and module_info["status"] != "active":
+            return skipped()
         file_path = module_info.get("file_path", "")
         if not file_path:
             err_msg = f"Module {module_id} has no file_path configured"
@@ -273,6 +311,16 @@ class CheckService:
             )
 
         # 4. Run the module
+        if automatic_ticket is not None:
+            cursor = await self._db.execute(
+                "SELECT d.module_id FROM devices d "
+                "JOIN modules m ON m.id = d.module_id "
+                "WHERE d.id = ? AND m.status = 'active'",
+                (device_id,),
+            )
+            current = await cursor.fetchone()
+            if current is None or current[0] != automatic_ticket[0]:
+                return skipped()
         runner = ModuleRunner(timeout=self._runner_timeout)
         self._scrape_client.canon_endpoint_cache = self._canon_endpoint_cache
         try:
@@ -281,6 +329,8 @@ class CheckService:
                 url="",  # No source URL column in DB, default to empty
                 model=model,
                 http_client=self._scrape_client,
+                admission=self._admission,
+                automatic_ticket=automatic_ticket,
             )
         except Exception as exc:
             import traceback
@@ -316,6 +366,8 @@ class CheckService:
                 error_message=err_msg,
             )
 
+        if run_result.error_type == "skipped":
+            return skipped()
         if not run_result.success or run_result.result is None:
             err_msg = run_result.error or "Module runner failed without error message"
             logger.error(

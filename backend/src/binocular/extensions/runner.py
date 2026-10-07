@@ -19,6 +19,7 @@ from binocular.extensions.contract import (
     RunResult,
 )
 from binocular.scraping.client import ScrapeClient
+from binocular.services.automatic_admission import AutomaticAdmission, AutomaticSkipped
 
 logger = structlog.get_logger("binocular.extensions.runner")
 
@@ -39,6 +40,8 @@ class ModuleRunner:
         url: str,
         model: str,
         http_client: ScrapeClient,
+        admission: AutomaticAdmission | None = None,
+        automatic_ticket: tuple[int, int] | None = None,
     ) -> RunResult:
         """Execute ``check_firmware`` on the given module.
 
@@ -66,11 +69,17 @@ class ModuleRunner:
             timeout=self._timeout,
         )
 
+        def invoke(client: object) -> object:
+            if automatic_ticket is not None:
+                if admission is None or not admission.claim(*automatic_ticket):
+                    raise AutomaticSkipped
+            return func(url, model, client)
+
         try:
             if type(http_client) is ScrapeClient:
                 async with http_client.scope(timeout=self._timeout) as scoped_client:
                     worker = asyncio.create_task(
-                        asyncio.to_thread(func, url, model, scoped_client)
+                        asyncio.to_thread(invoke, scoped_client)
                     )
                     scoped_client.scope.own(worker, cancellable=False)
                     while not worker.done():
@@ -99,9 +108,11 @@ class ModuleRunner:
                 # Validator/tests may provide a non-network mock implementing
                 # the same extension-facing contract.
                 raw = await asyncio.wait_for(
-                    asyncio.to_thread(func, url, model, http_client),
+                    asyncio.to_thread(invoke, http_client),
                     timeout=self._timeout,
                 )
+        except AutomaticSkipped:
+            return RunResult(success=False, error_type="skipped")
         except TimeoutError:
             logger.warning("runner_timeout", module=mod_name, timeout=self._timeout)
             return RunResult(

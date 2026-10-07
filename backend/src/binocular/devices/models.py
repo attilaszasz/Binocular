@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -59,12 +61,30 @@ class ModuleResponse(BaseModel):
     consecutive_failures: int = 0
     last_success: str | None = None
     source_url: str = ""
+    display_name: str = ""
+    coverage_notes: str = ""
+    model_examples: list[str] = Field(default_factory=list)
+    help_url: str = ""
+    guidance_provenance: str = "legacy"
+    linked_device_count: int = 0
+
+
+class ScopeMember(BaseModel):
+    id: int
+    name: str
+    model: str
+
+
+class ScopeResponse(BaseModel):
+    module_id: int
+    linked_device_count: int
+    devices: list[ScopeMember]
 
 
 class ModuleUpdate(BaseModel):
     """Request body for updating a module's status."""
 
-    status: str
+    status: Literal["active", "inactive", "error"]
 
 
 class ScheduleResponse(BaseModel):

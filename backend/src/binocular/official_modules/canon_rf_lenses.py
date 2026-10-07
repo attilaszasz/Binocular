@@ -15,6 +15,15 @@ from binocular.official_modules.canon_endpoint_cache import CanonEndpointCache
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "lens"
+SOURCE_DISPLAY_NAME = "Canon RF/RF-S lenses"
+SOURCE_COVERAGE_NOTES = (
+    "RF/RF-S lenses, Canon Asia English only; exact normalized names. "
+    "Adapters, extenders, cinema lenses and other mounts excluded. "
+    "RF-S18-45 has no firmware; no positive RF-S release verified. "
+    "No regional parity guarantee. Examples are not exhaustive firmware guarantees."
+)
+SOURCE_MODEL_EXAMPLES = ["RF24-105mm F4 L IS USM"]
+SOURCE_HELP_URL = "https://asia.canon/en/support/models?series=4"
 SOURCE_URL = "https://asia.canon/en/support/models?series=4"
 
 _CATALOG_URLS = (

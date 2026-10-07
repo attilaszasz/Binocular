@@ -31,7 +31,11 @@ export function useCreateDevice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: DeviceCreate) => devicesApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: DEVICES_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: DEVICES_KEY });
+      qc.invalidateQueries({ queryKey: ["modules"] });
+      qc.invalidateQueries({ queryKey: ["module-scope"] });
+    },
   });
 }
 
@@ -40,7 +44,11 @@ export function useUpdateDevice() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: DeviceUpdate }) =>
       devicesApi.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: DEVICES_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: DEVICES_KEY });
+      qc.invalidateQueries({ queryKey: ["modules"] });
+      qc.invalidateQueries({ queryKey: ["module-scope"] });
+    },
   });
 }
 
@@ -48,7 +56,11 @@ export function useDeleteDevice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => devicesApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: DEVICES_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: DEVICES_KEY });
+      qc.invalidateQueries({ queryKey: ["modules"] });
+      qc.invalidateQueries({ queryKey: ["module-scope"] });
+    },
   });
 }
 
@@ -75,4 +87,3 @@ export function useCheckBulk() {
     onSuccess: () => qc.invalidateQueries({ queryKey: DEVICES_KEY }),
   });
 }
-

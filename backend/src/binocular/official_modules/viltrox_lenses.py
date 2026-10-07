@@ -11,6 +11,14 @@ import bs4
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "lens"
+SOURCE_DISPLAY_NAME = "Viltrox lenses & teleconverters"
+SOURCE_COVERAGE_NOTES = (
+    "Lenses & teleconverters: index text/slug matching; mount suffix required. "
+    "Document Download only; companion app excluded. "
+    "Examples are not exhaustive firmware guarantees."
+)
+SOURCE_MODEL_EXAMPLES = ["AF 50/1.2 FE", "TC-2.0X FE"]
+SOURCE_HELP_URL = "https://viltrox.com/pages/download-center-1"
 SOURCE_URL = "https://viltrox.com/pages/download-center-1"
 
 _VILTROX_INDEX_URL = "https://viltrox.com/pages/download-center-1"
@@ -22,9 +30,7 @@ _FIRMWARE_LINE_RE = re.compile(
     r"V(?P<version>\d+(?:\.\d+){0,3})\s*(?:$|\()",
     re.IGNORECASE,
 )
-_COMPANION_APP_RE = re.compile(
-    r"Viltrox\s+Lens\s+V\d+(?:\.\d+)+", re.IGNORECASE
-)
+_COMPANION_APP_RE = re.compile(r"Viltrox\s+Lens\s+V\d+(?:\.\d+)+", re.IGNORECASE)
 _DATE_RE = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
 
 
@@ -89,8 +95,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
     section_soup = find_document_download_section(lens_html)
     if section_soup is None:
         raise ValueError(
-            "parse_error: ### Document Download section was not found at"
-            f" {lens_url}"
+            f"parse_error: ### Document Download section was not found at {lens_url}"
         )
 
     entries = parse_lens_page_entries(section_soup)
@@ -123,9 +128,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
     }
 
 
-def find_lens_link(
-    soup: bs4.BeautifulSoup, requested_model: str
-) -> bs4.Tag | None:
+def find_lens_link(soup: bs4.BeautifulSoup, requested_model: str) -> bs4.Tag | None:
     """Find the per-lens link in the side menu that matches the model.
 
     The display name (e.g. ``TC-2.0X FE``) is the primary match. The page slug

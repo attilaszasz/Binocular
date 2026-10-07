@@ -14,3 +14,7 @@ frontend/dist/
 frontend/coverage/
 frontend/*.tsbuildinfo
 backend/.dev-data/
+/.validation/
+/frontend/test-results/
+/frontend/playwright-report/
+/frontend/coverage/

@@ -10,7 +10,19 @@ from urllib.parse import urljoin
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "camera"
-SOURCE_URL = "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index.html"
+SOURCE_DISPLAY_NAME = "Panasonic Lumix MFT cameras"
+SOURCE_COVERAGE_NOTES = (
+    "MFT cameras: DC/DMC codes, grouped aliases, punctuation/case normalization. "
+    "Full-frame DC-S5 is excluded. "
+    "Examples are not exhaustive firmware guarantees."
+)
+SOURCE_MODEL_EXAMPLES = ["DC-GH7", "DC-G91"]
+SOURCE_HELP_URL = (
+    "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index.html"
+)
+SOURCE_URL = (
+    "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index.html"
+)
 
 _PANASONIC_FIRMWARE_URL = (
     "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index.html"

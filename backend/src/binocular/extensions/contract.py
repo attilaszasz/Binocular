@@ -13,6 +13,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+# Optional V1 author guidance; strict limits are enforced by guidance.SourceGuidance.
+SOURCE_DISPLAY_NAME_ATTR = "SOURCE_DISPLAY_NAME"
+SOURCE_COVERAGE_NOTES_ATTR = "SOURCE_COVERAGE_NOTES"
+SOURCE_MODEL_EXAMPLES_ATTR = "SOURCE_MODEL_EXAMPLES"
+SOURCE_HELP_URL_ATTR = "SOURCE_HELP_URL"
+
 # ---------------------------------------------------------------------------
 # Contract attribute names — used by the loader and validator to verify that
 # a module conforms to the V1 contract.

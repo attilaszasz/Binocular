@@ -94,6 +94,8 @@ def test_godox_module_loads_through_extension_contract() -> None:
 
     assert result.success is True
     assert result.module is not None
+    assert result.guidance.display_name == "Godox flashes"
+    assert result.guidance.model_examples == ("iT32", "V100S")
     assert result.module.MODULE_VERSION == "1.0.0"
     assert result.module.SUPPORTED_DEVICE_TYPE == "flash"
 
