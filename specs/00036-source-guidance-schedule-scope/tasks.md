@@ -75,7 +75,7 @@ T026: all lifecycle/bounds; T021: all pause barriers; T028: isolated SQLite/modu
 | FR-008 | T012 |
 | FR-009 | T003,T006,T026 |
 | FR-010 | T005,T006,T026 |
-| FR-011 | T004,T008,T023,T026 |
+| FR-011 | T004,T008,T023,T026,T035 |
 | FR-012 | T015,T019,T022 |
 | FR-013 | T020,T022 |
 | FR-014 | T013,T020 |
@@ -84,7 +84,7 @@ T026: all lifecycle/bounds; T021: all pause barriers; T028: isolated SQLite/modu
 | FR-017 | T024,T025,T027 |
 | FR-018 | T025,T028,T029 |
 | FR-019 | T019,T020 |
-| FR-020 | T009,T014,T021,T029 |
+| FR-020 | T009,T014,T021,T029,T035 |
 
 ## Phase: Bug Fixes
 
@@ -94,3 +94,6 @@ T026: all lifecycle/bounds; T021: all pause barriers; T028: isolated SQLite/modu
 - [X] T034 [BUG:ERROR] {FR-018} [requirement-gap] Correct light-theme source-card text contrast — frontend/src/components/modules/ModuleCard.tsx:66
   > Error: axe color-contrast: Official 3.33:1, active 3.31:1, Healthy 2.47:1; small text requires 4.5:1.
   > Fix hint: Adjust light-theme foreground/background pairs in ModuleCard.tsx:66,107 and ModuleStatusBadge.tsx:11; retain readable dark-theme states and add browser contrast regression.
+- [X] T035 [BUG:ERROR] {FR-011,FR-020} [test-failure] Replace historical Git lookup with exact checked-in Sony fixture; reject subprocess use and rerun backend CI gates — backend/tests/test_seeder.py:68
+  > Error: CI #37592881715 on 5a223df: historical provenance case fails with fatal: invalid object name 'b1b8b99' in shallow Actions checkout.
+  > Fix hint: Preserve historic SHA-256 ee30f81150e86c4b437cdb8f756100d950c8fe49fc96e6b975776c353ebaf319 and all existing provenance/state assertions.

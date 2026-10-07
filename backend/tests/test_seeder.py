@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -55,8 +54,13 @@ def _make_corrupted_module(dir_path: Path, filename: str) -> Path:
     "case", ["current", "historical", "unknown", "missing", "custom"]
 )
 async def test_provenance_backfill_protects_state_and_bytes(
-    tmp_path: Path, case: str
+    tmp_path: Path, case: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # Historical provenance must work in shallow checkouts without invoking Git.
+    def reject_subprocess(*args: object, **kwargs: object) -> bytes:
+        raise AssertionError("Provenance fixtures must not depend on subprocesses")
+
+    monkeypatch.setattr("subprocess.check_output", reject_subprocess)
     settings = Settings(data_dir=tmp_path, modules_dir=tmp_path / "modules")
     settings.modules_dir.mkdir()
     conn = await open_connection(settings)
@@ -67,13 +71,8 @@ async def test_provenance_backfill_protects_state_and_bytes(
     assert bundled is not None
     if case == "historical":
         path.write_bytes(
-            subprocess.check_output(
-                [
-                    "/usr/bin/git",
-                    "show",
-                    "b1b8b99:backend/src/binocular/official_modules/sony_alpha.py",
-                ]
-            )
+            (Path(__file__).parent / "fixtures/sony_alpha/historical_module.txt")
+            .read_bytes()
         )
         assert content_hash(path) == HISTORICAL_SHIPPED["sony_alpha"][1]
     elif case == "current":

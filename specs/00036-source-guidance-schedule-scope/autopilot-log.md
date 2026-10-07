@@ -106,3 +106,29 @@ Previous Gate halt and summary above remain historical; they are not a verdict f
 | QC | PASS; prior two defects resolved by actual verification | [qc-report.md](qc-report.md) |
 
 **Result**: Historical Gate halt and first QC FAIL remain preserved above. Current owning QC rerun is PASS: 480 backend, 83 frontend and six real Chromium scenarios pass; 16 axe states have zero violations. No new bug tasks, source edits or external publication. Genuine `.completed` retained; `.qc-passed` created at 2026-10-07T08:17:00Z after final report/task verification.
+
+## Owning Implement CI Portability Remediation — 2026-10-07
+
+| Timestamp | Phase | Event | Detail | Outcome | Rationale | Artifacts |
+|-----------|-------|-------|--------|---------|-----------|-----------|
+| 2026-10-07T08:22:52Z | Implement | decision | [CI #37592881715](https://github.com/attilaszasz/Binocular/actions/runs/37592881715) on 5a223df failed historical seeder test: Git object b1b8b99 unavailable in shallow Actions checkout | Prior checkpoint superseded; T035 added with FR-011/FR-020 | Actual failed log, not a production seeder defect; preserve all prior task IDs and outcomes | [tasks.md](tasks.md), [../../.validation/issue12-ci-failed.log](../../.validation/issue12-ci-failed.log) |
+| 2026-10-07T08:22:52Z | Implement | gate_check | Exact canonical historical Sony bytes checked in as .txt; unchanged SHA-256 ee30f81150e86c4b437cdb8f756100d950c8fe49fc96e6b975776c353ebaf319; test reads bytes and rejects subprocess.check_output | PASS: five provenance cases with subprocess disabled | No production code, digest, assertion, coverage threshold or checkout-depth changes | [quickstart.md](quickstart.md), [../../backend/tests/test_seeder.py](../../backend/tests/test_seeder.py), [../../backend/tests/fixtures/sony_alpha/historical_module.txt](../../backend/tests/fixtures/sony_alpha/historical_module.txt) |
+| 2026-10-07T08:22:52Z | Implement | phase_complete | uv sync --group dev; exact backend CI Ruff/mypy/pytest coverage/pip-audit all executed; 480 tests, 87.20%, 123 typed files, no known dependency vulnerabilities; git diff --check clean | T035 complete; 35/35; owning .completed updated | Local Python 3.13.16; hosted CI rerun not claimed. Parent owns new QC; qc-report.md/.qc-passed retained untouched as historical checkpoint, not new repair approval | [tasks.md](tasks.md), [quickstart.md](quickstart.md), [.implement-state](.implement-state), [.completed](.completed) |
+
+## Owning QC T035 Rerun — 2026-10-07
+
+| Timestamp | Phase | Event | Detail | Outcome | Rationale | Artifacts |
+|-----------|-------|-------|--------|---------|-----------|-----------|
+| 2026-10-07T08:25:29Z | QC | gate_check | Scoped two-file test/fixture repair; prior local PASS and subsequent hosted CI FAIL loaded; spec/plan/frontend/production unchanged, genuine completion and 35/35 tasks verified | PASS | Auditor/Story Verifier roles inline; five provenance cases independently pass with check_output forbidden, canonical captured/fixture SHA-256 exact | [qc-report.md](qc-report.md), [tasks.md](tasks.md) |
+| 2026-10-07T08:25:29Z | QC | gate_check | Exact backend Ruff/mypy/pytest coverage/pip-audit independently executed; mandatory frontend lint/types/tests and Docker build independently executed | PASS | 480 backend tests/87.20%, mypy 123 files/Ruff clean, no known audited dependency vulnerabilities; 83 Vitest tests pass. Image manifest equals prior scanned/non-root-verified image. Unchanged prior six Chromium/16 axe/frontend coverage evidence retained explicitly, not rerun claims | [qc-report.md](qc-report.md) |
+| 2026-10-07T08:28:27Z | QC | phase_complete | Final report/task/completion/fixture gates verified; QC artifact trailing whitespace corrected and git diff --check clean; preexisting stale .qc-passed replaced | PASS; 35/35, no new bugs | Actual local verification only; no hosted CI rerun, children, source edits, commits, pushes or external actions | [qc-report.md](qc-report.md), [.completed](.completed), [.qc-passed](.qc-passed) |
+
+## Current T035 Run Summary
+
+| Phase | Status | Key Artifact |
+|-------|--------|--------------|
+| Specify / Clarify / Plan / Checklist / Tasks / Analyze | PASS, unchanged | [spec.md](spec.md), [plan.md](plan.md), [tasks.md](tasks.md) |
+| Implement | PASS; T035 genuinely complete, 35/35 | [tasks.md](tasks.md), [.completed](.completed) |
+| QC | PASS; independent scoped repair and mandatory local CI gates | [qc-report.md](qc-report.md), [.qc-passed](.qc-passed) |
+
+**Result**: Previous Gate/QC failures and hosted shallow-checkout failure remain historical evidence. Current local QC PASS supersedes the old checkpoint: five no-Git provenance cases and 480 backend/83 frontend tests pass; backend coverage 87.20%. Prior unchanged frontend coverage/six Chromium/16 clean axe state evidence is retained without claiming fresh browser execution. `.completed` remains parent-created; owning QC refreshed `.qc-passed` at 2026-10-07T08:28:27Z. Hosted CI rerun remains parent-owned and unclaimed; no source or external actions performed by this QC run.
