@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: Source guidance additive API
+  version: 1.0.0
+  description: Existing trusted-LAN optional Basic auth applies to every operation; existing fields retained. This is a feature subset, not the entire application API.
+x-auth-posture: Optional existing Basic auth middleware; no new authentication mechanism.
+paths:
+  /api/v1/modules:
+    get:
+      responses:
+        '200':
+          description: Existing modules with additive source fields
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ModuleResponse'
+    post:
+      parameters:
+        - name: run_phase2
+          in: query
+          schema: {type: boolean, default: false}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+      responses:
+        '200':
+          description: NDJSON stream; validation/persistence errors are terminal failed events, not success. Uploaded declarations supply optional guidance; omitted guidance clears previous author fields.
+          content:
+            application/x-ndjson:
+              schema: {type: string, description: Newline-delimited UploadEvent objects}
+              x-event-schema: {$ref: '#/components/schemas/UploadEvent'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /api/v1/modules/{module_id}:
+    put:
+      parameters:
+        - name: module_id
+          in: path
+          required: true
+          schema: {type: integer, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [active, inactive, error]}
+      responses:
+        '200':
+          description: Saved state; inactive is committed and queued automatic worker admission invalidated before success. Active is explicit resume.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ModuleResponse'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '500': {$ref: '#/components/responses/PersistenceError'}
+  /api/v1/modules/{module_id}/devices:
+    get:
+      parameters:
+        - name: module_id
+          in: path
+          required: true
+          schema: {type: integer, minimum: 1}
+      responses:
+        '200':
+          description: Exact membership snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScopeResponse'
+        '404':
+          description: Module not found
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '500': {$ref: '#/components/responses/PersistenceError'}
+  /api/v1/schedules:
+    get:
+      responses:
+        '200':
+          description: Existing schedules, including paused modules
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ScheduleResponse'}
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [module_id, interval_hours]
+              properties:
+                module_id: {type: integer}
+                interval_hours: {type: integer, minimum: 1}
+      responses:
+        '200':
+          description: Persisted interval; module status unchanged and only active rows register jobs
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ScheduleResponse'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '500': {$ref: '#/components/responses/PersistenceError'}
+components:
+  responses:
+    NotFound:
+      description: Module not found
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HttpError'}
+    ValidationError:
+      description: Existing FastAPI 422 detail array; invalid ID, status, interval or missing multipart file
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [detail]
+            properties:
+              detail:
+                type: array
+                items: {type: object, additionalProperties: true}
+    PersistenceError:
+      description: Non-success response on failed persistence; existing handler determines detail exposure
+  schemas:
+    HttpError:
+      type: object
+      required: [detail]
+      properties:
+        detail: {type: string}
+    ModuleResponse:
+      allOf:
+        - $ref: '#/components/schemas/ModuleAdditions'
+        - type: object
+          required: [id, name, device_type]
+          properties:
+            id: {type: integer}
+            name: {type: string}
+            device_type: {type: string}
+            version: {type: string, default: ''}
+            author: {type: string, default: ''}
+            file_path: {type: string, default: ''}
+            is_official: {type: boolean, default: false}
+            status: {type: string, default: active}
+            created_at: {type: string, default: ''}
+            consecutive_failures: {type: integer, default: 0}
+            last_success: {type: [string, 'null'], default: null}
+            source_url: {type: string, default: '', description: Canonical endpoint preserved verbatim; consumers validate before making it actionable}
+    UploadEvent:
+      type: object
+      required: [status, step, message]
+      properties:
+        status: {type: string, enum: [running, failed, success]}
+        step: {type: string}
+        message: {type: string}
+        validation_result: {type: object, additionalProperties: true}
+        module: {$ref: '#/components/schemas/ModuleResponse'}
+    ScheduleResponse:
+      type: object
+      required: [module_id, module_name, device_type, interval_hours]
+      properties:
+        module_id: {type: integer}
+        module_name: {type: string}
+        device_type: {type: string}
+        interval_hours: {type: integer}
+        last_run: {type: [string, 'null'], default: null}
+        next_run: {type: [string, 'null'], default: null}
+    ModuleAdditions:
+      type: object
+      description: Additive fragment; existing ModuleResponse fields retained
+      required: [display_name, coverage_notes, model_examples, help_url, guidance_provenance, linked_device_count]
+      properties:
+        display_name: {type: string, maxLength: 120, default: ''}
+        coverage_notes: {type: string, maxLength: 1000, default: ''}
+        model_examples:
+          type: array
+          maxItems: 10
+          default: []
+          items: {type: string, minLength: 1, maxLength: 120}
+        help_url: {type: string, maxLength: 2048, default: ''}
+        guidance_provenance: {type: string, enum: [verified_official, custom, legacy], readOnly: true}
+        linked_device_count: {type: integer, minimum: 0, readOnly: true}
+    ScopeResponse:
+      type: object
+      required: [module_id, linked_device_count, devices]
+      properties:
+        module_id: {type: integer, minimum: 1}
+        linked_device_count: {type: integer, minimum: 0}
+        devices:
+          type: array
+          items:
+            type: object
+            required: [id, name, model]
+            properties:
+              id: {type: integer, minimum: 1}
+              name: {type: string}
+              model: {type: string}

@@ -11,6 +11,14 @@ import bs4
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "flash"
+SOURCE_DISPLAY_NAME = "Godox flashes"
+SOURCE_COVERAGE_NOTES = (
+    "Flash firmware pages; punctuation/case normalization. "
+    "Keep the suffix identifying the mount variant. "
+    "Examples are not exhaustive firmware guarantees."
+)
+SOURCE_MODEL_EXAMPLES = ["iT32", "V100S"]
+SOURCE_HELP_URL = "https://www.godox.com/firmware-flash/"
 SOURCE_URL = "https://www.godox.com"
 
 _GODOX_BASE_URL = "https://www.godox.com"

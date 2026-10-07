@@ -25,6 +25,16 @@ case "$PGID" in
         ;;
 esac
 
+# Numeric strings such as 00 must not bypass the root prohibition.
+case "$PUID" in
+    *[1-9]*) ;;
+    *) echo "ERROR: PUID must be non-zero. Refusing to run as root." >&2; exit 1 ;;
+esac
+case "$PGID" in
+    *[1-9]*) ;;
+    *) echo "ERROR: PGID must be non-zero. Refusing to run as root." >&2; exit 1 ;;
+esac
+
 echo "Setting up user binocular with PUID=$PUID and PGID=$PGID"
 
 # Create or modify group.
@@ -46,4 +56,8 @@ mkdir -p /app/data /app/modules
 chown "$PUID:$PGID" /app/data /app/modules
 
 # Drop privileges and exec the application.
-exec su-exec binocular:binocular "$@"
+if [ "$(id -u binocular)" = "0" ] || [ "$(id -g binocular)" = "0" ]; then
+    echo "ERROR: Refusing to execute with root user/group identity." >&2
+    exit 1
+fi
+exec gosu binocular:binocular "$@"

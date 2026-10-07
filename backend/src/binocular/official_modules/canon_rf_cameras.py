@@ -15,6 +15,14 @@ from binocular.official_modules.canon_endpoint_cache import CanonEndpointCache
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "camera"
+SOURCE_DISPLAY_NAME = "Canon EOS R cameras"
+SOURCE_COVERAGE_NOTES = (
+    "EOS R cameras, Canon Asia English only; exact case/whitespace-normalized "
+    "names. Cinema EOS/EOS R5 C excluded; no regional parity guarantee. "
+    "Examples are not exhaustive firmware guarantees."
+)
+SOURCE_MODEL_EXAMPLES = ["EOS R5"]
+SOURCE_HELP_URL = "https://asia.canon/en/support/models?series=3"
 SOURCE_URL = "https://asia.canon/en/support/models?series=3"
 
 _CATALOG_URL = "https://asia.canon/en/support/models?series=3"

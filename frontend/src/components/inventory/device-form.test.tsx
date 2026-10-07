@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { DeviceForm } from "./device-form";
 
@@ -31,6 +31,50 @@ vi.mock("@/lib/api", async (importOriginal) => {
 });
 
 describe("DeviceForm", () => {
+  it("requires a source and preserves free-text values on add", () => {
+    const submit = vi.fn();
+    const view = render(<DeviceForm onSubmit={submit} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "new" } });
+    fireEvent.submit(view.container.querySelector("form")!);
+    expect(screen.getByRole("alert")).toHaveTextContent("Please select a module");
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it("submits only changed edit fields and retains manually entered version", () => {
+    const submit = vi.fn();
+    const view = render(<DeviceForm device={device} onSubmit={submit} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "renamed" } });
+    fireEvent.change(screen.getByLabelText("Current Version"), { target: { value: "manual" } });
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "free text" } });
+    fireEvent.submit(view.container.querySelector("form")!);
+    expect(submit).toHaveBeenCalledWith({ name: "renamed", model: "free text", current_version: "manual" });
+  });
+  const device = { id: 1, name: "Camera", model: "old", module_id: 1, module_name: "Sony", device_type: "camera", current_version: "typed", has_update: false, latest_detected_version: null, last_checked: null, last_notified_version: null, created_at: "", updated_at: "" };
+  it.each([false, true])("discards stale success/error and finally after model edit (%s)", async (reject) => {
+    let resolve!: (value: { version: string }) => void;
+    let fail!: (error: Error) => void;
+    mockSearchVersion.mockImplementationOnce(() => new Promise((yes, no) => { resolve = yes; fail = no; }));
+    render(<DeviceForm device={device} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Search Version" }));
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "new" } });
+    await act(async () => { if (reject) fail(new Error("stale error")); else resolve({ version: "stale" }); });
+    expect(screen.getByLabelText("Current Version")).toHaveValue("typed");
+    expect(screen.queryByText("stale error")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search Version" })).toBeEnabled();
+  });
+  it("invalidates requests on unmount and clears only search-derived values", async () => {
+    mockSearchVersion.mockResolvedValueOnce({ version: "derived" });
+    const view = render(<DeviceForm device={device} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Search Version" }));
+    await waitFor(() => expect(screen.getByLabelText("Current Version")).toHaveValue("derived"));
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "new" } });
+    expect(screen.getByLabelText("Current Version")).toHaveValue("");
+    let resolve!: (value: { version: string }) => void;
+    mockSearchVersion.mockImplementationOnce(() => new Promise(yes => { resolve = yes; }));
+    fireEvent.click(screen.getByRole("button", { name: "Search Version" }));
+    view.unmount();
+    await act(async () => resolve({ version: "ignored" }));
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseModules.mockReturnValue({
@@ -49,7 +93,7 @@ describe("DeviceForm", () => {
 
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Model")).toBeInTheDocument();
-    expect(screen.getByLabelText("Module")).toBeInTheDocument();
+    expect(screen.getByLabelText("Source")).toBeInTheDocument();
     expect(screen.getByLabelText("Current Version")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Search Version" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Device" })).toBeInTheDocument();
@@ -94,10 +138,10 @@ describe("DeviceForm", () => {
       />,
     );
 
-    const link = screen.getByRole("link", { name: "View module source page" });
+    const link = screen.getByRole("link", { name: /View module source page/ });
     expect(link).toHaveAttribute("href", "https://example.com/sony");
     expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noreferrer");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("does not render a source link when the selected module has no URL", () => {
@@ -123,7 +167,7 @@ describe("DeviceForm", () => {
       />,
     );
 
-    expect(screen.queryByRole("link", { name: "View module source page" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /View module source page/ })).not.toBeInTheDocument();
   });
 
   it("enables Search Version button when initial device has model and module", () => {

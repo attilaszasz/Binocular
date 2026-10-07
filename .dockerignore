@@ -1,0 +1,17 @@
+.git
+.validation
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.coverage
+frontend/dist
+frontend/coverage
+frontend/test-results
+frontend/playwright-report
+.DS_Store
+Thumbs.db
+.vscode
+.idea

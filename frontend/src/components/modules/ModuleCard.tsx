@@ -11,22 +11,29 @@ import {
 } from "@/components/ui/tooltip";
 import { ModuleStatusBadge } from "./ModuleStatusBadge";
 import { FrequencyEditor } from "./FrequencyEditor";
-import { useUpdateModule, useDeleteModule } from "@/hooks/use-modules";
+import { useUpdateModule, useDeleteModule, useModuleScope } from "@/hooks/use-modules";
 import type { Module } from "@/lib/api";
 
 interface ModuleCardProps {
   module: Module;
   onDeleteError?: (error: string) => void;
+  countsUpdating?: boolean;
 }
 
-export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
+export function ModuleCard({ module, onDeleteError, countsUpdating }: ModuleCardProps) {
   const updateMutation = useUpdateModule();
   const deleteMutation = useDeleteModule();
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [inspect, setInspect] = useState(false);
+  const scope = useModuleScope(module.id, inspect);
+  const count = inspect ? (scope.isError || scope.isFetching ? undefined : scope.data?.linked_device_count) : countsUpdating ? undefined : module.linked_device_count;
 
   const handleStatusToggle = (checked: boolean) => {
     const newStatus = checked ? "active" : "inactive";
-    updateMutation.mutate({ id: module.id, status: newStatus });
+    setErrorText(null);
+    updateMutation.mutate({ id: module.id, status: newStatus }, {
+      onError: (err) => setErrorText(err.message || "Status was not saved"),
+    });
   };
 
   const handleDelete = () => {
@@ -50,19 +57,19 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
   const isDeleteDisabled = module.is_official;
 
   return (
-    <Card className="flex flex-col h-full border border-border bg-card text-card-foreground">
+    <Card className="flex flex-col h-full min-w-0 border border-border bg-card text-card-foreground">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="space-y-1">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
-            {module.name}
+           <CardTitle className="text-xl font-bold flex flex-wrap items-center gap-2">
+            <span>{module.display_name || module.name.replaceAll("_", " ")}</span>
             {module.is_official && (
-              <span className="text-[10px] bg-blue-500/10 text-blue-500 font-semibold px-2 py-0.5 rounded-full dark:bg-blue-500/20">
+              <span className="text-[10px] bg-blue-500/10 text-info-foreground font-semibold px-2 py-0.5 rounded-full dark:bg-blue-500/20">
                 Official
               </span>
             )}
           </CardTitle>
           <span className="text-sm text-muted-foreground capitalize">
-            {module.device_type}
+            {module.coverage_notes || module.device_type}
           </span>
         </div>
         <ModuleStatusBadge status={module.status} />
@@ -70,6 +77,11 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
 
       <CardContent className="flex-1 flex flex-col justify-between pt-4">
         <div className="space-y-2 text-sm">
+          {!!module.model_examples?.length && <p>Model examples: {module.model_examples.join("; ")}</p>}
+          {module.guidance_provenance === "legacy" && <p role="status">Unverified source provenance. Inspect the file before repair; custom bytes are protected.</p>}
+          <details>
+          <summary className="cursor-pointer focus-visible:outline">Details</summary>
+          <p className="break-all">Internal name: {module.name}</p>
           <div className="flex justify-between border-b border-border/40 pb-1">
             <span className="text-muted-foreground">Version</span>
             <span className="font-mono">{module.version || "—"}</span>
@@ -81,17 +93,18 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
           <div className="flex flex-col gap-0.5 border-b border-border/40 pb-1">
             <span className="text-muted-foreground">File Path</span>
             <span
-              className="font-mono text-xs truncate"
+              className="font-mono text-xs break-all"
               title={module.file_path}
             >
               {module.file_path || "—"}
             </span>
           </div>
-          {module.is_official && (
+          </details>
+          {(module.is_official || !!module.consecutive_failures || !!module.last_success) && (
             <>
               <div className="flex justify-between border-b border-border/40 pb-1">
                 <span className="text-muted-foreground">Health</span>
-                <span className={module.consecutive_failures && module.consecutive_failures >= 5 ? "text-destructive font-semibold" : module.consecutive_failures && module.consecutive_failures > 0 ? "text-amber-500 font-semibold" : "text-emerald-500 font-semibold"}>
+                <span className={module.consecutive_failures && module.consecutive_failures >= 5 ? "text-destructive font-semibold" : module.consecutive_failures && module.consecutive_failures > 0 ? "text-warning-foreground font-semibold" : "text-success-foreground font-semibold"}>
                   {module.consecutive_failures && module.consecutive_failures > 0
                     ? `${module.consecutive_failures} consecutive failures`
                     : "Healthy"}
@@ -110,17 +123,29 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
         </div>
 
 
+        <div className="space-y-2 mt-3 text-sm">
+          <p role="status">{count === undefined ? "Linked device count unknown" : `${count} linked devices`}</p>
+          <Button variant="outline" aria-expanded={inspect} aria-controls={`scope-${module.id}`} onClick={() => setInspect(!inspect)}>Inspect linked devices</Button>
+          {inspect && <section id={`scope-${module.id}`} aria-label="Linked devices">
+            {scope.isFetching && <p role="status">Refreshing linked devices…</p>}
+            {scope.isError && <p role="alert">Unable to load linked devices. Count unknown.</p>}
+            {!scope.isFetching && !scope.isError && scope.data && (scope.data.devices.length ? <ul>{scope.data.devices.map(d => <li key={d.id} className="break-words">{d.name} — {d.model}</li>)}</ul> : <p>No linked devices.</p>)}
+            <Button variant="outline" onClick={() => scope.refetch()}>Refresh linked devices</Button>
+          </section>}
+          <p>Frequency and pause affect all {count === undefined ? "currently linked" : count} devices currently linked to this source, and devices linked later.</p>
+          {module.status !== "active" && <p>Automatic monitoring is off. Manual single, bulk checks and version search remain available without resuming.</p>}
+        </div>
         <FrequencyEditor module={module} />
 
         {module.is_official && module.consecutive_failures !== undefined && module.consecutive_failures >= 5 && (
-          <div className="mt-3 flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
+          <div role="alert" className="mt-3 flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
             <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
             <span>Consistently failing updates checks. Please check logs/targets.</span>
           </div>
         )}
 
         {errorText && (
-          <div className="mt-3 flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
+          <div role="alert" className="mt-3 flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
             <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
             <span>{errorText}</span>
           </div>
@@ -133,9 +158,10 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
               checked={module.status === "active"}
               onCheckedChange={handleStatusToggle}
               disabled={updateMutation.isPending}
+              aria-label={`Automatic monitoring for ${module.display_name || module.name}`}
             />
             <span className="text-sm text-muted-foreground">
-              {module.status === "active" ? "Enabled" : "Disabled"}
+              {updateMutation.isPending ? "Saving…" : module.status === "active" ? "Automatic on" : "Automatic off"}
             </span>
           </div>
 
@@ -149,6 +175,7 @@ export function ModuleCard({ module, onDeleteError }: ModuleCardProps) {
                     className="h-8 w-8"
                     onClick={handleDelete}
                     disabled={isDeleteDisabled || deleteMutation.isPending}
+                    aria-label={`Delete ${module.display_name || module.name}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -83,6 +83,8 @@ def test_module_loads_through_extension_contract() -> None:
 
     assert result.success is True
     assert result.module is not None
+    assert result.guidance.display_name == "Nikon Z-series cameras"
+    assert result.guidance.model_examples == ("Z 30", "Z 6II")
     assert result.module.MODULE_VERSION == "1.0.0"
     assert result.module.SUPPORTED_DEVICE_TYPE == "camera"
 

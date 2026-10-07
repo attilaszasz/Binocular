@@ -9,6 +9,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
+from binocular.services.automatic_admission import AutomaticAdmission
+
 logger = structlog.get_logger("binocular.services.scheduler")
 
 
@@ -25,6 +27,7 @@ class SchedulerService:
         self._settings = settings
         self._scheduler = AsyncIOScheduler(timezone=UTC)
         self._is_running = False
+        self.admission = AutomaticAdmission()
 
     async def start(self) -> None:
         """Start the background job scheduler and load active jobs."""
@@ -81,6 +84,7 @@ class SchedulerService:
 
         for row in rows:
             module_id, interval_hours, _last_run, next_run = row
+            self.admission.activate(module_id)
 
             next_run_time: datetime
             if next_run:
@@ -125,6 +129,7 @@ class SchedulerService:
 
     def remove_job(self, module_id: int) -> None:
         """Remove a scheduled job from APScheduler."""
+        self.admission.pause(module_id)
         job_id = f"module_{module_id}"
         if self._scheduler.get_job(job_id):
             self._scheduler.remove_job(job_id)
@@ -132,6 +137,15 @@ class SchedulerService:
 
     async def register_new_module(self, module_id: int) -> None:
         """Register check schedule for a newly added module."""
+        revision = self.admission.revision(module_id)
+        cursor = await self._db.execute(
+            "SELECT status FROM modules WHERE id = ?", (module_id,)
+        )
+        status = await cursor.fetchone()
+        if not status or status[0] != "active":
+            self.remove_job(module_id)
+            return
+        self.admission.activate(module_id, expected=revision)
         cursor = await self._db.execute(
             """
             SELECT module_id, interval_hours, last_run, next_run
@@ -167,7 +181,7 @@ class SchedulerService:
             )
             await self._db.commit()
 
-            if self._is_running:
+            if self._is_running and self.admission.ticket(module_id) is not None:
                 self._register_job(module_id, interval_hours, next_run_time)
 
     async def reschedule_module(self, module_id: int, interval_hours: int) -> None:
@@ -186,12 +200,24 @@ class SchedulerService:
         )
         await self._db.commit()
 
-        if self._is_running:
-            self._register_job(module_id, interval_hours, next_run)
+        await self.register_new_module(module_id)
 
     async def run_module_check(self, module_id: int) -> None:
         """Execute firmware checks concurrently for all devices using this module."""
         logger.info("run_module_check_start", module_id=module_id)
+        generation = self.admission.ticket(module_id)
+        if generation is None:
+            return
+        cursor = await self._db.execute(
+            "SELECT status FROM modules WHERE id = ?", (module_id,)
+        )
+        status = await cursor.fetchone()
+        if (
+            not status
+            or status[0] != "active"
+            or not self.admission.claim(module_id, generation)
+        ):
+            return
 
         # 1. Retrieve all devices registered under this module
         cursor = await self._db.execute(
@@ -233,9 +259,15 @@ class SchedulerService:
             modules_dir=self._settings.modules_dir,
             runner_timeout=self._settings.module_timeout,
             health_threshold=self._settings.module_health_threshold,
+            admission=self.admission,
         )
 
-        tasks = [check_service.check_device(device_id) for device_id in device_ids]
+        tasks = [
+            check_service.check_device(
+                device_id, automatic_ticket=(module_id, generation)
+            )
+            for device_id in device_ids
+        ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         for device_id, result in zip(device_ids, results, strict=True):

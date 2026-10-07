@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from pathlib import Path
 
 import aiosqlite
 import pytest
@@ -38,7 +39,14 @@ async def repo(tmp_path: object) -> AsyncGenerator[ModuleRepository]:
 
         """
     )
+    await conn.executescript(
+        (
+            Path(__file__).parents[2]
+            / "src/binocular/db/migrations/0010_source_guidance.sql"
+        ).read_text()
+    )
     repo = ModuleRepository(conn)
+    await conn.execute("CREATE TABLE devices (module_id INTEGER)")
     yield repo
     await conn.close()
 

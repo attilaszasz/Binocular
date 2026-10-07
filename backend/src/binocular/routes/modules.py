@@ -17,10 +17,14 @@ from binocular.devices.models import (
     ModuleUpdate,
     ScheduleResponse,
     ScheduleUpdate,
+    ScopeMember,
+    ScopeResponse,
 )
+from binocular.extensions.guidance import SourceGuidance, readable_name
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.repository import ModuleRepository
 from binocular.extensions.validator import validate_module
+from binocular.services.official_provenance import guidance_provenance
 
 logger = structlog.get_logger("binocular.routes.modules")
 
@@ -31,6 +35,20 @@ def _repository(db: DBDep) -> ModuleRepository:
     return ModuleRepository(db)
 
 
+def module_response(row: dict[str, object]) -> ModuleResponse:
+    guidance = SourceGuidance.from_row(row)
+    data = dict(row)
+    data.update(guidance.persistence())
+    data["model_examples"] = list(guidance.model_examples)
+    data["display_name"] = guidance.display_name.strip() or readable_name(
+        str(row["name"])
+    )
+    data["coverage_notes"] = guidance.coverage_notes.strip() or str(row["device_type"])
+    data["guidance_provenance"] = guidance_provenance(data)
+    data["is_official"] = data["guidance_provenance"] == "verified_official"
+    return ModuleResponse(**data)
+
+
 @router.get("/modules", response_model=list[ModuleResponse])
 async def list_modules(db: DBDep) -> list[ModuleResponse]:
     """List all registered modules with full metadata."""
@@ -39,9 +57,22 @@ async def list_modules(db: DBDep) -> list[ModuleResponse]:
     res = []
     for r in rows:
         d = dict(r)
-        d["is_official"] = bool(d["is_official"])
-        res.append(ModuleResponse(**d))
+        res.append(module_response(d))
     return res
+
+
+@router.get("/modules/{module_id}/devices", response_model=ScopeResponse)
+async def module_devices(module_id: int, db: DBDep) -> ScopeResponse:
+    if await _repository(db).get_by_id(module_id) is None:
+        raise HTTPException(status_code=404, detail="Module not found")
+    cursor = await db.execute(
+        "SELECT id, name, model FROM devices WHERE module_id = ? ORDER BY id",
+        (module_id,),
+    )
+    devices = [ScopeMember(**dict(row)) for row in await cursor.fetchall()]
+    return ScopeResponse(
+        module_id=module_id, linked_device_count=len(devices), devices=devices
+    )
 
 
 @router.post("/modules", response_class=StreamingResponse)
@@ -165,11 +196,19 @@ async def upload_module(
                             run_phase2=True,
                         )
                     else:
-                        validation_result = validate_module(
-                            temp_path,
-                            loaded_module=None,
-                            run_phase2=False,
+                        yield (
+                            json.dumps(
+                                {
+                                    "status": "failed",
+                                    "step": "runtime",
+                                    "message": "; ".join(
+                                        e.message for e in load_result.errors
+                                    ),
+                                }
+                            )
+                            + "\n"
                         )
+                        return
 
                 if not validation_result.valid:
                     result_dict = {
@@ -243,35 +282,47 @@ async def upload_module(
                     or "Operator"
                 )
 
-                # Save file to final modules directory
-                final_path = modules_dir / filename
-                final_path.write_bytes(contents)
-
-                # Register in database
                 repo = _repository(db)
                 existing = await repo.get_by_name(name)
-                if existing:
-                    await repo.update(
-                        existing["id"],
-                        device_type=device_type,
-                        version=version,
-                        author=author,
-                        file_path=str(final_path),
-                        status="active",
-                        source_url=source_url,
-                    )
-                    module_id = existing["id"]
-                else:
-                    module_id = await repo.create(
-                        name=name,
-                        device_type=device_type,
-                        version=version,
-                        author=author,
-                        file_path=str(final_path),
-                        is_official=False,
-                        status="active",
-                        source_url=source_url,
-                    )
+                # Retain prior bytes if persistence fails; never claim a failed save.
+                final_path = modules_dir / filename
+                prior_bytes = final_path.read_bytes() if final_path.exists() else None
+                final_path.write_bytes(contents)
+
+                try:
+                    if existing:
+                        await repo.update(
+                            existing["id"],
+                            device_type=device_type,
+                            version=version,
+                            author=author,
+                            file_path=str(final_path),
+                            source_url=source_url,
+                            is_official=False,
+                            registration_origin="custom",
+                            official_content_hash="",
+                            **load_result.guidance.persistence(),
+                        )
+                        module_id = existing["id"]
+                    else:
+                        module_id = await repo.create(
+                            name=name,
+                            device_type=device_type,
+                            version=version,
+                            author=author,
+                            file_path=str(final_path),
+                            is_official=False,
+                            status="active",
+                            source_url=source_url,
+                            registration_origin="custom",
+                            **load_result.guidance.persistence(),
+                        )
+                except Exception:
+                    if prior_bytes is None:
+                        final_path.unlink(missing_ok=True)
+                    else:
+                        final_path.write_bytes(prior_bytes)
+                    raise
 
                 row = await repo.get_by_id(module_id)
                 if not row:
@@ -292,7 +343,7 @@ async def upload_module(
                 await scheduler.register_new_module(module_id)
 
                 d = dict(row)
-                d["is_official"] = bool(d["is_official"])
+                d = module_response(d).model_dump()
 
                 # Yield final success event
                 yield (
@@ -356,8 +407,7 @@ async def update_module(
         )
 
     d = dict(updated)
-    d["is_official"] = bool(d["is_official"])
-    return ModuleResponse(**d)
+    return module_response(d)
 
 
 @router.delete("/modules/{module_id}", status_code=204)

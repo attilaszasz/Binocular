@@ -21,6 +21,40 @@ globalThis.ResizeObserver = class ResizeObserver {
 };
 
 describe("ModuleUploadForm", () => {
+  it("offers manual copying when the Clipboard API is absent on HTTP LAN origins", async () => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+    mockMutateAsync.mockRejectedValueOnce(new Error("metadata invalid"));
+    render(<ModuleUploadForm />);
+    fireEvent.change(screen.getByLabelText("Python module file", { exact: true }), { target: { files: [new File(["code"], "custom.py")] } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Module" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Copy for AI" }));
+    expect(await screen.findByText(/Select the displayed errors manually/)).toBeInTheDocument();
+  });
+  it("copies actual validation errors and surfaces clipboard failure", async () => {
+    const copy = vi.fn().mockRejectedValue(new Error("permission denied"));
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: copy } });
+    mockMutateAsync.mockRejectedValueOnce(new Error("metadata invalid"));
+    render(<ModuleUploadForm />);
+    fireEvent.change(screen.getByLabelText("Python module file", { exact: true }), { target: { files: [new File(["code"], "custom.py")] } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Module" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Copy for AI" }));
+    expect(await screen.findByText(/Unable to copy errors/)).toBeInTheDocument();
+    expect(copy).toHaveBeenCalledWith(expect.stringContaining("metadata invalid"));
+    copy.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByRole("button", { name: "Copy for AI" }));
+    await screen.findByText("Copied!");
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(screen.queryByText("custom.py")).not.toBeInTheDocument();
+  });
+  it("warns before import and rejects truncated streams without claiming saved", async () => {
+    mockMutateAsync.mockResolvedValueOnce({ body: { getReader: () => ({ read: async () => ({ done: true }) }) } });
+    const { container } = render(<ModuleUploadForm />);
+    expect(screen.getByText(/unsandboxed, user-vetted code/)).toBeInTheDocument();
+    fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files: [new File(["code"], "test.py")] } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Module" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("without confirmed save");
+    expect(screen.queryByText("Module Uploaded Successfully")).not.toBeInTheDocument();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });

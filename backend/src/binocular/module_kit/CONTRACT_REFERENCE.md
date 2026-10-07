@@ -101,3 +101,8 @@ Modules are validated in two phases on upload:
 Extension modules execute **in-process** with the full privileges of the
 Binocular application.  Only upload modules from trusted sources that you
 have personally reviewed.
+# Optional source guidance (V1 compatible)
+
+Omission remains compatible: readable filename and existing type are shown without invented coverage or official claims. Declare literal plain text; no HTML/Markdown. Bounds: `SOURCE_DISPLAY_NAME` ≤120 characters, `SOURCE_COVERAGE_NOTES` ≤1000, `SOURCE_MODEL_EXAMPLES` list/tuple of at most 10 nonblank strings ≤120 each, `SOURCE_HELP_URL` ≤2048. Blank strings/empty examples are allowed. Wrong types, excessive lengths and nonliteral declarations are rejected with field-specific fixes. Only absolute HTTP(S) URLs without credentials/control characters act; canonical `SOURCE_URL` remains distinct and unchanged.
+
+Modules are user-vetted, unsandboxed in-process code with full application privileges. Import alone executes code, even without runtime verification. Validation is not a sandbox. Share reviewed Python files and captured fixtures, never credentials/private inventory.

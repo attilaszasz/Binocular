@@ -17,7 +17,7 @@ const INTERVAL_OPTIONS = [
 ];
 
 export function FrequencyEditor({ module }: FrequencyEditorProps) {
-  const { data: schedules, isLoading } = useSchedules();
+  const { data: schedules, isLoading, isError } = useSchedules();
   const updateScheduleMutation = useUpdateSchedule();
 
   if (isLoading) {
@@ -30,7 +30,7 @@ export function FrequencyEditor({ module }: FrequencyEditorProps) {
   }
 
   const schedule = schedules?.find((s) => s.module_id === module.id);
-  if (!schedule) return null;
+  if (isError || !schedule) return <p role="alert">Check frequency unavailable. Refresh to retry.</p>;
 
   const handleValueChange = (val: string) => {
     const hours = parseInt(val, 10);
@@ -54,7 +54,7 @@ export function FrequencyEditor({ module }: FrequencyEditorProps) {
         onValueChange={handleValueChange}
         disabled={isUpdating}
       >
-        <SelectTrigger className="w-full h-8 text-xs bg-background border-border/60">
+        <SelectTrigger aria-label={`Check frequency for ${module.display_name || module.name}`} className="w-full h-8 text-xs bg-background border-border/60">
           <SelectValue placeholder="Select frequency" />
         </SelectTrigger>
         <SelectContent>
@@ -65,7 +65,10 @@ export function FrequencyEditor({ module }: FrequencyEditorProps) {
           ))}
         </SelectContent>
       </Select>
-      {schedule.next_run && (
+      {updateScheduleMutation.isError && <p role="alert">Frequency was not saved. {updateScheduleMutation.error.message}</p>}
+      {isUpdating && <p role="status">Saving frequency…</p>}
+      {module.status !== "active" && <p>Changing frequency does not resume automatic monitoring.</p>}
+      {schedule.next_run && module.status === "active" && (
         <span className="text-[10px] text-muted-foreground/80 mt-0.5">
           Next check: {new Date(schedule.next_run).toLocaleString()}
         </span>

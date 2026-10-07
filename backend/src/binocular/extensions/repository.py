@@ -24,6 +24,10 @@ class ModuleRepository(RepositoryBase):
         "id, name, device_type, version, author,"
         " file_path, is_official, status, created_at,"
         " consecutive_failures, last_success, COALESCE(source_url, '') AS source_url"
+        ", (SELECT COUNT(*) FROM devices WHERE devices.module_id = modules.id)"
+        " AS linked_device_count, display_name, coverage_notes,"
+        " model_examples, help_url,"
+        " registration_origin, official_content_hash"
     )
 
     async def list_all(self) -> list[aiosqlite.Row]:
@@ -52,13 +56,20 @@ class ModuleRepository(RepositoryBase):
         is_official: bool = False,
         status: str = "active",
         source_url: str = "",
+        display_name: str = "",
+        coverage_notes: str = "",
+        model_examples: str = "[]",
+        help_url: str = "",
+        registration_origin: str = "legacy",
+        official_content_hash: str = "",
     ) -> int:
         """Insert a new module and return its ID."""
         sql = """
             INSERT INTO modules
                 (name, device_type, version, author, file_path, is_official,
-                 status, source_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 status, source_url, display_name, coverage_notes, model_examples,
+                 help_url, registration_origin, official_content_hash)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         cursor = await self.execute(
             sql,
@@ -71,6 +82,12 @@ class ModuleRepository(RepositoryBase):
                 int(is_official),
                 status,
                 source_url,
+                display_name,
+                coverage_notes,
+                model_examples,
+                help_url,
+                registration_origin,
+                official_content_hash,
             ),
         )
         if cursor.lastrowid is None:  # pragma: no cover
@@ -98,6 +115,12 @@ class ModuleRepository(RepositoryBase):
             "consecutive_failures",
             "last_success",
             "source_url",
+            "display_name",
+            "coverage_notes",
+            "model_examples",
+            "help_url",
+            "registration_origin",
+            "official_content_hash",
         }
 
         updates = {k: v for k, v in fields.items() if k in allowed and v is not None}

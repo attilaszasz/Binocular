@@ -66,6 +66,55 @@ def test_discover_missing_dir(tmp_path: Path) -> None:
     assert _discover_migrations(tmp_path / "nonexistent") == []
 
 
+async def test_guidance_migration_preserves_operational_snapshot(
+    settings: Settings,
+) -> None:
+    import binocular.db.migrations as migrations
+
+    all_migrations = _discover_migrations(
+        Path(migrations.__file__).parent / "migrations"
+    )
+    conn = await open_connection(settings)
+    try:
+        with patch(
+            "binocular.db.migrations._discover_migrations",
+            return_value=[m for m in all_migrations if m[0] <= 9],
+        ):
+            await run_migrations(conn, settings)
+        await conn.execute(
+            "INSERT INTO modules (name, status, consecutive_failures, last_success) "
+            "VALUES ('legacy', 'inactive', 3, 'saved')"
+        )
+        await conn.execute(
+            "INSERT INTO devices (name, module_id, current_version) "
+            "VALUES ('camera', 1, '1')"
+        )
+        await conn.execute(
+            "UPDATE schedules SET interval_hours=6, last_run='old', next_run='future' "
+            "WHERE module_id=1"
+        )
+        await conn.commit()
+
+        async def rows(table: str) -> list[dict[str, object]]:
+            cursor = await conn.execute(f"SELECT * FROM {table}")  # noqa: S608
+            return [dict(row) for row in await cursor.fetchall()]
+
+        before_modules, before_devices, before_schedules = (
+            await rows("modules"),
+            await rows("devices"),
+            await rows("schedules"),
+        )
+        assert await run_migrations(conn, settings) == 1
+        after = (await rows("modules"))[0]
+        assert {key: after[key] for key in before_modules[0]} == before_modules[0]
+        assert after["registration_origin"] == "legacy"
+        assert after["model_examples"] == "[]"
+        assert await rows("devices") == before_devices
+        assert await rows("schedules") == before_schedules
+    finally:
+        await close_connection(conn)
+
+
 # --- Migration application tests ---
 
 

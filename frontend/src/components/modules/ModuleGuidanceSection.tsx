@@ -33,18 +33,22 @@ export function ModuleGuidanceSection() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [kitFiles, setKitFiles] = useState<KitFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let current = true;
     fetch("/api/v1/module-kit/")
-      .then((r) => r.json())
+      .then((r) => { if (r.ok === false) throw new Error("Unable to load module kit"); return r.json(); })
       .then((data: KitListResponse) => {
-        setKitFiles(data.files || []);
+        if (current) { setKitFiles(data.files || []); setError(""); }
       })
       .catch(() => {
-        setKitFiles([]);
+        if (current) { setKitFiles([]); setError("Unable to load module kit. Retry."); }
       })
-      .finally(() => setIsLoading(false));
-  }, []);
+      .finally(() => { if (current) setIsLoading(false); });
+    return () => { current = false; };
+  }, [attempt]);
 
   const downloadFile = (file: KitFile) => {
     const link = document.createElement("a");
@@ -78,28 +82,30 @@ export function ModuleGuidanceSection() {
     <Card className="border border-border bg-card text-card-foreground">
       <CardHeader
         className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer select-none"
-        onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-primary" />
           <div>
-            <CardTitle className="text-base">Create a Module</CardTitle>
+            <CardTitle className="text-base"><button type="button" className="text-left focus-visible:outline" aria-expanded={isExpanded} aria-controls="module-authoring" onClick={() => setIsExpanded(!isExpanded)}>Create a Module</button></CardTitle>
             <CardDescription className="text-xs mt-0.5">
               Step-by-step guide to building your own firmware detection module
             </CardDescription>
           </div>
         </div>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <span aria-hidden="true">
           {isExpanded ? (
             <ChevronUp className="h-4 w-4" />
           ) : (
             <ChevronDown className="h-4 w-4" />
           )}
-        </Button>
+        </span>
       </CardHeader>
 
       {isExpanded && (
-        <CardContent className="space-y-5 pt-2">
+        <CardContent id="module-authoring" className="space-y-5 pt-2">
+          <p className="text-sm">Modules are user-vetted, unsandboxed in-process code with full application privileges. Review before uploading; validation is not a sandbox.</p>
+          <p className="text-sm">Optional V1 guidance: SOURCE_DISPLAY_NAME (120 characters), SOURCE_COVERAGE_NOTES (1000), SOURCE_MODEL_EXAMPLES (10 nonblank strings of 120), SOURCE_HELP_URL (2048, absolute HTTP(S)). Omission uses readable name/existing type, without official claims.</p>
+          <p className="text-sm">Share your reviewed Python file and captured fixtures with other operators; share no credentials or private inventory.</p>
           {/* Steps */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -193,7 +199,7 @@ export function ModuleGuidanceSection() {
               )}
             </div>
 
-            {isLoading ? (
+             {error ? <div role="alert"><p>{error}</p><Button onClick={() => { setIsLoading(true); setAttempt(attempt + 1); }}>Retry kit</Button></div> : isLoading ? (
               <div className="grid gap-2 sm:grid-cols-2">
                 {[1, 2, 3, 4].map((i) => (
                   <div
@@ -215,7 +221,7 @@ export function ModuleGuidanceSection() {
                     >
                       <Icon className="h-4 w-4 text-muted-foreground mt-0.5 group-hover:text-primary transition-colors" />
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                        <div className="text-sm font-medium break-all group-hover:text-primary transition-colors">
                           {file.name}
                         </div>
                         <p className="text-xs text-muted-foreground leading-normal mt-0.5">
