@@ -16,6 +16,7 @@ dependencies = [
     "jinja2>=3.1.0",
     "beautifulsoup4>=4.12,<5.0",
     "httpx>=0.27",
+    "certifi>=2026.10.19",
     "urllib3>=2.8.0,<3",
     "oauthlib>=4.0.0,<5",
 ]
@@ -74,5 +75,6 @@ dev = [
     "pip>=26.2",
     "ruff>=0.8",
     "pip-audit>=2.7",
+    "filelock>=4.2.1,<5",
     "types-beautifulsoup4>=4.12,<5.0",
 ]
