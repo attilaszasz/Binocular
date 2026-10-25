@@ -22,6 +22,8 @@ export function NavItem({ to, label, icon: Icon, collapsed = false }: NavItemPro
   const link = (
     <Link
       to={to}
+      aria-label={label}
+      aria-current={isActive ? "page" : undefined}
       className={cn(
         "flex items-center rounded-md py-2 text-sm font-medium transition-colors",
         "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -49,4 +51,3 @@ export function NavItem({ to, label, icon: Icon, collapsed = false }: NavItemPro
 
   return link
 }
-

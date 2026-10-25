@@ -1,7 +1,8 @@
 /**
  * DeviceForm — add/edit device form with module selection dropdown.
  */
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { SourceGuidance } from "./SourceGuidance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +31,7 @@ export function DeviceForm({
   onCancel,
   isPending,
 }: DeviceFormProps) {
-  const { data: modules, isLoading: modulesLoading } = useModules();
+  const { data: modules, isLoading: modulesLoading, isError: modulesError } = useModules();
 
   const [name, setName] = useState(device?.name ?? "");
   const [model, setModel] = useState(device?.model ?? "");
@@ -42,23 +43,37 @@ export function DeviceForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const generation = useRef(0);
+  const derivedVersion = useRef(false);
+  useEffect(() => () => { generation.current++; }, []);
+  const resetSearch = () => {
+    generation.current++;
+    setIsSearching(false);
+    setError(null);
+    if (derivedVersion.current) setCurrentVersion("");
+    derivedVersion.current = false;
+  };
 
   const handleSearchVersion = async () => {
     if (!moduleId || !model.trim()) return;
+    const requestGeneration = ++generation.current;
     setIsSearching(true);
     setError(null);
     try {
       const result = await checksApi.searchVersion(Number(moduleId), model.trim());
+      if (requestGeneration !== generation.current) return;
       if (result.version) {
         setCurrentVersion(result.version);
+        derivedVersion.current = true;
       } else {
         throw new Error("No version returned by module");
       }
     } catch (err: unknown) {
+      if (requestGeneration !== generation.current) return;
       const message = err instanceof Error ? err.message : "An unexpected error occurred during version search";
       setError(message);
     } finally {
-      setIsSearching(false);
+      if (requestGeneration === generation.current) setIsSearching(false);
     }
   };
 
@@ -94,7 +109,7 @@ export function DeviceForm({
     }
   };
 
-  const noModules = !modulesLoading && (!modules || modules.length === 0);
+  const noModules = !modulesLoading && !modulesError && (!modules || modules.length === 0);
   const selectedModule = modules?.find((module) => module.id === Number(moduleId));
 
   return (
@@ -105,7 +120,9 @@ export function DeviceForm({
         </p>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {modulesLoading && <p role="status">Loading sources…</p>}
+      {modulesError && <p role="alert">Unable to load sources. Refresh to retry.</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
       <div className="space-y-2">
         <Label htmlFor="device-name">Name</Label>
@@ -119,23 +136,13 @@ export function DeviceForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="device-model">Model</Label>
-        <Input
-          id="device-model"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          placeholder="e.g. A7R V"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="device-module">Module</Label>
+        <Label htmlFor="device-module">Source</Label>
         <div className="flex gap-2">
           <div className="flex-1">
             <Select
               value={moduleId}
-              onValueChange={setModuleId}
-              disabled={noModules}
+              onValueChange={(value) => { resetSearch(); setModuleId(value); }}
+              disabled={noModules || modulesLoading || modulesError}
             >
               <SelectTrigger id="device-module">
                 <SelectValue placeholder="Select a module" />
@@ -143,12 +150,25 @@ export function DeviceForm({
               <SelectContent>
                 {modules?.map((m) => (
                   <SelectItem key={m.id} value={m.id.toString()}>
-                    {m.name} ({m.device_type})
+                    {m.display_name || m.name} {m.status !== "active" ? "(automatic off)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+        </div>
+        <SourceGuidance module={selectedModule} id="device-model-help" />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="device-model">Model</Label>
+        <Input
+          id="device-model"
+          aria-describedby="device-model-help"
+          value={model}
+          onChange={(e) => { resetSearch(); setModel(e.target.value); }}
+          placeholder="Enter source-specific model"
+        />
           <Button
             type="button"
             variant="outline"
@@ -158,17 +178,6 @@ export function DeviceForm({
             {isSearching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSearching ? "Searching..." : "Search Version"}
           </Button>
-        </div>
-        {selectedModule?.source_url && (
-          <a
-            className="text-sm text-primary underline-offset-4 hover:underline"
-            href={selectedModule.source_url}
-            target="_blank"
-            rel="noreferrer"
-          >
-            View module source page
-          </a>
-        )}
       </div>
 
       <div className="space-y-2">
@@ -176,13 +185,13 @@ export function DeviceForm({
         <Input
           id="device-version"
           value={currentVersion}
-          onChange={(e) => setCurrentVersion(e.target.value)}
+          onChange={(e) => { generation.current++; derivedVersion.current = false; setIsSearching(false); setCurrentVersion(e.target.value); }}
           placeholder="e.g. 1.0.0"
         />
       </div>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={isPending || noModules}>
+        <Button type="submit" disabled={isPending || noModules || modulesLoading || modulesError}>
           {device ? "Save Changes" : "Add Device"}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>

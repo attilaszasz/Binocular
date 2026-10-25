@@ -14,12 +14,19 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: process.env.VITE_API_TARGET || "http://localhost:8000",
         changeOrigin: true,
       },
     },
   },
   test: {
+    exclude: ["e2e/**", "node_modules/**"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/**/*.d.ts"],
+      thresholds: { lines: 80, statements: 80, functions: 80, branches: 80 },
+    },
     environment: "jsdom",
     globals: true,
     passWithNoTests: true,

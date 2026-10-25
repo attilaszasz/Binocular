@@ -11,19 +11,32 @@ export function useModules() {
   return useQuery<Module[]>({
     queryKey: MODULES_KEY,
     queryFn: modulesApi.list,
+    refetchOnWindowFocus: "always",
+  });
+}
+
+export function useModuleScope(id: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ["module-scope", id],
+    queryFn: () => modulesApi.devices(id),
+    enabled,
+    refetchOnWindowFocus: "always",
+    staleTime: 0,
   });
 }
 
 export function useUploadModule() {
   const qc = useQueryClient();
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: ({ file, runPhase2 }: { file: File; runPhase2: boolean }) =>
       modulesApi.upload(file, runPhase2),
-    onSuccess: () => {
+  });
+  return { ...mutation, acknowledgeSave: () => {
       qc.invalidateQueries({ queryKey: MODULES_KEY });
       qc.invalidateQueries({ queryKey: DEVICES_KEY });
-    },
-  });
+      qc.invalidateQueries({ queryKey: ["module-scope"] });
+      qc.invalidateQueries({ queryKey: ["schedules"] });
+    } };
 }
 
 export function useUpdateModule() {
@@ -34,6 +47,8 @@ export function useUpdateModule() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: MODULES_KEY });
       qc.invalidateQueries({ queryKey: DEVICES_KEY });
+      qc.invalidateQueries({ queryKey: ["module-scope"] });
+      qc.invalidateQueries({ queryKey: ["schedules"] });
     },
   });
 }
@@ -45,6 +60,8 @@ export function useDeleteModule() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: MODULES_KEY });
       qc.invalidateQueries({ queryKey: DEVICES_KEY });
+      qc.invalidateQueries({ queryKey: ["module-scope"] });
+      qc.invalidateQueries({ queryKey: ["schedules"] });
     },
   });
 }

@@ -13,6 +13,7 @@ from binocular.config import Settings
 from binocular.extensions.loader import ModuleLoader
 from binocular.extensions.repository import ModuleRepository
 from binocular.extensions.validator import validate_module
+from binocular.services.official_provenance import HISTORICAL_SHIPPED
 from binocular.services.version_compare import VersionCompare
 
 logger = structlog.get_logger("binocular.services.seeder")
@@ -93,53 +94,40 @@ class OfficialModuleSeeder:
 
         # Check existing record
         existing = await self._repository.get_by_name(name)
-        should_update = False
         active_path = self._modules_dir / bundled_path.name
-
-        if existing is None:
-            logger.info("official_module_discovered", name=name)
-            should_update = True
-        else:
-            # Idempotency and version check
-            # Read active file to compare hashes if it exists
-            active_hash = ""
-            if active_path.exists():
-                active_hash = self._hash_file(active_path)
-
-            hash_match = active_hash == bundled_hash
-            version_match = existing["version"] == bundled_version
-
-            if hash_match and version_match:
-                logger.debug("official_module_unchanged", name=name)
+        active_hash = self._hash_file(active_path) if active_path.is_file() else ""
+        if existing is not None:
+            info = dict(existing)
+            historical = HISTORICAL_SHIPPED.get(name)
+            known = (
+                bool(active_hash)
+                and Path(info["file_path"]) == active_path
+                and info["registration_origin"] != "custom"
+                and (
+                    (active_hash == bundled_hash and info["version"] == bundled_version)
+                    or (historical == (info["version"], active_hash))
+                    or (
+                        info["registration_origin"] == "bundled"
+                        and active_hash == info["official_content_hash"]
+                    )
+                )
+            )
+            if not known:
+                logger.warning("official_provenance_unverifiable_protected", name=name)
+                await self._repository.update(info["id"], is_official=False)
                 return
-
-            if not version_match:
-                # Bundled version is newer than existing database version
-                if VersionCompare.is_newer(existing["version"], bundled_version):
-                    logger.info(
-                        "official_module_upgrade_detected",
-                        name=name,
-                        old_version=existing["version"],
-                        new_version=bundled_version,
-                    )
-                    should_update = True
-                else:
-                    logger.debug(
-                        "official_module_custom_newer",
-                        name=name,
-                        custom_version=existing["version"],
-                        bundled_version=bundled_version,
-                    )
-            else:
-                # Same version but file was modified/different hash
-                should_update = True
-
-        if not should_update:
+            if info["version"] != bundled_version and not VersionCompare.is_newer(
+                info["version"], bundled_version
+            ):
+                return
+        elif active_path.exists() and active_hash != bundled_hash:
+            logger.warning("unregistered_custom_file_protected", name=name)
             return
 
         # 3. Copy file to active directory
         self._modules_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(bundled_path, active_path)
+        if active_hash != bundled_hash:
+            shutil.copyfile(bundled_path, active_path)
 
         # 4. Upsert module record in database
         if existing is None:
@@ -152,6 +140,9 @@ class OfficialModuleSeeder:
                 is_official=True,
                 status="active",
                 source_url=source_url,
+                registration_origin="bundled",
+                official_content_hash=bundled_hash,
+                **load_result.guidance.persistence(),
             )
         else:
             await self._repository.update(
@@ -161,8 +152,10 @@ class OfficialModuleSeeder:
                 author=author,
                 file_path=str(active_path),
                 is_official=True,
-                status="active",
                 source_url=source_url,
+                registration_origin="bundled",
+                official_content_hash=bundled_hash,
+                **load_result.guidance.persistence(),
             )
 
         await self._connection.commit()

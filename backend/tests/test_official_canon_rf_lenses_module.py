@@ -104,6 +104,8 @@ def test_module_contract_loads_and_has_no_direct_http_imports() -> None:
 
     assert result.success is True
     assert result.module is not None
+    assert result.guidance.display_name == "Canon RF/RF-S lenses"
+    assert result.guidance.model_examples == ("RF24-105mm F4 L IS USM",)
     assert result.module.MODULE_VERSION == "1.0.0"
     assert result.module.SUPPORTED_DEVICE_TYPE == "lens"
     assert "import httpx" not in source

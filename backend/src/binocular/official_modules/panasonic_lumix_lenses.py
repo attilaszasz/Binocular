@@ -9,8 +9,20 @@ from typing import Any
 from urllib.parse import urljoin, urlparse
 
 MODULE_VERSION = "1.0.0"
-SUPPORTED_DEVICE_TYPE = "camera"
-SOURCE_URL = "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index.html"
+SUPPORTED_DEVICE_TYPE = "lens"
+SOURCE_DISPLAY_NAME = "Panasonic Lumix lenses"
+SOURCE_COVERAGE_NOTES = (
+    "L-mount & MFT lenses: normalized exact S-/H- codes. "
+    "H-FS14140 lacks a handler and fails visibly. "
+    "Examples are not exhaustive firmware guarantees."
+)
+SOURCE_MODEL_EXAMPLES = ["S-R1635", "H-ES12035"]
+SOURCE_HELP_URL = (
+    "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html"
+)
+SOURCE_URL = (
+    "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index.html"
+)
 
 _PANASONIC_LENSES_URL = (
     "https://av.jpn.support.panasonic.com/support/global/cs/dsc/download/index5.html"

@@ -10,6 +10,14 @@ from typing import Any
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "camera"
+SOURCE_DISPLAY_NAME = "Sony Alpha cameras & lenses"
+SOURCE_COVERAGE_NOTES = (
+    "Cameras & lenses in the firmware index; model/name/SKU normalization "
+    "and Alpha/A aliases. Not every Sony product. "
+    "Examples are not exhaustive firmware guarantees."
+)
+SOURCE_MODEL_EXAMPLES = ["ILCE-7CM2", "SEL2470GM"]
+SOURCE_HELP_URL = "https://alphauniverse.com/firmware/"
 SOURCE_URL = "https://alphauniverse.com/firmware/"
 
 _ALPHA_UNIVERSE_FIRMWARE_URL = "https://alphauniverse.com/firmware/"

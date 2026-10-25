@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { ModuleGuidanceSection } from "./ModuleGuidanceSection";
 
@@ -39,6 +39,27 @@ beforeEach(() => {
 });
 
 describe("ModuleGuidanceSection", () => {
+  it("downloads individual/all files without an external ZIP dependency", async () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(<ModuleGuidanceSection />);
+    fireEvent.click(screen.getByRole("button", { name: "Create a Module" }));
+    fireEvent.click(await screen.findByRole("button", { name: /STARTER_TEMPLATE.py/ }));
+    expect(click).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Download All" }));
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(5));
+    click.mockRestore();
+  });
+  it("announces load failure and retries via accessible disclosure", async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("offline"));
+    render(<ModuleGuidanceSection />);
+    const trigger = screen.getByRole("button", { name: "Create a Module" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(trigger);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to load");
+    fireEvent.click(screen.getByRole("button", { name: "Retry kit" }));
+    expect(await screen.findByText("STARTER_TEMPLATE.py")).toBeInTheDocument();
+    expect(screen.getByText(/Share your reviewed Python file/)).toBeInTheDocument();
+  });
   it("renders the section title", () => {
     render(<ModuleGuidanceSection />);
     expect(screen.getByText("Create a Module")).toBeInTheDocument();

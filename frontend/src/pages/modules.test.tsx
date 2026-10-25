@@ -1,12 +1,16 @@
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ModulesPage } from "./modules";
 import { vi, describe, it, expect } from "vitest";
 
+const { refetchModules } = vi.hoisted(() => ({ refetchModules: vi.fn() }));
+
 // Mock the hooks
 vi.mock("@/hooks/use-modules", () => ({
+  useModuleScope: () => ({ refetch: vi.fn() }),
   useModules: () => ({
+    refetch: refetchModules,
     data: [
       {
         id: 1,
@@ -58,6 +62,14 @@ vi.mock("@/hooks/use-schedules", () => ({
 }));
 
 describe("ModulesPage", () => {
+  it("refreshes inspected scope queries as well as source summaries", () => {
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    render(<QueryClientProvider client={queryClient}><ModulesPage /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Refresh sources" }));
+    expect(refetchModules).toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["module-scope"] });
+  });
   it("renders modules list successfully", () => {
     const queryClient = new QueryClient();
     render(
@@ -66,7 +78,7 @@ describe("ModulesPage", () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText("test_module")).toBeInTheDocument();
+    expect(screen.getByText("test module")).toBeInTheDocument();
     expect(screen.getByText("Test Author")).toBeInTheDocument();
     expect(screen.getByText("active")).toBeInTheDocument();
   });

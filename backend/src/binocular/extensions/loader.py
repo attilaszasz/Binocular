@@ -21,6 +21,7 @@ from binocular.extensions.contract import (
     SOURCE_URL_ATTR,
     SUPPORTED_DEVICE_TYPE_ATTR,
 )
+from binocular.extensions.guidance import FIELDS, SourceGuidance
 
 logger = structlog.get_logger("binocular.extensions.loader")
 
@@ -55,6 +56,7 @@ class LoadResult:
     device_type: str = ""
     version: str = ""
     source_url: str = ""
+    guidance: SourceGuidance = field(default_factory=SourceGuidance)
 
 
 class ModuleLoader:
@@ -177,6 +179,14 @@ class ModuleLoader:
                 )
             )
 
+        guidance = SourceGuidance()
+        try:
+            guidance = SourceGuidance.parse(
+                {key: getattr(module, key) for key in FIELDS if hasattr(module, key)}
+            )
+        except ValueError as exc:
+            errors.append(LoadError("guidance", str(exc)))
+
         if errors:
             return LoadResult(
                 success=False,
@@ -196,6 +206,7 @@ class ModuleLoader:
             device_type=device_type,
             version=version,
             source_url=source_url,
+            guidance=guidance,
         )
 
         return LoadResult(
@@ -206,6 +217,7 @@ class ModuleLoader:
             device_type=device_type,
             version=version,
             source_url=source_url,
+            guidance=guidance,
         )
 
     def load_all(self) -> list[LoadResult]:

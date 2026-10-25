@@ -91,7 +91,7 @@ export function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">Inventory</h1>
           {!isLoading && totalDevices > 0 && (
@@ -121,6 +121,7 @@ export function InventoryPage() {
       </div>
 
       {/* Add / Edit form */}
+      {(createDevice.error || updateDevice.error) && <p role="alert">Device was not saved. {(createDevice.error || updateDevice.error)?.message}</p>}
       {formMode.type !== "closed" && (
         <Card>
           <CardHeader>

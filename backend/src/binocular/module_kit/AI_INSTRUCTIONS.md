@@ -177,3 +177,6 @@ Save the script above as `test_harness.py` and run:
 ```bash
 python test_harness.py your_module.py
 ```
+# Source guidance and trust
+
+Use optional literal V1 fields: `SOURCE_DISPLAY_NAME` (str ≤120), `SOURCE_COVERAGE_NOTES` (str ≤1000), `SOURCE_MODEL_EXAMPLES` (list/tuple of ≤10 nonblank strings ≤120), `SOURCE_HELP_URL` (str ≤2048, absolute HTTP(S), no credentials/control characters). Missing/blank metadata remains compatible; no invented coverage or official claims. Keep canonical `SOURCE_URL` separate from human naming help. Test every declared example against captured fixtures and retain near-match/no-firmware failures. Modules are user-vetted, unsandboxed in-process code with full application privileges; import executes code, validation does not sandbox it. Share reviewed files/fixtures only, without secrets.

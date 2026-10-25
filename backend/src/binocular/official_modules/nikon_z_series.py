@@ -11,6 +11,14 @@ from urllib.parse import urljoin
 
 MODULE_VERSION = "1.0.0"
 SUPPORTED_DEVICE_TYPE = "camera"
+SOURCE_DISPLAY_NAME = "Nikon Z-series cameras"
+SOURCE_COVERAGE_NOTES = (
+    "Z-series mirrorless cameras: XML Mirrorless/Z Series; "
+    "spacing/underscore/case aliases. DSLR, lenses and speedlights excluded. "
+    "Examples are not exhaustive firmware guarantees."
+)
+SOURCE_MODEL_EXAMPLES = ["Z 30", "Z 6II"]
+SOURCE_HELP_URL = "https://downloadcenter.nikonimglib.com/en/index.html"
 SOURCE_URL = "https://downloadcenter.nikonimglib.com/en/0/product_data.xml"
 
 _CATALOG_URL = "https://downloadcenter.nikonimglib.com/en/0/product_data.xml"
@@ -23,9 +31,7 @@ _Z_SERIES_SUB_CATEGORY = "Z Series"
 # Class-agnostic ``<token>:Ver.`` prefix (e.g. ``C:Ver.`` for cameras;
 # ``A:Ver.`` / ``L:Ver.`` for accessories, stripped if encountered).
 _TOKEN_PREFIX_RE = re.compile(r"^[A-Z]+:Ver\.", re.IGNORECASE)
-_DATE_RE = re.compile(
-    r"^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})$"
-)
+_DATE_RE = re.compile(r"^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})$")
 # Row of the ``#firmware`` pseudoTable: rows contain only spans (no nested
 # ``<div>``), so the non-greedy ``.*?`` always stops at the row's own ``</div>``.
 _ROW_RE = re.compile(
@@ -234,9 +240,7 @@ def _normalize_date(value: str) -> str | None:
     match = _DATE_RE.match(value.strip())
     if match is None:
         return None
-    return (
-        f"{match.group('year')}-{match.group('month')}-{match.group('day')}"
-    )
+    return f"{match.group('year')}-{match.group('month')}-{match.group('day')}"
 
 
 def _resolve_download_url(href: str) -> str:
@@ -278,9 +282,7 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
             ``download_url_not_found``. ``parse_error`` is NOT used.
     """
     if not model or not model.strip():
-        raise ValueError(
-            "product_not_found: Nikon Z-Series model is empty"
-        )
+        raise ValueError("product_not_found: Nikon Z-Series model is empty")
     source_url = url or _CATALOG_URL
 
     loop = asyncio.new_event_loop()

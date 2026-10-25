@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Puzzle, Plus, Sparkles, Activity, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +16,13 @@ import { ModuleUploadForm } from "@/components/modules/ModuleUploadForm";
 import { StatCard } from "@/components/inventory/stat-card";
 
 export function ModulesPage() {
-  const { data: modules, isLoading, error } = useModules();
+  const queryClient = useQueryClient();
+  const { data: modules, isLoading, isFetching, error, refetch } = useModules();
   const [showUpload, setShowUpload] = useState(false);
+  const refreshSources = () => {
+    void queryClient.invalidateQueries({ queryKey: ["module-scope"] });
+    void refetch();
+  };
 
   const totalModules = modules?.length ?? 0;
   const officialModules = modules?.filter((m) => m.is_official).length ?? 0;
@@ -28,9 +34,10 @@ export function ModulesPage() {
         <h1 className="text-3xl font-bold tracking-tight">Modules</h1>
         <Card>
           <CardContent className="p-6">
-            <p className="text-destructive">
+             <p role="alert" className="text-destructive">
               Failed to load modules. Please try again later.
-            </p>
+             </p>
+              <Button onClick={refreshSources}>Retry sources</Button>
           </CardContent>
         </Card>
       </div>
@@ -39,7 +46,7 @@ export function ModulesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
           <Puzzle className="h-8 w-8 text-primary" />
           Modules
@@ -51,6 +58,8 @@ export function ModulesPage() {
           </Button>
         )}
       </div>
+      <Button variant="outline" onClick={refreshSources}>Refresh sources</Button>
+      {isFetching && <p role="status">Refreshing sources and linked counts…</p>}
 
       {/* Stats row */}
       {!isLoading && totalModules > 0 && (
@@ -80,7 +89,7 @@ export function ModulesPage() {
       {/* Upload Form Section */}
       {showUpload && (
         <Card className="border border-border bg-card text-card-foreground">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardHeader className="flex flex-wrap gap-2 items-center justify-between space-y-0 pb-4">
             <div>
               <CardTitle>Upload Extension Module</CardTitle>
               <CardDescription>
@@ -130,7 +139,7 @@ export function ModulesPage() {
       {!isLoading && totalModules > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {modules!.map((module) => (
-            <ModuleCard key={module.id} module={module} />
+            <ModuleCard key={module.id} module={module} countsUpdating={isFetching} />
           ))}
         </div>
       )}

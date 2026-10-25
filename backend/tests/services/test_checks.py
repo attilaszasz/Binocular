@@ -62,6 +62,12 @@ async def conn() -> AsyncGenerator[aiosqlite.Connection]:
         """
     )
     await db.commit()
+    await db.executescript(
+        (
+            Path(__file__).parents[2]
+            / "src/binocular/db/migrations/0010_source_guidance.sql"
+        ).read_text()
+    )
     yield db
     await db.close()
 

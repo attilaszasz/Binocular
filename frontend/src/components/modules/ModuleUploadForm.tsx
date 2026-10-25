@@ -31,6 +31,7 @@ export function ModuleUploadForm() {
   const [runPhase2, setRunPhase2] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState("");
   const [validationErrors, setValidationErrors] = useState<ValidationError | null>(
     null
   );
@@ -121,7 +122,7 @@ export function ModuleUploadForm() {
 
         for (const line of lines) {
           if (!line.trim()) continue;
-          try {
+          {
             const event = JSON.parse(line);
 
             setProgressSteps((prev) =>
@@ -160,14 +161,14 @@ export function ModuleUploadForm() {
                 fileInputRef.current.value = "";
               }
               setUploadSuccess(true);
+              uploadMutation.acknowledgeSave?.();
               setIsUploading(false);
               return;
             }
-          } catch (err) {
-            console.error("Failed to parse stream event", err);
           }
         }
       }
+      throw new Error("Upload stream ended without confirmed save");
     } catch (err: unknown) {
       setIsUploading(false);
       if (
@@ -187,17 +188,24 @@ export function ModuleUploadForm() {
     }
   };
 
-  const handleCopyForAI = () => {
+  const handleCopyForAI = async () => {
     if (!validationErrors) return;
     const text = formatErrorsForAI(
       validationErrors,
       file?.name || "uploaded_module.py"
     );
     if (text) {
-      navigator.clipboard.writeText(text).then(() => {
+      try {
+        if (!navigator.clipboard?.writeText) {
+          throw new Error("Clipboard unavailable on this origin");
+        }
+        await navigator.clipboard.writeText(text);
+        setCopyError("");
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-      });
+      } catch {
+        setCopyError("Unable to copy errors. Select the displayed errors manually.");
+      }
     }
   };
 
@@ -210,7 +218,7 @@ export function ModuleUploadForm() {
           <div>
             <h4 className="font-semibold">Trust Boundary Warning</h4>
             <p className="mt-1 text-xs opacity-90 leading-normal">
-              Uploaded modules execute in-process with the full privileges of the
+              Uploaded modules are unsandboxed, user-vetted code. They execute in-process with the full privileges of the
               application. Only upload modules from trusted sources that you have
               personally reviewed.
             </p>
@@ -223,6 +231,10 @@ export function ModuleUploadForm() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => !isUploading && fileInputRef.current?.click()}
+          role="button"
+          tabIndex={isUploading ? -1 : 0}
+          aria-label="Choose Python module file"
+          onKeyDown={(e) => { if (!isUploading && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fileInputRef.current?.click(); } }}
           className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
             isUploading ? "cursor-not-allowed opacity-50 border-muted" : "cursor-pointer border-border hover:border-primary/50 hover:bg-accent/10"
           } ${
@@ -233,6 +245,7 @@ export function ModuleUploadForm() {
         >
           <input
             type="file"
+            aria-label="Python module file"
             ref={fileInputRef}
             onChange={handleFileChange}
             accept=".py"
@@ -344,7 +357,7 @@ export function ModuleUploadForm() {
 
       {/* Validation success / failures */}
       {uploadSuccess && (
-        <div className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-emerald-600 dark:text-emerald-400">
+        <div role="status" className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-emerald-600 dark:text-emerald-400">
           <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
           <div>
             <h4 className="font-semibold text-sm">Module Uploaded Successfully</h4>
@@ -356,8 +369,9 @@ export function ModuleUploadForm() {
       )}
 
       {validationErrors && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 space-y-4">
-          <div className="flex items-start justify-between">
+        <div role="alert" className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 space-y-4 break-words">
+          {copyError && <p>{copyError}</p>}
+          <div className="flex flex-wrap gap-2 items-start justify-between">
             <div className="flex items-start gap-3 text-destructive">
               <XCircle className="h-5 w-5 shrink-0 mt-0.5" />
               <div>

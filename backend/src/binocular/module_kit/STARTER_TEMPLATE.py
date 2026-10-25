@@ -129,3 +129,8 @@ def check_firmware(url: str, model: str, http_client: Any) -> dict[str, Any]:
         "release_date": None,
         "download_url": source_url,
     }
+# Optional bounded literal guidance; omission remains V1 compatible.
+SOURCE_DISPLAY_NAME = ""
+SOURCE_COVERAGE_NOTES = ""
+SOURCE_MODEL_EXAMPLES: list[str] = []
+SOURCE_HELP_URL = ""

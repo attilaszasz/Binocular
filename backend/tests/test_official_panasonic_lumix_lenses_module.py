@@ -55,8 +55,10 @@ def test_lens_module_loads_through_extension_contract() -> None:
 
     assert result.success is True
     assert result.module is not None
+    assert result.guidance.display_name == "Panasonic Lumix lenses"
+    assert result.guidance.model_examples == ("S-R1635", "H-ES12035")
     assert result.module.MODULE_VERSION == "1.0.0"
-    assert result.module.SUPPORTED_DEVICE_TYPE == "camera"
+    assert result.module.SUPPORTED_DEVICE_TYPE == "lens"
 
 
 def test_lens_module_does_not_import_direct_http_clients() -> None:

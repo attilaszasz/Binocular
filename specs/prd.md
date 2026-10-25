@@ -222,3 +222,5 @@ Context that downstream architecture design or governance work must preserve.
 *Managed section — rewritten by SDD planning agents. Do not edit manually.*
 
 - Reserved for reusable project-level product context promoted from downstream runs.
+- Firmware-source display guidance is separate from stable module identity. Human-readable coverage, model examples, and region notes describe verified matching behavior; canonical scraped-source links and consumer help links serve distinct purposes.
+- Frequency and pause are module-wide controls affecting all linked devices. Paused sources disable automatic monitoring without implying that explicit manual checks are unavailable.
