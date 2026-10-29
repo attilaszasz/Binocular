@@ -1,10 +1,10 @@
 ---
 adr_id: ADR-0005
-status: accepted
+status: superseded
 date: 2026-05-31
 tags: [extension-engine, security, trust-boundary]
 supersedes: []
-superseded_by: ""
+superseded_by: ADR-0016
 related_artifacts: [specs/prd.md#CAP-002, specs/prd.md#CAP-003]
 ---
 
@@ -12,7 +12,7 @@ related_artifacts: [specs/prd.md#CAP-002, specs/prd.md#CAP-003]
 
 ## Status
 
-Accepted.
+Superseded by [ADR-0016](../adrs/0016-versioned-catalog-capable-module-contract-with-v1-compatibility.md).
 
 ## Context
 

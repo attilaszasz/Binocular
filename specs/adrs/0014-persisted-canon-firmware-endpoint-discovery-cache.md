@@ -1,10 +1,10 @@
 ---
 adr_id: ADR-0014
-status: accepted
+status: superseded
 date: 2026-09-07
 tags: [canon, cache, sqlite, scraping, reliability, concurrency]
 supersedes: []
-superseded_by: ""
+superseded_by: ADR-0015
 related_artifacts: [specs/prd.md#CAP-015, specs/sad.md#architecture-decision-records, specs/project-plan.md, E028, E029, E031]
 ---
 
@@ -12,7 +12,7 @@ related_artifacts: [specs/prd.md#CAP-015, specs/sad.md#architecture-decision-rec
 
 ## Status
 
-Accepted.
+Superseded by [ADR-0015](../adrs/0015-instance-local-model-catalog-and-verified-firmware-observations.md).
 
 ## Context
 

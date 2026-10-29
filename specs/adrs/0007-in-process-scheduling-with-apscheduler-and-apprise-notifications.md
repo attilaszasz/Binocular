@@ -1,10 +1,10 @@
 ---
 adr_id: ADR-0007
-status: accepted
+status: superseded
 date: 2026-06-07
 tags: [scheduling, notifications, dependencies]
 supersedes: []
-superseded_by: ""
+superseded_by: ADR-0017
 related_artifacts: [specs/prd.md#CAP-004, specs/prd.md#CAP-007]
 ---
 
@@ -12,7 +12,7 @@ related_artifacts: [specs/prd.md#CAP-004, specs/prd.md#CAP-007]
 
 ## Status
 
-Accepted.
+Superseded by [ADR-0017](../adrs/0017-shared-model-refresh-with-transactional-comparison-and-notification-delivery.md).
 
 ## Context
 
