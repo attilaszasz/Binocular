@@ -8,6 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 from binocular.app import create_app
 from binocular.config import Settings
+from binocular.db.repository import RepositoryBase
 from binocular.extensions.repository import ModuleRepository
 
 
@@ -32,10 +33,9 @@ async def test_replacement_omission_and_failed_write(tmp_path: Path) -> None:
             registration_origin="bundled",
             official_content_hash="a" * 64,
         )
-        await db.execute(
+        await RepositoryBase(db).execute(
             "UPDATE schedules SET interval_hours=6 WHERE module_id=?", (mid,)
         )
-        await db.commit()
         code = (
             b'MODULE_VERSION="1"\nSUPPORTED_DEVICE_TYPE="lens"\n'
             b'def check_firmware(a,b,c): return {"latest_version":"1"}\n'
@@ -76,8 +76,9 @@ async def test_scope_zero_one_many_relink_delete(tmp_path: Path) -> None:
     )
     async with app.router.lifespan_context(app):
         db = app.state.db
-        await db.execute("INSERT INTO modules (name) VALUES ('a'), ('b')")
-        await db.commit()
+        await RepositoryBase(db).execute(
+            "INSERT INTO modules (name) VALUES ('a'), ('b')"
+        )
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:

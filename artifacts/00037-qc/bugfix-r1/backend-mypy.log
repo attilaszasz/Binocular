@@ -1,0 +1,5 @@
+cwd=/workspace/Binocular/backend
+command=uv run mypy --strict . 
+Success: no issues found in 150 source files
+
+EXIT=0

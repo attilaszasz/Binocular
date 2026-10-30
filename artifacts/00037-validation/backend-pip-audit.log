@@ -1,0 +1,8 @@
+Found 1 known vulnerability in 1 package
+Name    Version ID              Fix Versions
+------- ------- --------------- ------------
+msgpack 1.2.1   CVE-2026-114613 1.2.3
+
+Name      Skip Reason
+--------- ------------------------------------------------------------------------
+binocular Dependency not found on PyPI and could not be audited: binocular (0.1.0)

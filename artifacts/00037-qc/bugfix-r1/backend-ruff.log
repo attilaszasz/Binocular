@@ -1,0 +1,5 @@
+cwd=/workspace/Binocular/backend
+command=uv run ruff check . 
+All checks passed!
+
+EXIT=0

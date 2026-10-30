@@ -7,6 +7,7 @@ import json
 import urllib.parse
 from typing import Any
 
+import aiosqlite
 import apprise
 import structlog
 
@@ -18,7 +19,7 @@ logger = structlog.get_logger("binocular.services.notifier")
 class NotifierService:
     """Service to handle notification dispatch using Apprise."""
 
-    def __init__(self, db: Any) -> None:
+    def __init__(self, db: aiosqlite.Connection) -> None:
         self._db = db
 
     def _get_apprise_url(self, channel_type: str, config: dict[str, Any]) -> str | None:
@@ -32,12 +33,7 @@ class NotifierService:
             to_email = config.get("to_email", "")
 
             if not host or not from_email or not to_email:
-                logger.warning(
-                    "incomplete_email_config",
-                    host=host,
-                    from_email=from_email,
-                    to_email=to_email,
-                )
+                logger.warning("incomplete_email_config")
                 return None
 
             params = {
@@ -71,9 +67,7 @@ class NotifierService:
             token = config.get("app_token", "")
 
             if not server_url or not token:
-                logger.warning(
-                    "incomplete_gotify_config", server_url=server_url, token=token
-                )
+                logger.warning("incomplete_gotify_config")
                 return None
 
             parsed = urllib.parse.urlparse(server_url)
@@ -83,19 +77,13 @@ class NotifierService:
 
             return f"{scheme}://{netloc}/{token}"
 
-        logger.warning("unsupported_channel_type", channel_type=channel_type)
+        logger.warning("unsupported_channel_type")
         return None
 
     async def test_channel(
         self, channel_type: str, config: dict[str, Any]
     ) -> tuple[bool, str]:
         """Send a test notification using temporary configuration details."""
-        ap = apprise.Apprise()
-        url = self._get_apprise_url(channel_type, config)
-        if not url:
-            return False, f"Incomplete configuration inputs for '{channel_type}'"
-
-        ap.add(url)
         title = "Binocular Notification Test"
         body = (
             "This is a test notification confirming your Binocular alert channel works."
@@ -103,6 +91,11 @@ class NotifierService:
 
         loop = asyncio.get_running_loop()
         try:
+            ap = apprise.Apprise()
+            url = self._get_apprise_url(channel_type, config)
+            if not url:
+                return False, "Incomplete configuration inputs"
+            ap.add(url)
             success = await loop.run_in_executor(
                 None, lambda: ap.notify(body=body, title=title)
             )
@@ -113,53 +106,64 @@ class NotifierService:
                     False,
                     "Apprise delivery failed. Verify configuration and credentials.",
                 )
-        except Exception as exc:
-            return False, f"Connection error: {exc}"
+        except Exception:
+            return False, "Notification delivery failed; verify configuration."
 
     async def send_notification(
         self, title: str, body: str, is_html: bool = False
     ) -> bool:
-        """Dispatch alerts across all enabled notification channels."""
+        """Read configuration, dispatch outside a unit, then record activity.
+
+        The connection is read-only runtime input. ActivityRepository owns each
+        short bookkeeping unit; no transaction spans Apprise execution.
+        """
         repo = NotificationsRepository(self._db)
         channels = await repo.list_all()
 
         ap = apprise.Apprise()
         enabled_channels: list[str] = []
+        configuration_failed = False
 
         for row in channels:
             channel = dict(row)
             if channel["enabled"]:
                 try:
                     config = json.loads(channel["config"])
+                    url = self._get_apprise_url(channel["type"], config)
+                    if url:
+                        ap.add(url)
+                        # _get_apprise_url accepts only these code-owned types.
+                        enabled_channels.append(
+                            "email" if channel["type"] == "email" else "gotify"
+                        )
                 except Exception:
-                    logger.exception(
-                        "invalid_channel_config_format", channel_type=channel["type"]
-                    )
+                    configuration_failed = True
+                    logger.error("invalid_channel_config_format")
                     continue
-
-                url = self._get_apprise_url(channel["type"], config)
-                if url:
-                    ap.add(url)
-                    enabled_channels.append(channel["type"])
 
         from binocular.db.activity_repository import ActivityRepository
 
         activity_repo = ActivityRepository(self._db)
 
         if not enabled_channels:
-            logger.info("no_enabled_notification_channels_skipping")
+            if configuration_failed:
+                logger.error("notification_configuration_failed")
+            else:
+                logger.info("no_enabled_notification_channels_skipping")
             try:
                 await activity_repo.log(
-                    level="INFO",
+                    level="ERROR" if configuration_failed else "INFO",
                     category="notification",
                     message=(
+                        "Notification configuration failed: operation=delivery"
+                        if configuration_failed else
                         "No enabled notification channels configured; "
                         "skipping dispatch."
                     ),
                 )
             except Exception:
-                logger.exception("failed_to_write_activity_log")
-            return True
+                logger.error("failed_to_write_activity_log")
+            return not configuration_failed
 
         body_format = "html" if is_html else "text"
         loop = asyncio.get_running_loop()
@@ -168,6 +172,7 @@ class NotifierService:
             success = await loop.run_in_executor(
                 None, lambda: ap.notify(body=body, title=title, body_format=body_format)
             )
+            success = bool(success) and not configuration_failed
             if success:
                 logger.info("notifications_sent", channels=enabled_channels)
                 try:
@@ -180,7 +185,7 @@ class NotifierService:
                         ),
                     )
                 except Exception:
-                    logger.exception("failed_to_write_activity_log")
+                    logger.error("failed_to_write_activity_log")
                 return True
             else:
                 logger.error("notifications_delivery_failed", channels=enabled_channels)
@@ -194,24 +199,20 @@ class NotifierService:
                         ),
                     )
                 except Exception:
-                    logger.exception("failed_to_write_activity_log")
+                    logger.error("failed_to_write_activity_log")
                 return False
-        except Exception as exc:
-            import traceback
-
-            tb_str = traceback.format_exc()
-            logger.exception(
+        except Exception:
+            logger.error(
                 "notifications_dispatch_error",
                 channels=enabled_channels,
-                error=str(exc),
+                error_code="delivery_failed", operation="delivery",
             )
             try:
                 await activity_repo.log(
                     level="ERROR",
                     category="notification",
-                    message=f"Notification dispatch failed with error: {exc}",
-                    traceback=tb_str,
+                    message="Notification dispatch failed: operation=delivery",
                 )
             except Exception:
-                logger.exception("failed_to_write_activity_log")
+                logger.error("failed_to_write_activity_log")
             return False

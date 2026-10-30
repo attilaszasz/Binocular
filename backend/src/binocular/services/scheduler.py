@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
+import aiosqlite
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
+from binocular.config import Settings
+from binocular.db.unit_of_work import WriteUnit
+from binocular.scraping.client import ScrapeClient
 from binocular.services.automatic_admission import AutomaticAdmission
 
 logger = structlog.get_logger("binocular.services.scheduler")
@@ -21,7 +24,9 @@ class SchedulerService:
     to SQLite to guarantee restart safety and interval resume.
     """
 
-    def __init__(self, db: Any, scrape_client: Any, settings: Any) -> None:
+    def __init__(
+        self, db: aiosqlite.Connection, scrape_client: ScrapeClient, settings: Settings
+    ) -> None:
         self._db = db
         self._scrape_client = scrape_client
         self._settings = settings
@@ -175,11 +180,11 @@ class SchedulerService:
                 next_run_time = now
 
             # Persist updated next_run
-            await self._db.execute(
-                "UPDATE schedules SET next_run = ? WHERE module_id = ?",
-                (next_run_time.isoformat(), module_id),
-            )
-            await self._db.commit()
+            async with WriteUnit(self._db) as unit:
+                await unit.connection.execute(
+                    "UPDATE schedules SET next_run = ? WHERE module_id = ?",
+                    (next_run_time.isoformat(), module_id),
+                )
 
             if self._is_running and self.admission.ticket(module_id) is not None:
                 self._register_job(module_id, interval_hours, next_run_time)
@@ -190,15 +195,24 @@ class SchedulerService:
         next_run = now
 
         # Update DB schedule
-        await self._db.execute(
-            """
-            UPDATE schedules
-            SET interval_hours = ?, next_run = ?, updated_at = datetime('now')
-            WHERE module_id = ?
-            """,
-            (interval_hours, next_run.isoformat(), module_id),
-        )
-        await self._db.commit()
+        async with WriteUnit(self._db) as unit:
+            # Frequency is a refresh input; timestamps are only bookkeeping.
+            # Compare before changing the schedule so one effective change bumps
+            # the module generation once, atomically with the new interval.
+            await unit.connection.execute(
+                "UPDATE modules SET config_generation = config_generation + 1 "
+                "WHERE id = ? AND EXISTS (SELECT 1 FROM schedules "
+                "WHERE module_id = ? AND interval_hours IS NOT ?)",
+                (module_id, module_id, interval_hours),
+            )
+            await unit.connection.execute(
+                """
+                UPDATE schedules
+                SET interval_hours = ?, next_run = ?, updated_at = datetime('now')
+                WHERE module_id = ?
+                """,
+                (interval_hours, next_run.isoformat(), module_id),
+            )
 
         await self.register_new_module(module_id)
 
@@ -229,22 +243,21 @@ class SchedulerService:
         # 2. Update schedule execution timestamps in database
         now = datetime.now(UTC)
 
-        cursor = await self._db.execute(
-            "SELECT interval_hours FROM schedules WHERE module_id = ?", (module_id,)
-        )
-        sched_row = await cursor.fetchone()
-        interval_hours = sched_row[0] if sched_row else 24
-
-        next_run = now + timedelta(hours=interval_hours)
-        await self._db.execute(
-            """
-            UPDATE schedules
-            SET last_run = ?, next_run = ?, updated_at = datetime('now')
-            WHERE module_id = ?
-            """,
-            (now.isoformat(), next_run.isoformat(), module_id),
-        )
-        await self._db.commit()
+        async with WriteUnit(self._db) as unit:
+            async with unit.connection.execute(
+                "SELECT interval_hours FROM schedules WHERE module_id = ?", (module_id,)
+            ) as cursor:
+                sched_row = await cursor.fetchone()
+            interval_hours = sched_row[0] if sched_row else 24
+            next_run = now + timedelta(hours=interval_hours)
+            await unit.connection.execute(
+                """
+                UPDATE schedules
+                SET last_run = ?, next_run = ?, updated_at = datetime('now')
+                WHERE module_id = ?
+                """,
+                (now.isoformat(), next_run.isoformat(), module_id),
+            )
 
         if not device_ids:
             logger.info("no_devices_found_for_module_check", module_id=module_id)
@@ -276,8 +289,7 @@ class SchedulerService:
                     "device_check_failed_in_scheduler",
                     device_id=device_id,
                     module_id=module_id,
-                    error=str(result),
-                    exc_info=result,
+                    error_code="parse", operation="verification",
                 )
 
         logger.info(

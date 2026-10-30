@@ -41,17 +41,19 @@ export function DeviceForm({
   const [currentVersion, setCurrentVersion] = useState(
     device?.current_version ?? "",
   );
+  const [installedUnknown, setInstalledUnknown] = useState(
+    device?.installed_unknown ?? !device?.current_version?.trim(),
+  );
+  const [referenceVersion, setReferenceVersion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const generation = useRef(0);
-  const derivedVersion = useRef(false);
   useEffect(() => () => { generation.current++; }, []);
   const resetSearch = () => {
     generation.current++;
     setIsSearching(false);
     setError(null);
-    if (derivedVersion.current) setCurrentVersion("");
-    derivedVersion.current = false;
+    setReferenceVersion(null);
   };
 
   const handleSearchVersion = async () => {
@@ -59,12 +61,12 @@ export function DeviceForm({
     const requestGeneration = ++generation.current;
     setIsSearching(true);
     setError(null);
+    setReferenceVersion(null);
     try {
       const result = await checksApi.searchVersion(Number(moduleId), model.trim());
       if (requestGeneration !== generation.current) return;
-      if (result.version) {
-        setCurrentVersion(result.version);
-        derivedVersion.current = true;
+      if (result.version?.trim()) {
+        setReferenceVersion(result.version);
       } else {
         throw new Error("No version returned by module");
       }
@@ -98,6 +100,9 @@ export function DeviceForm({
         update.module_id = Number(moduleId);
       if (currentVersion !== device.current_version)
         update.current_version = currentVersion;
+      if (installedUnknown !== (device.installed_unknown ?? !device.current_version.trim()))
+        update.installed_unknown = installedUnknown;
+      if (device.revision !== undefined) update.expected_revision = device.revision;
       onSubmit(update);
     } else {
       onSubmit({
@@ -105,6 +110,7 @@ export function DeviceForm({
         model,
         module_id: Number(moduleId),
         current_version: currentVersion,
+        installed_unknown: installedUnknown,
       } satisfies DeviceCreate);
     }
   };
@@ -158,6 +164,7 @@ export function DeviceForm({
           </div>
         </div>
         <SourceGuidance module={selectedModule} id="device-model-help" />
+        <p className="text-xs text-muted-foreground">Manual model entry · per-model version search, not catalog selection.</p>
       </div>
 
       <div className="space-y-2">
@@ -178,6 +185,11 @@ export function DeviceForm({
             {isSearching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSearching ? "Searching..." : "Search Version"}
           </Button>
+        {referenceVersion && (
+          <p role="status" aria-label="Version search reference" className="text-sm text-muted-foreground">
+            Latest found version (reference only): {referenceVersion}. Enter the version installed on your device below.
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -185,9 +197,28 @@ export function DeviceForm({
         <Input
           id="device-version"
           value={currentVersion}
-          onChange={(e) => { generation.current++; derivedVersion.current = false; setIsSearching(false); setCurrentVersion(e.target.value); }}
+          onChange={(e) => {
+            generation.current++;
+            setIsSearching(false);
+            setCurrentVersion(e.target.value);
+            setInstalledUnknown(!e.target.value.trim());
+          }}
           placeholder="e.g. 1.0.0"
+          aria-describedby="device-version-help"
         />
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="device-installed-unknown"
+            checked={installedUnknown}
+            onChange={(e) => setInstalledUnknown(e.target.checked || !currentVersion.trim())}
+            aria-describedby="device-version-help"
+          />
+          <Label htmlFor="device-installed-unknown">Installed version unknown</Label>
+        </div>
+        <p id="device-version-help" className="text-xs text-muted-foreground">
+          Unknown preserves any entered version as a reference. Entering a nonblank installed version clears unknown; a blank version is always unknown.
+        </p>
       </div>
 
       <div className="flex gap-2 pt-2">

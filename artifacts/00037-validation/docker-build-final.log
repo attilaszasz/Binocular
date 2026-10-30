@@ -1,0 +1,166 @@
+#0 building with "default" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.21kB 0.0s done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for docker.io/library/python:3.13-slim
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/node:22-slim
+#3 DONE 0.5s
+
+#4 [internal] load metadata for ghcr.io/astral-sh/uv:latest
+#4 DONE 0.5s
+
+#2 [internal] load metadata for docker.io/library/python:3.13-slim
+#2 DONE 0.6s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 274B done
+#5 DONE 0.0s
+
+#6 [frontend-builder 1/6] FROM docker.io/library/node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
+#6 resolve docker.io/library/node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da 0.0s done
+#6 DONE 0.0s
+
+#7 FROM ghcr.io/astral-sh/uv:latest@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0
+#7 resolve ghcr.io/astral-sh/uv:latest@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 0.0s done
+#7 DONE 0.0s
+
+#8 [builder 1/9] FROM docker.io/library/python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb
+#8 resolve docker.io/library/python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb 0.0s done
+#8 DONE 0.0s
+
+#9 [internal] load build context
+#9 transferring context: 244.53kB 0.0s done
+#9 DONE 0.0s
+
+#10 [builder 4/9] COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+#10 CACHED
+
+#11 [builder 2/9] WORKDIR /build
+#11 CACHED
+
+#12 [builder 3/9] RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl     && rm -rf /var/lib/apt/lists/*
+#12 CACHED
+
+#13 [builder 5/9] WORKDIR /app
+#13 CACHED
+
+#14 [builder 6/9] COPY backend/pyproject.toml backend/uv.lock* /app/
+#14 DONE 0.1s
+
+#15 [builder 7/9] RUN uv sync --frozen --no-dev --no-install-project
+#15 0.444 Using CPython 3.13.18 interpreter at: /usr/local/bin/python3
+#15 0.444 Creating virtual environment at: .venv
+#15 0.722 Downloading pydantic-core (2.0MiB)
+#15 0.722 Downloading apprise (1.6MiB)
+#15 0.723 Downloading uvloop (4.2MiB)
+#15 2.957  Downloaded apprise
+#15 3.059  Downloaded pydantic-core
+#15 3.418  Downloaded uvloop
+#15 3.419 Prepared 39 packages in 2.97s
+#15 3.443 Installed 39 packages in 24ms
+#15 3.443  + aiosqlite==0.22.1
+#15 3.443  + annotated-doc==0.0.4
+#15 3.443  + annotated-types==0.7.0
+#15 3.443  + anyio==4.14.2
+#15 3.443  + apprise==1.11.0
+#15 3.443  + apscheduler==3.11.3
+#15 3.443  + beautifulsoup4==4.15.0
+#15 3.443  + certifi==2026.10.23
+#15 3.443  + charset-normalizer==3.4.7
+#15 3.443  + click==8.4.2
+#15 3.443  + fastapi==0.138.2
+#15 3.443  + h11==0.16.0
+#15 3.444  + httpcore==1.0.9
+#15 3.444  + httptools==0.8.0
+#15 3.444  + httpx==0.28.1
+#15 3.444  + idna==3.18
+#15 3.444  + jinja2==3.1.6
+#15 3.444  + markdown==3.10.2
+#15 3.444  + markupsafe==3.0.3
+#15 3.444  + oauthlib==4.0.0
+#15 3.444  + pydantic==2.13.4
+#15 3.444  + pydantic-core==2.46.4
+#15 3.444  + pydantic-settings==2.14.2
+#15 3.444  + python-dotenv==1.2.2
+#15 3.444  + python-multipart==0.0.32
+#15 3.444  + pyyaml==6.0.3
+#15 3.444  + requests==2.34.2
+#15 3.444  + requests-oauthlib==2.0.0
+#15 3.444  + soupsieve==2.9.2
+#15 3.444  + starlette==1.3.1
+#15 3.444  + structlog==26.1.0
+#15 3.444  + typing-extensions==4.15.0
+#15 3.444  + typing-inspection==0.4.2
+#15 3.444  + tzlocal==5.4.4
+#15 3.444  + urllib3==2.8.0
+#15 3.444  + uvicorn==0.49.0
+#15 3.444  + uvloop==0.22.1
+#15 3.444  + watchfiles==1.2.0
+#15 3.444  + websockets==16.0
+#15 DONE 3.5s
+
+#16 [builder 8/9] COPY backend/src /app/src
+#16 DONE 0.1s
+
+#17 [builder 9/9] RUN uv sync --frozen --no-dev
+#17 0.313    Building binocular @ file:///app
+#17 1.697       Built binocular @ file:///app
+#17 1.699 Prepared 1 package in 1.38s
+#17 1.701 Installed 1 package in 1ms
+#17 1.701  + binocular==0.1.0 (from file:///app)
+#17 DONE 1.7s
+
+#18 [stage-2 2/9] RUN apt-get update && apt-get upgrade -y     && apt-get install -y --no-install-recommends gosu passwd     && rm -rf /var/lib/apt/lists/*
+#18 CACHED
+
+#19 [frontend-builder 4/6] RUN npm ci
+#19 CACHED
+
+#20 [frontend-builder 5/6] COPY frontend/ ./
+#20 CACHED
+
+#21 [frontend-builder 2/6] WORKDIR /build/frontend
+#21 CACHED
+
+#22 [frontend-builder 3/6] COPY frontend/package.json frontend/package-lock.json ./
+#22 CACHED
+
+#23 [stage-2 3/9] RUN python -m pip uninstall --yes pip
+#23 CACHED
+
+#24 [frontend-builder 6/6] RUN npm run build
+#24 CACHED
+
+#25 [stage-2 4/9] COPY --from=builder /app/.venv /app/.venv
+#25 DONE 0.2s
+
+#26 [stage-2 5/9] COPY backend/src /app/src
+#26 DONE 0.0s
+
+#27 [stage-2 6/9] COPY --from=frontend-builder /build/frontend/dist /app/static_dist
+#27 DONE 0.0s
+
+#28 [stage-2 7/9] COPY entrypoint.sh /entrypoint.sh
+#28 DONE 0.0s
+
+#29 [stage-2 8/9] RUN chmod +x /entrypoint.sh
+#29 DONE 0.1s
+
+#30 [stage-2 9/9] RUN mkdir -p /app/data /app/modules
+#30 DONE 0.1s
+
+#31 exporting to oci image format
+#31 exporting layers
+#31 exporting layers 2.1s done
+#31 exporting manifest sha256:54c83a271ce6f218cae54dc1c93445d686dc81ccb039c04012b8fa57576d70a4 done
+#31 exporting config sha256:2257a18fd5beeaae2d7b7f4a3497a919a281846256ec31847abae8818447cd24 done
+#31 sending tarball
+#31 sending tarball 2.4s done
+#31 DONE 4.5s
+
+#32 importing to docker
+#32 DONE 0.0s

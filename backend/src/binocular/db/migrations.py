@@ -8,6 +8,7 @@ applying any pending migrations.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -59,18 +60,23 @@ async def _get_user_version(conn: aiosqlite.Connection) -> int:
     return int(row[0]) if row else 0
 
 
-async def _set_user_version(conn: aiosqlite.Connection, version: int) -> None:
-    """Set the schema version in the database header.
+async def _execute_upgrade(conn: aiosqlite.Connection, script: str) -> None:
+    """Submit the whole upgrade, including its commit, to SQLite once."""
+    async with conn.executescript(script):
+        pass
 
-    ``PRAGMA user_version`` cannot be executed inside a transaction in
-    some SQLite builds, so we execute it outside the migration
-    transaction.
 
-    Args:
-        conn: Active database connection.
-        version: New schema version to set.
-    """
-    await conn.execute(f"PRAGMA user_version = {version}")
+async def _drain(task: asyncio.Task[None]) -> bool:
+    """Finish queued SQLite work even under repeated caller cancellation."""
+    cancelled = False
+    while True:
+        try:
+            await asyncio.shield(task)
+            return cancelled
+        except asyncio.CancelledError:
+            if task.cancelled():
+                raise
+            cancelled = True
 
 
 async def _create_backup(conn: aiosqlite.Connection, settings: Settings) -> Path:
@@ -93,7 +99,8 @@ async def _create_backup(conn: aiosqlite.Connection, settings: Settings) -> Path
     backup_path = backup_dir / f"binocular_pre_migrate_{timestamp}.db"
 
     logger.info("creating_backup", path=str(backup_path))
-    await conn.execute(f"VACUUM INTO '{backup_path.resolve()}'")
+    async with conn.execute("VACUUM INTO ?", (str(backup_path.resolve()),)):
+        pass
     logger.info("backup_created", path=str(backup_path))
     return backup_path
 
@@ -102,9 +109,13 @@ async def run_migrations(conn: aiosqlite.Connection, settings: Settings) -> int:
     """Discover and apply pending migrations.
 
     Performs a ``VACUUM INTO`` backup before applying any pending
-    migrations.  Each migration runs in its own transaction; on
-    failure the transaction is rolled back and the schema version
-    remains at the last successfully applied value.
+    migrations. All pending scripts and the final schema version share
+    one transaction. Failure rolls back the entire pending upgrade.
+
+    Before submission, cancellation leaves the database unchanged. The
+    single script submission also submits COMMIT; after that boundary we
+    drain SQLite's result before propagating cancellation, which may
+    coincide with a committed upgrade rather than a rollback.
 
     Args:
         conn: Active database connection.
@@ -143,30 +154,28 @@ async def run_migrations(conn: aiosqlite.Connection, settings: Settings) -> int:
         logger.exception("backup_failed")
         raise
 
-    applied = 0
-    for version, path in pending:
-        sql = path.read_text(encoding="utf-8")
-        logger.info("applying_migration", version=version, file=path.name)
-        try:
-            await conn.execute("BEGIN")
-            await conn.executescript(sql)
-            await conn.commit()
-            await _set_user_version(conn, version)
-            applied += 1
-            logger.info("migration_applied", version=version, file=path.name)
-        except Exception:
-            await conn.rollback()
-            logger.exception(
-                "migration_failed",
-                version=version,
-                file=path.name,
-            )
-            raise
+    scripts = ["BEGIN;"]
+    for _, path in pending:
+        scripts.append(path.read_text(encoding="utf-8"))
+    final_version = pending[-1][0]
+    scripts.extend((f"PRAGMA user_version = {final_version};", "COMMIT;"))
+    # executescript implicitly commits an existing transaction. BEGIN must
+    # therefore be inside this one submission, not a preceding execute call.
+    upgrade = asyncio.create_task(_execute_upgrade(conn, "\n;\n".join(scripts)))
+    try:
+        cancelled = await _drain(upgrade)
+    except BaseException:
+        await _drain(asyncio.create_task(conn.rollback()))
+        logger.exception("migration_failed", final_version=final_version)
+        raise
 
-    final_version = await _get_user_version(conn)
+    applied = len(pending)
     logger.info(
         "migrations_complete",
         applied=applied,
         final_version=final_version,
+        cancelled=cancelled,
     )
+    if cancelled:
+        raise asyncio.CancelledError
     return applied

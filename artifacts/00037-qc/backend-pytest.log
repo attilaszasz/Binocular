@@ -1,0 +1,53 @@
+cwd=/workspace/Binocular/backend
+command=uv run pytest -W error --cov=binocular --cov-report=term-missing --cov-report=xml:../artifacts/00037-qc/backend-coverage.xml --cov-fail-under=80 
+started=2026-10-30T11:27:32+02:00
+============================= test session starts ==============================
+platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
+rootdir: /workspace/Binocular/backend
+configfile: pyproject.toml
+testpaths: tests
+plugins: asyncio-1.4.0, cov-7.1.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1350 items
+
+tests/db/test_auxiliary_write_ownership.py ..........                    [  0%]
+tests/db/test_catalog_atomic_work.py ................................... [  3%]
+............                                                             [  4%]
+tests/db/test_catalog_delivery.py ...................................... [  7%]
+.................                                                        [  8%]
+tests/db/test_catalog_delivery_transitions.py .......................... [ 10%]
+.................                                                        [ 11%]
+tests/db/test_catalog_device_links.py ........................           [ 13%]
+tests/db/test_catalog_identity.py .................                      [ 14%]
+tests/db/test_catalog_intents.py ....................................... [ 17%]
+.....                                                                    [ 17%]
+tests/db/test_catalog_migration.py ...................                   [ 19%]
+tests/db/test_catalog_observations.py ...........................        [ 21%]
+tests/db/test_catalog_performance.py .......                             [ 21%]
+tests/db/test_catalog_reevaluation.py ...............................    [ 24%]
+tests/db/test_catalog_refresh_work.py ...........................        [ 26%]
+tests/db/test_catalog_repository.py ........................             [ 27%]
+tests/db/test_catalog_security.py ...................................... [ 30%]
+........................................................................ [ 35%]
+........................................................................ [ 41%]
+.....................................................                    [ 45%]
+tests/db/test_catalog_types.py ......................................... [ 48%]
+.............                                                            [ 49%]
+tests/db/test_catalog_work.py ...............                            [ 50%]
+tests/db/test_legacy_repository_units.py .............                   [ 51%]
+tests/db/test_runtime_write_ownership.py .............                   [ 52%]
+tests/db/test_write_ownership.py ....................................... [ 55%]
+........................                                                 [ 56%]
+tests/db/test_write_unit.py ........................                     [ 58%]
+tests/devices/test_repository.py ........                                [ 59%]
+tests/devices/test_routes.py ..........                                  [ 60%]
+tests/devices/test_service.py .......                                    [ 60%]
+tests/extensions/test_contract.py .......                                [ 61%]
+tests/extensions/test_loader.py .........                                [ 61%]
+tests/extensions/test_repository.py ...........                          [ 62%]
+tests/extensions/test_runner.py .............                            [ 63%]
+tests/extensions/test_validator.py ...............                       [ 64%]
+tests/routes/test_backups.py ..                                          [ 64%]
+tests/routes/test_checks_routes.py .......                               [ 65%]
+tests/routes/test_modules.py ........                                    [ 65%]
+tests/routes/test_modules_streaming.py .

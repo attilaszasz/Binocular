@@ -71,7 +71,7 @@ export function InventoryPage() {
   };
 
   const handleConfirm = (device: Device) => {
-    confirmUpdate.mutate(device.id);
+    confirmUpdate.mutate({ id: device.id, expectedRevision: device.revision });
   };
 
   if (error) {
@@ -122,6 +122,7 @@ export function InventoryPage() {
 
       {/* Add / Edit form */}
       {(createDevice.error || updateDevice.error) && <p role="alert">Device was not saved. {(createDevice.error || updateDevice.error)?.message}</p>}
+      {confirmUpdate.error && <p role="alert">Update was not confirmed. {confirmUpdate.error.message}</p>}
       {formMode.type !== "closed" && (
         <Card>
           <CardHeader>

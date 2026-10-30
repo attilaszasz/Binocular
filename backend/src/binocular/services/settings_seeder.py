@@ -21,10 +21,11 @@ class NotificationSettingsSeeder:
     async def seed(self) -> None:
         """Seed notification settings from environment variables if present."""
         logger.info("settings_seeding_started")
+        configurations: list[tuple[str, dict[str, object]]] = []
 
         # 1. Email (SMTP) Settings
         if self._settings.smtp_host:
-            email_config = {
+            email_config: dict[str, object] = {
                 "smtp_host": self._settings.smtp_host,
                 "smtp_port": self._settings.smtp_port,
                 "smtp_user": self._settings.smtp_username or "",
@@ -33,16 +34,22 @@ class NotificationSettingsSeeder:
                 "from_email": self._settings.smtp_from or "",
                 "to_email": self._settings.smtp_to or "",
             }
-            logger.info("seeding_email_settings", smtp_host=self._settings.smtp_host)
-            await self._repository.save("email", True, email_config)
+            configurations.append(("email", email_config))
 
         # 2. Gotify Settings
         if self._settings.gotify_url:
-            gotify_config = {
+            gotify_config: dict[str, object] = {
                 "server_url": self._settings.gotify_url,
                 "app_token": self._settings.gotify_token or "",
             }
-            logger.info("seeding_gotify_settings", gotify_url=self._settings.gotify_url)
-            await self._repository.save("gotify", True, gotify_config)
+            configurations.append(("gotify", gotify_config))
+
+        # A startup configuration is one change, not independently committed
+        # channels. Preparation and logging never hold the writer transaction.
+        if configurations:
+            async with self._repository.write_unit() as unit:
+                repository = NotificationsRepository(unit)
+                for channel_type, config in configurations:
+                    await repository.save(channel_type, True, config)
 
         logger.info("settings_seeding_completed")

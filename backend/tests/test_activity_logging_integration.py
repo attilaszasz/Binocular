@@ -14,6 +14,10 @@ from binocular.app import create_app
 from binocular.config import Settings
 from binocular.db.activity_repository import ActivityRepository
 from binocular.db.notifications_repository import NotificationsRepository
+from binocular.db.repository import RepositoryBase
+from binocular.db.unit_of_work import WriteUnit
+from binocular.devices.repository import DeviceRepository
+from binocular.extensions.repository import ModuleRepository
 from binocular.services.checks import CheckService
 from binocular.services.notifier import NotifierService
 
@@ -35,28 +39,18 @@ async def test_app_client() -> AsyncIterator[AsyncClient]:
                 db = app.state.db
                 module_path = str(Path(td) / "modules" / "sony.py")
                 # Seed required tables for testing checks integration
-                await db.execute(
-                    "INSERT INTO modules "
-                    "(id, name, device_type, version, author, status, file_path) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        1,
-                        "sony_camera",
-                        "camera",
-                        "1.0.0",
-                        "Official",
-                        "active",
-                        module_path,
-                    ),
-                )
-                await db.execute(
-                    "INSERT INTO devices "
-                    "(id, name, model, module_id, current_version, "
-                    "has_update, last_notified_version) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (1, "Camera 1", "Alpha 7 IV", 1, "1.0.0", 0, None),
-                )
-                await db.commit()
+                async with WriteUnit(db) as unit:
+                    mid = await ModuleRepository(unit).create(
+                        name="sony_camera",
+                        device_type="camera",
+                        version="1.0.0",
+                        author="Official",
+                        status="active",
+                        file_path=module_path,
+                    )
+                    await DeviceRepository(unit).create(
+                        "Camera 1", "Alpha 7 IV", mid, "1.0.0"
+                    )
                 yield ac
 
 
@@ -82,8 +76,7 @@ async def test_check_service_logs_to_activity_repo(
     activity_repo = ActivityRepository(db)
 
     # 1. Clear activity log
-    await db.execute("DELETE FROM activity_log")
-    await db.commit()
+    await RepositoryBase(db).execute("DELETE FROM activity_log")
 
     # 2. Run check
     result = await check_service.check_device(device_id=1)
@@ -113,8 +106,7 @@ async def test_notifier_service_logs_to_activity_repo(
     )
 
     # Clear activity logs
-    await db.execute("DELETE FROM activity_log")
-    await db.commit()
+    await RepositoryBase(db).execute("DELETE FROM activity_log")
 
     notifier = NotifierService(db)
 

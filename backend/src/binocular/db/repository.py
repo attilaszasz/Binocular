@@ -7,25 +7,49 @@ parameter binding (``?`` placeholders) to prevent SQL injection.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from typing import Any
 
 import aiosqlite
+
+from binocular.db.unit_of_work import WriteConnection, WriteUnit
 
 
 class RepositoryBase:
     """Base class for domain repositories.
 
-    Wraps an :class:`aiosqlite.Connection` and provides convenient
-    async helpers for executing parameterized SQL.
+    Shared connections serve reads and resolve the file for standalone writes.
+    A bound WriteUnit/WriteConnection participates without committing. Combine
+    multiple mutations by binding repositories inside one caller-owned unit.
 
     Args:
-        conn: An active aiosqlite connection with
-            ``row_factory = aiosqlite.Row`` already set.
+        conn: A shared read connection or an active, task-owned write unit.
     """
 
-    def __init__(self, conn: aiosqlite.Connection) -> None:
-        self._conn = conn
+    def __init__(
+        self, conn: aiosqlite.Connection | WriteUnit | WriteConnection
+    ) -> None:
+        self._conn = conn.connection if isinstance(conn, WriteUnit) else conn
+
+    def write_unit(self) -> WriteUnit:
+        """Create a standalone unit from this repository's shared read connection.
+
+        To combine methods/repositories, bind new instances to the returned unit
+        inside its context. A participating repository cannot create another unit.
+        """
+        if isinstance(self._conn, WriteConnection):
+            raise RuntimeError("Repository already participates in a WriteUnit")
+        return WriteUnit(self._conn)
+
+    @asynccontextmanager
+    async def write_scope(self) -> AsyncIterator[WriteConnection]:
+        """Join an explicit caller unit, or own a short standalone mutation."""
+        if isinstance(self._conn, WriteConnection):
+            yield self._conn
+        else:
+            async with self.write_unit() as unit:
+                yield unit.connection
 
     async def execute(
         self,
@@ -43,8 +67,12 @@ class RepositoryBase:
         Returns:
             The resulting :class:`aiosqlite.Cursor`.
         """
-        cursor = await self._conn.execute(sql, parameters)
-        await self._conn.commit()
+        if isinstance(self._conn, WriteConnection):
+            return await self._conn.execute(sql, parameters)
+        async with self.write_unit() as unit:
+            cursor = await unit.connection.execute(sql, parameters)
+            # Standalone callers use lastrowid/rowcount, not an open result set.
+            await cursor.close()
         return cursor
 
     async def fetch_one(
@@ -62,8 +90,8 @@ class RepositoryBase:
             An :class:`aiosqlite.Row` supporting named-column access,
             or ``None`` if no rows matched.
         """
-        cursor = await self._conn.execute(sql, parameters)
-        return await cursor.fetchone()
+        async with self._conn.execute(sql, parameters) as cursor:
+            return await cursor.fetchone()
 
     async def fetch_all(
         self,
@@ -80,5 +108,5 @@ class RepositoryBase:
             A list of :class:`aiosqlite.Row` objects supporting
             named-column access.
         """
-        cursor = await self._conn.execute(sql, parameters)
-        return await cursor.fetchall()  # type: ignore[return-value]
+        async with self._conn.execute(sql, parameters) as cursor:
+            return await cursor.fetchall()  # type: ignore[return-value]

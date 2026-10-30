@@ -9,9 +9,12 @@ import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import TypeVar, cast
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 import aiosqlite
+
+from binocular.db.repository import RepositoryBase
+from binocular.db.unit_of_work import WriteConnection, WriteUnit
 
 _DAY_MS = 24 * 60 * 60 * 1000
 _LEASE_MS = 30_000
@@ -43,13 +46,15 @@ class RefreshLease:
     is_owner: bool
 
 
-class CanonEndpointCache:
+class CanonEndpointCache(RepositoryBase):
     """SQLite repository for Canon discovery metadata and refresh leases."""
 
     def __init__(
-        self, conn: aiosqlite.Connection, now_ms: Callable[[], int] | None = None
+        self,
+        conn: aiosqlite.Connection | WriteUnit | WriteConnection,
+        now_ms: Callable[[], int] | None = None,
     ) -> None:
-        self._conn = conn
+        super().__init__(conn)
         self._now_ms = now_ms or (lambda: time.time_ns() // 1_000_000)
         self._inflight: dict[tuple[str, str], asyncio.Future[object]] = {}
         self._lock = asyncio.Lock()
@@ -59,23 +64,42 @@ class CanonEndpointCache:
         return " ".join(model.split()).casefold()
 
     @staticmethod
-    def _validate_endpoint(endpoint_url: str) -> None:
-        parsed = urlsplit(endpoint_url)
-        if parsed.scheme != "https" or parsed.hostname != "asia.canon":
-            raise ValueError("Canon endpoint must be an HTTPS asia.canon URL")
+    def _safe_endpoint(endpoint_url: str, model: str) -> str:
+        """Retain only the known Canon firmware resource, not arbitrary URL secrets.
+
+        Unlike provenance origins this URL must remain fetchable. The product
+        segment must match the already selected model; the sole query is fixed
+        code-owned firmware selection, never a copied query/fragment value.
+        """
+        try:
+            parsed = urlsplit(endpoint_url)
+            parts = parsed.path.split("/")
+            prefix = parts[:-2]
+            if (
+                parsed.scheme != "https" or parsed.hostname != "asia.canon"
+                or parsed.username is not None or parsed.password is not None
+                or parsed.port not in (None, 443)
+                or prefix not in (["", "asia", "en", "support"], ["", "en", "support"])
+                or parts[-1] != "get-search-result-content"
+                or CanonEndpointCache.model_key(unquote(parts[-2])).replace(" ", "")
+                != CanonEndpointCache.model_key(model).replace(" ", "")
+                or any(c in unquote(parts[-2]) for c in ("/", "\\", "?", "#"))
+            ):
+                raise ValueError
+            return urlunsplit(("https", "asia.canon", parsed.path, "fileType=FA", ""))
+        except Exception:
+            raise ValueError("Unsafe Canon firmware endpoint") from None
 
     async def get_mapping(
         self, catalogue_family: str, model: str
     ) -> CanonEndpointMapping | None:
-        row = await (
-            await self._conn.execute(
-                "SELECT catalogue_family, model_key, endpoint_url, discovered_at, "
-                "last_validated_at, invalidated_at, invalidation_reason "
-                "FROM canon_firmware_endpoint_mappings WHERE catalogue_family = ? "
-                "AND model_key = ?",
-                (catalogue_family, self.model_key(model)),
-            )
-        ).fetchone()
+        row = await self.fetch_one(
+            "SELECT catalogue_family, model_key, endpoint_url, discovered_at, "
+            "last_validated_at, invalidated_at, invalidation_reason "
+            "FROM canon_firmware_endpoint_mappings WHERE catalogue_family = ? "
+            "AND model_key = ?",
+            (catalogue_family, self.model_key(model)),
+        )
         return CanonEndpointMapping(*tuple(row)) if row else None
 
     async def upsert_discovery(
@@ -85,9 +109,9 @@ class CanonEndpointCache:
         endpoint_url: str,
         now_ms: int | None = None,
     ) -> None:
-        self._validate_endpoint(endpoint_url)
+        endpoint_url = self._safe_endpoint(endpoint_url, model)
         timestamp = self._now_ms() if now_ms is None else now_ms
-        await self._conn.execute(
+        await self.execute(
             "INSERT INTO canon_firmware_endpoint_mappings "
             "(catalogue_family, model_key, endpoint_url, discovered_at, last_validated_at, invalidated_at, invalidation_reason) "
             "VALUES (?, ?, ?, ?, ?, NULL, NULL) "
@@ -102,25 +126,33 @@ class CanonEndpointCache:
                 timestamp,
             ),
         )
-        await self._conn.commit()
 
     async def record_live_validation(self, catalogue_family: str, model: str) -> None:
-        await self._conn.execute(
+        await self.execute(
             "UPDATE canon_firmware_endpoint_mappings SET last_validated_at = ? "
             "WHERE catalogue_family = ? AND model_key = ? AND invalidated_at IS NULL",
             (self._now_ms(), catalogue_family, self.model_key(model)),
         )
-        await self._conn.commit()
 
     async def invalidate_mapping(
         self, catalogue_family: str, model: str, reason: str
     ) -> None:
-        await self._conn.execute(
+        # Legacy callers supplied exception class names. Never retain arbitrary
+        # exception text/class names (including provider-defined class names).
+        reasons = {
+            "transport": "transport", "http_status": "http_status", "parse": "parse",
+            "identity": "identity", "ValueError": "parse", "ConnectError": "transport",
+            "ScrapeError": "transport", "HTTPStatusError": "http_status",
+        }
+        safe_reason = (
+            reasons.get(reason, "sanitization_failed")
+            if type(reason) is str else "sanitization_failed"
+        )
+        await self.execute(
             "UPDATE canon_firmware_endpoint_mappings SET invalidated_at = ?, invalidation_reason = ? "
             "WHERE catalogue_family = ? AND model_key = ?",
-            (self._now_ms(), reason, catalogue_family, self.model_key(model)),
+            (self._now_ms(), safe_reason, catalogue_family, self.model_key(model)),
         )
-        await self._conn.commit()
 
     async def acquire_or_join_lease(
         self, catalogue_family: str, model: str, owner_token: str | None = None
@@ -128,23 +160,21 @@ class CanonEndpointCache:
         key = self.model_key(model)
         token = owner_token or uuid.uuid4().hex
         now = self._now_ms()
-        await self._conn.execute("BEGIN IMMEDIATE")
-        try:
-            row = await (
-                await self._conn.execute(
-                    "SELECT owner_token, fencing_token, expires_at, state FROM canon_refresh_leases "
-                    "WHERE catalogue_family = ? AND model_key = ?",
-                    (catalogue_family, key),
-                )
-            ).fetchone()
+        async with self.write_scope() as conn:
+            async with conn.execute(
+                "SELECT owner_token, fencing_token, expires_at, state FROM canon_refresh_leases "
+                "WHERE catalogue_family = ? AND model_key = ?",
+                (catalogue_family, key),
+            ) as cursor:
+                row = await cursor.fetchone()
             if row is None:
-                await self._conn.execute(
+                await conn.execute(
                     "INSERT INTO canon_refresh_leases VALUES (?, ?, ?, 1, ?, ?, 1, 'open')",
                     (catalogue_family, key, token, now + _LEASE_MS, now),
                 )
                 lease = RefreshLease(token, 1, True)
             elif row["state"] == "open" and int(row["expires_at"]) > now:
-                await self._conn.execute(
+                await conn.execute(
                     "UPDATE canon_refresh_leases SET waiter_count = waiter_count + 1 "
                     "WHERE catalogue_family = ? AND model_key = ?",
                     (catalogue_family, key),
@@ -154,23 +184,19 @@ class CanonEndpointCache:
                 )
             else:
                 fencing = int(row["fencing_token"]) + 1
-                await self._conn.execute(
+                await conn.execute(
                     "UPDATE canon_refresh_leases SET owner_token=?, fencing_token=?, expires_at=?, "
                     "heartbeat_at=?, waiter_count=1, state='open' WHERE catalogue_family=? AND model_key=?",
                     (token, fencing, now + _LEASE_MS, now, catalogue_family, key),
                 )
                 lease = RefreshLease(token, fencing, True)
-            await self._conn.commit()
             return lease
-        except BaseException:
-            await self._conn.rollback()
-            raise
 
     async def heartbeat_lease(
         self, catalogue_family: str, model: str, lease: RefreshLease
     ) -> bool:
         now = self._now_ms()
-        cursor = await self._conn.execute(
+        cursor = await self.execute(
             "UPDATE canon_refresh_leases SET heartbeat_at=?, expires_at=? WHERE catalogue_family=? "
             "AND model_key=? AND owner_token=? AND fencing_token=? AND state='open' AND expires_at > ?",
             (
@@ -183,29 +209,22 @@ class CanonEndpointCache:
                 now,
             ),
         )
-        await self._conn.commit()
         return cursor.rowcount == 1
 
     async def detach_waiter(
         self, catalogue_family: str, model: str, lease: RefreshLease
     ) -> None:
         key = self.model_key(model)
-        await self._conn.execute("BEGIN IMMEDIATE")
-        try:
-            await self._conn.execute(
-                "UPDATE canon_refresh_leases SET waiter_count = MAX(waiter_count - 1, 0) "
-                "WHERE catalogue_family=? AND model_key=? AND fencing_token=?",
-                (catalogue_family, key, lease.fencing_token),
-            )
-            await self._conn.commit()
-        except BaseException:
-            await self._conn.rollback()
-            raise
+        await self.execute(
+            "UPDATE canon_refresh_leases SET waiter_count = MAX(waiter_count - 1, 0) "
+            "WHERE catalogue_family=? AND model_key=? AND fencing_token=?",
+            (catalogue_family, key, lease.fencing_token),
+        )
 
     async def close_lease(
         self, catalogue_family: str, model: str, lease: RefreshLease
     ) -> None:
-        await self._conn.execute(
+        await self.execute(
             "UPDATE canon_refresh_leases SET state='closing', waiter_count=0, "
             "expires_at=? WHERE catalogue_family=? AND model_key=? "
             "AND owner_token=? AND fencing_token=?",
@@ -217,12 +236,13 @@ class CanonEndpointCache:
                 lease.fencing_token,
             ),
         )
-        await self._conn.commit()
 
     async def coordinate_live_check(
         self, catalogue_family: str, model: str, operation: Callable[[], Awaitable[T]]
     ) -> T:
         """Coalesce in-process callers while SQLite fencing coordinates processes."""
+        if isinstance(self._conn, WriteConnection):
+            raise RuntimeError("Live checks cannot run inside a caller WriteUnit")
         key = (catalogue_family, self.model_key(model))
         async with self._lock:
             existing: asyncio.Future[object] | None = self._inflight.get(key)
@@ -255,5 +275,9 @@ class CanonEndpointCache:
                 raise RuntimeError("Canon refresh lease was fenced by another owner")
             return await operation()
         finally:
-            await self.detach_waiter(catalogue_family, model, lease)
-            await self.close_lease(catalogue_family, model, lease)
+            # Detachment and closure describe one terminal lease transition.
+            # Never expose half of that transition to an independent owner.
+            async with self.write_scope() as conn:
+                cache = CanonEndpointCache(conn, self._now_ms)
+                await cache.detach_waiter(catalogue_family, model, lease)
+                await cache.close_lease(catalogue_family, model, lease)

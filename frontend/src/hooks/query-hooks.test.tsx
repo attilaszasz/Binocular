@@ -30,12 +30,13 @@ it("membership mutations invalidate both old/new scopes by invalidating the whol
     await result.current.create.mutateAsync({ name: "camera", module_id: 1 });
     await result.current.update.mutateAsync({ id: 1, data: { module_id: 2 } });
     await result.current.remove.mutateAsync(1);
-    await result.current.confirm.mutateAsync(1);
+    await result.current.confirm.mutateAsync({ id: 1, expectedRevision: 4 });
     await result.current.check.mutateAsync(1);
     await result.current.bulk.mutateAsync();
   });
   expect(invalidate.mock.calls.filter(([args]) => args?.queryKey?.[0] === "module-scope")).toHaveLength(3);
   expect(invalidate).toHaveBeenCalledWith({ queryKey: ["modules"] });
+  expect(fetch).toHaveBeenCalledWith("/api/v1/devices/1/confirm?expected_revision=4", expect.objectContaining({ method: "PUT" }));
 });
 
 it("invalidates status/schedule saves but waits for the NDJSON terminal upload acknowledgement", async () => {

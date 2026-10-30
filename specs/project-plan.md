@@ -147,7 +147,7 @@ Amended 2026-10-29 for instance-local catalog-first discovery under project inst
 
 > Depends on completed SQLite/inventory/cache foundations. Establishes stable variant identity and coherent transaction ownership before any shared-result atomic work is enabled.
 
-- [ ] E032 [P1] [TECHNICAL] {PRD:CAP-016}{SAD:ADR-0004}{SAD:ADR-0015}{SAD:ADR-0017}{DOD:DDR-003} Catalog Persistence and Write Ownership — catalog/observation schema, safe legacy inventory migration, caller-owned write units, and durable-work primitives [→ Details](plan/E032.md)
+- [X] E032 [P1] [TECHNICAL] {PRD:CAP-016}{SAD:ADR-0004}{SAD:ADR-0015}{SAD:ADR-0017}{DOD:DDR-003} Catalog Persistence and Write Ownership — catalog/observation schema, safe legacy inventory migration, caller-owned write units, and durable-work primitives [→ Details](plan/E032.md)
 
 ### Wave 21 — Versioned Catalog Contract
 

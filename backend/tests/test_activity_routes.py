@@ -12,6 +12,9 @@ from httpx import ASGITransport, AsyncClient
 from binocular.app import create_app
 from binocular.config import Settings
 from binocular.db.activity_repository import ActivityRepository
+from binocular.db.unit_of_work import WriteUnit
+from binocular.devices.repository import DeviceRepository
+from binocular.extensions.repository import ModuleRepository
 
 
 @pytest.fixture
@@ -30,26 +33,18 @@ async def test_app_client() -> AsyncIterator[AsyncClient]:
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 db = app.state.db
                 # Seed a device
-                await db.execute(
-                    "INSERT INTO modules "
-                    "(id, name, device_type, version, author, status, file_path) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        1,
-                        "sony_camera",
-                        "camera",
-                        "1.0.0",
-                        "Official",
-                        "active",
-                        str(Path(td) / "modules" / "sony.py"),
-                    ),
-                )
-                await db.execute(
-                    "INSERT INTO devices (id, name, model, module_id, current_version) "
-                    "VALUES (?, ?, ?, ?, ?)",
-                    (1, "Camera A", "Model X", 1, "1.0.0"),
-                )
-                await db.commit()
+                async with WriteUnit(db) as unit:
+                    mid = await ModuleRepository(unit).create(
+                        name="sony_camera",
+                        device_type="camera",
+                        version="1.0.0",
+                        author="Official",
+                        status="active",
+                        file_path=str(Path(td) / "modules" / "sony.py"),
+                    )
+                    await DeviceRepository(unit).create(
+                        "Camera A", "Model X", mid, "1.0.0"
+                    )
 
                 # Seed some activity logs
                 repo = ActivityRepository(db)

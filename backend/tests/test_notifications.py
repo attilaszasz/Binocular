@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from collections.abc import AsyncIterator
 from pathlib import Path
 from unittest.mock import patch
@@ -14,52 +13,38 @@ from httpx import ASGITransport, AsyncClient
 from binocular.app import create_app
 from binocular.config import Settings
 from binocular.db.notifications_repository import NotificationsRepository
+from binocular.db.unit_of_work import WriteUnit
 from binocular.devices.repository import DeviceRepository
+from binocular.extensions.repository import ModuleRepository
 from binocular.services.checks import CheckService
 from binocular.services.email_renderer import EmailRenderer
 from binocular.services.notifier import NotifierService
 
 
 @pytest.fixture
-async def test_app_client() -> AsyncIterator[AsyncClient]:
+async def test_app_client(settings: Settings) -> AsyncIterator[AsyncClient]:
     """Provide an HTTP client with active database state and a initialized module."""
-    with tempfile.TemporaryDirectory() as td:
-        settings = Settings(
-            data_dir=Path(td),
-            modules_dir=Path(td) / "modules",
-            seed_modules=False,
-        )
-        app = create_app(settings=settings)
+    app = create_app(settings=settings)
 
-        async with app.router.lifespan_context(app):
-            transport = ASGITransport(app=app)
-            async with AsyncClient(transport=transport, base_url="http://test") as ac:
-                db = app.state.db
-                module_path = str(Path(td) / "modules" / "sony.py")
-                # Seed required tables for testing checks integration
-                await db.execute(
-                    "INSERT INTO modules "
-                    "(id, name, device_type, version, author, status, file_path) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        1,
-                        "sony_camera",
-                        "camera",
-                        "1.0.0",
-                        "Official",
-                        "active",
-                        module_path,
-                    ),
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            db = app.state.db
+            module_path = str(settings.modules_dir / "sony.py")
+            # The app lifespan applies all migrations before seeding test data.
+            async with WriteUnit(db) as unit:
+                mid = await ModuleRepository(unit).create(
+                    name="sony_camera",
+                    device_type="camera",
+                    version="1.0.0",
+                    author="Official",
+                    status="active",
+                    file_path=module_path,
                 )
-                await db.execute(
-                    "INSERT INTO devices "
-                    "(id, name, model, module_id, current_version, "
-                    "has_update, last_notified_version) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (1, "Camera 1", "Alpha 7 IV", 1, "1.0.0", 0, None),
+                await DeviceRepository(unit).create(
+                    "Camera 1", "Alpha 7 IV", mid, "1.0.0"
                 )
-                await db.commit()
-                yield ac
+            yield ac
 
 
 @pytest.mark.asyncio
@@ -350,11 +335,7 @@ async def test_check_service_integration(test_app_client: AsyncClient) -> None:
         "def check_firmware(url, model, client):\n"
         "    return CheckResult(latest_version='2.1.0')\n"
     )
-    await db.execute(
-        "UPDATE modules SET file_path = ? WHERE id = 1",
-        (str(module_file_updated),),
-    )
-    await db.commit()
+    await ModuleRepository(db).update(1, file_path=str(module_file_updated))
 
     # Should dispatch alert
     with patch("apprise.Apprise.notify", return_value=True) as mock_send:

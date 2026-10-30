@@ -2,28 +2,16 @@
 
 from __future__ import annotations
 
-import tempfile
-from collections.abc import AsyncIterator
-from pathlib import Path
-
+import aiosqlite
 import pytest
 
-from binocular.config import Settings
 from binocular.db.activity_repository import ActivityRepository
-from binocular.db.connection import close_connection, open_connection
-from binocular.db.migrations import run_migrations
 
 
 @pytest.fixture
-async def repo() -> AsyncIterator[ActivityRepository]:
+def repo(migrated_db: aiosqlite.Connection) -> ActivityRepository:
     """Provide an ActivityRepository with a clean test database and migrations run."""
-    with tempfile.TemporaryDirectory() as td:
-        settings = Settings(data_dir=Path(td))
-        conn = await open_connection(settings)
-        await run_migrations(conn, settings)
-        repo = ActivityRepository(conn)
-        yield repo
-        await close_connection(conn)
+    return ActivityRepository(migrated_db)
 
 
 @pytest.mark.asyncio

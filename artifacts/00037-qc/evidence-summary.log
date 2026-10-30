@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/workspace/Binocular/artifacts/00037-qc/summarize-evidence.py", line 19, in <module>
+    coverage = ET.parse(out / 'backend-coverage.xml').getroot()
+               ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/openchamber/.local/share/uv/python/cpython-3.13.18-linux-x86_64-gnu/lib/python3.13/xml/etree/ElementTree.py", line 1219, in parse
+    tree.parse(source, parser)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/openchamber/.local/share/uv/python/cpython-3.13.18-linux-x86_64-gnu/lib/python3.13/xml/etree/ElementTree.py", line 562, in parse
+    source = open(source, "rb")
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/Binocular/artifacts/00037-qc/backend-coverage.xml'

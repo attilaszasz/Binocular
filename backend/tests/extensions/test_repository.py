@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
-from pathlib import Path
-
 import aiosqlite
 import pytest
 
@@ -12,43 +9,9 @@ from binocular.extensions.repository import ModuleRepository
 
 
 @pytest.fixture
-async def repo(tmp_path: object) -> AsyncGenerator[ModuleRepository]:
-    """Create an in-memory database with migrations applied and return a repo."""
-    conn = await aiosqlite.connect(":memory:")
-    conn.row_factory = aiosqlite.Row
-
-    # Apply migrations 0002 + 0003 inline for test isolation.
-    await conn.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS modules (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            name        TEXT    NOT NULL,
-            device_type TEXT    NOT NULL DEFAULT '',
-            created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
-        );
-        ALTER TABLE modules ADD COLUMN version TEXT NOT NULL DEFAULT '';
-        ALTER TABLE modules ADD COLUMN author TEXT NOT NULL DEFAULT '';
-        ALTER TABLE modules ADD COLUMN file_path TEXT NOT NULL DEFAULT '';
-        ALTER TABLE modules ADD COLUMN is_official INTEGER NOT NULL DEFAULT 0
-            CHECK(is_official IN (0, 1));
-        ALTER TABLE modules ADD COLUMN status TEXT NOT NULL DEFAULT 'active'
-            CHECK(status IN ('active', 'inactive', 'error'));
-        ALTER TABLE modules ADD COLUMN consecutive_failures INTEGER NOT NULL DEFAULT 0;
-        ALTER TABLE modules ADD COLUMN last_success TEXT NULL;
-        ALTER TABLE modules ADD COLUMN source_url TEXT NULL;
-
-        """
-    )
-    await conn.executescript(
-        (
-            Path(__file__).parents[2]
-            / "src/binocular/db/migrations/0010_source_guidance.sql"
-        ).read_text()
-    )
-    repo = ModuleRepository(conn)
-    await conn.execute("CREATE TABLE devices (module_id INTEGER)")
-    yield repo
-    await conn.close()
+def repo(migrated_db: aiosqlite.Connection) -> ModuleRepository:
+    """Use the same fully migrated schema as the application."""
+    return ModuleRepository(migrated_db)
 
 
 class TestModuleRepository:
@@ -121,9 +84,11 @@ class TestModuleRepository:
         assert row["is_official"] == 1
 
     async def test_update_noop(self, repo: ModuleRepository) -> None:
-        """Update with no valid fields should be a no-op."""
+        """Empty updates are no-ops; unsupported syntax is rejected."""
         mid = await repo.create(name="unchanged", device_type="camera")
-        await repo.update(mid, invalid_field="value")
+        await repo.update(mid)
+        with pytest.raises(ValueError, match="Unsupported module update field"):
+            await repo.update(mid, invalid_field="value")
         row = await repo.get_by_id(mid)
         assert row is not None
         assert row["name"] == "unchanged"

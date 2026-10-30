@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from binocular.db.catalog_types import ComparisonStatus
+
 
 class DeviceCreate(BaseModel):
     """Request body for creating a new device."""
@@ -14,6 +16,7 @@ class DeviceCreate(BaseModel):
     model: str = ""
     module_id: int
     current_version: str = ""
+    installed_unknown: bool | None = None
 
 
 class DeviceUpdate(BaseModel):
@@ -26,6 +29,8 @@ class DeviceUpdate(BaseModel):
     model: str | None = None
     module_id: int | None = None
     current_version: str | None = None
+    installed_unknown: bool | None = None
+    expected_revision: int | None = Field(default=None, ge=1)
 
 
 class DeviceResponse(BaseModel):
@@ -41,9 +46,15 @@ class DeviceResponse(BaseModel):
     has_update: bool
     latest_detected_version: str | None
     last_checked: str | None
+    last_check_attempt_at: str | None = None
     last_notified_version: str | None
     created_at: str
     updated_at: str
+    catalog_model_id: str | None = None
+    catalog_link_state: Literal["legacy", "unresolved", "linked"] = "legacy"
+    installed_unknown: bool = True
+    revision: int = Field(default=1, ge=1)
+    comparison_status: ComparisonStatus = "unverified"
 
 
 class ModuleResponse(BaseModel):

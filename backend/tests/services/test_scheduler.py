@@ -3,18 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-import tempfile
-from pathlib import Path
 from threading import Event
 from types import ModuleType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import aiosqlite
 import pytest
 
 from binocular.config import Settings
-from binocular.db.connection import close_connection, open_connection
-from binocular.db.migrations import run_migrations
 from binocular.extensions.runner import ModuleRunner
 from binocular.services.automatic_admission import AutomaticAdmission
 from binocular.services.checks import CheckService
@@ -22,14 +19,11 @@ from binocular.services.scheduler import SchedulerService
 
 
 @pytest.fixture
-async def temp_db() -> Any:
+def temp_db(
+    migrated_db: aiosqlite.Connection, settings: Settings
+) -> tuple[aiosqlite.Connection, Settings]:
     """Provide a clean SQLite database connection with migrations run."""
-    with tempfile.TemporaryDirectory() as td:
-        settings = Settings(data_dir=Path(td), modules_dir=Path(td) / "modules")
-        conn = await open_connection(settings)
-        await run_migrations(conn, settings)
-        yield conn, settings
-        await close_connection(conn)
+    return migrated_db, settings
 
 
 @pytest.mark.asyncio
@@ -148,13 +142,13 @@ async def test_run_module_check_triggers_checks(
         ("sony_camera", "camera", "1.0.0", "Official", "active"),
     )
     await conn.execute(
-        "INSERT INTO devices (name, model, module_id, current_version) "
-        "VALUES (?, ?, ?, ?)",
+        "INSERT INTO devices (name, model, module_id, current_version, "
+        "installed_unknown) VALUES (?, ?, ?, ?, 0)",
         ("My A7IV", "ILCE-7M4", 1, "1.0"),
     )
     await conn.execute(
-        "INSERT INTO devices (name, model, module_id, current_version) "
-        "VALUES (?, ?, ?, ?)",
+        "INSERT INTO devices (name, model, module_id, current_version, "
+        "installed_unknown) VALUES (?, ?, ?, ?, 0)",
         ("My A7R V", "ILCE-7RM5", 1, "2.0"),
     )
     await conn.commit()
@@ -249,8 +243,8 @@ async def test_automatic_skip_is_neutral_manual_paused_allowed(temp_db: Any) -> 
         (str(path),),
     )
     await conn.execute(
-        "INSERT INTO devices (name, module_id, current_version) "
-        "VALUES ('camera', 1, '1')"
+        "INSERT INTO devices (name, module_id, current_version, installed_unknown) "
+        "VALUES ('camera', 1, '1', 0)"
     )
     await conn.commit()
     gate = AutomaticAdmission()

@@ -1,0 +1,908 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1793352088532" clover="3.2.0">
+  <project timestamp="1793352088533" name="All files">
+    <metrics statements="743" coveredstatements="667" conditionals="741" coveredconditionals="624" methods="266" coveredmethods="226" elements="1750" coveredelements="1517" complexity="0" loc="743" ncloc="743" packages="9" files="44" classes="44"/>
+    <package name="src">
+      <metrics statements="3" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+      <file name="App.tsx" path="/workspace/Binocular/frontend/src/App.tsx">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="15" count="1" type="stmt"/>
+      </file>
+      <file name="main.tsx" path="/workspace/Binocular/frontend/src/main.tsx">
+        <metrics statements="1" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="6" count="0" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.components">
+      <metrics statements="24" coveredstatements="23" conditionals="11" coveredconditionals="8" methods="9" coveredmethods="8"/>
+      <file name="theme-context.ts" path="/workspace/Binocular/frontend/src/components/theme-context.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="11" count="1" type="stmt"/>
+      </file>
+      <file name="theme-provider.tsx" path="/workspace/Binocular/frontend/src/components/theme-provider.tsx">
+        <metrics statements="23" coveredstatements="22" conditionals="11" coveredconditionals="8" methods="9" coveredmethods="8"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="15" count="9" type="cond" truecount="1" falsecount="1"/>
+        <line num="16" count="9" type="cond" truecount="1" falsecount="1"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="25" count="1" type="stmt"/>
+        <line num="37" count="4" type="stmt"/>
+        <line num="38" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="39" count="1" type="stmt"/>
+        <line num="40" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="44" count="4" type="stmt"/>
+        <line num="47" count="0" type="stmt"/>
+        <line num="50" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="52" count="4" type="stmt"/>
+        <line num="53" count="3" type="stmt"/>
+        <line num="54" count="3" type="stmt"/>
+        <line num="58" count="4" type="stmt"/>
+        <line num="59" count="3" type="stmt"/>
+        <line num="60" count="3" type="stmt"/>
+        <line num="61" count="3" type="stmt"/>
+        <line num="64" count="4" type="stmt"/>
+        <line num="65" count="4" type="stmt"/>
+        <line num="69" count="4" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.components.inventory">
+      <metrics statements="86" coveredstatements="85" conditionals="128" coveredconditionals="117" methods="22" coveredmethods="22"/>
+      <file name="SourceGuidance.tsx" path="/workspace/Binocular/frontend/src/components/inventory/SourceGuidance.tsx">
+        <metrics statements="3" coveredstatements="3" conditionals="12" coveredconditionals="12" methods="1" coveredmethods="1"/>
+        <line num="5" count="67" type="stmt"/>
+        <line num="6" count="67" type="stmt"/>
+        <line num="7" count="67" type="stmt"/>
+      </file>
+      <file name="device-card.tsx" path="/workspace/Binocular/frontend/src/components/inventory/device-card.tsx">
+        <metrics statements="15" coveredstatements="15" conditionals="34" coveredconditionals="29" methods="7" coveredmethods="7"/>
+        <line num="17" count="2" type="stmt"/>
+        <line num="41" count="24" type="stmt"/>
+        <line num="42" count="24" type="stmt"/>
+        <line num="43" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="44" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="46" count="24" type="stmt"/>
+        <line num="47" count="5" type="stmt"/>
+        <line num="48" count="5" type="stmt"/>
+        <line num="50" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="51" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="55" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="60" count="24" type="stmt"/>
+        <line num="88" count="1" type="stmt"/>
+        <line num="98" count="1" type="stmt"/>
+        <line num="160" count="2" type="stmt"/>
+      </file>
+      <file name="device-form.tsx" path="/workspace/Binocular/frontend/src/components/inventory/device-form.tsx">
+        <metrics statements="66" coveredstatements="65" conditionals="80" coveredconditionals="74" methods="12" coveredmethods="12"/>
+        <line num="34" count="66" type="stmt"/>
+        <line num="36" count="66" type="cond" truecount="2" falsecount="0"/>
+        <line num="37" count="66" type="cond" truecount="2" falsecount="0"/>
+        <line num="38" count="66" type="stmt"/>
+        <line num="41" count="66" type="stmt"/>
+        <line num="44" count="66" type="stmt"/>
+        <line num="47" count="66" type="stmt"/>
+        <line num="48" count="66" type="stmt"/>
+        <line num="49" count="66" type="stmt"/>
+        <line num="50" count="66" type="stmt"/>
+        <line num="51" count="66" type="stmt"/>
+        <line num="52" count="66" type="stmt"/>
+        <line num="53" count="6" type="stmt"/>
+        <line num="54" count="6" type="stmt"/>
+        <line num="55" count="6" type="stmt"/>
+        <line num="56" count="6" type="stmt"/>
+        <line num="59" count="66" type="stmt"/>
+        <line num="60" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="61" count="9" type="stmt"/>
+        <line num="62" count="9" type="stmt"/>
+        <line num="63" count="9" type="stmt"/>
+        <line num="64" count="9" type="stmt"/>
+        <line num="65" count="9" type="stmt"/>
+        <line num="66" count="9" type="stmt"/>
+        <line num="67" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="68" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="69" count="3" type="stmt"/>
+        <line num="71" count="2" type="stmt"/>
+        <line num="74" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="75" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="76" count="4" type="stmt"/>
+        <line num="78" count="9" type="cond" truecount="2" falsecount="0"/>
+        <line num="82" count="66" type="stmt"/>
+        <line num="83" count="7" type="stmt"/>
+        <line num="84" count="7" type="stmt"/>
+        <line num="86" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="87" count="1" type="stmt"/>
+        <line num="88" count="1" type="stmt"/>
+        <line num="90" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="91" count="1" type="stmt"/>
+        <line num="92" count="1" type="stmt"/>
+        <line num="95" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="96" count="4" type="stmt"/>
+        <line num="97" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="98" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="99" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="100" count="0" type="stmt"/>
+        <line num="101" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="102" count="3" type="stmt"/>
+        <line num="103" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="104" count="2" type="stmt"/>
+        <line num="105" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="106" count="4" type="stmt"/>
+        <line num="108" count="1" type="stmt"/>
+        <line num="118" count="66" type="cond" truecount="4" falsecount="0"/>
+        <line num="119" count="81" type="stmt"/>
+        <line num="121" count="66" type="stmt"/>
+        <line num="138" count="8" type="stmt"/>
+        <line num="150" count="1" type="stmt"/>
+        <line num="158" count="130" type="stmt"/>
+        <line num="176" count="5" type="stmt"/>
+        <line num="201" count="13" type="stmt"/>
+        <line num="202" count="13" type="stmt"/>
+        <line num="203" count="13" type="stmt"/>
+        <line num="204" count="13" type="stmt"/>
+        <line num="214" count="3" type="cond" truecount="2" falsecount="0"/>
+      </file>
+      <file name="empty-state.tsx" path="/workspace/Binocular/frontend/src/components/inventory/empty-state.tsx">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="12" count="2" type="stmt"/>
+      </file>
+      <file name="stat-card.tsx" path="/workspace/Binocular/frontend/src/components/inventory/stat-card.tsx">
+        <metrics statements="1" coveredstatements="1" conditionals="2" coveredconditionals="2" methods="1" coveredmethods="1"/>
+        <line num="15" count="6" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.components.layout">
+      <metrics statements="22" coveredstatements="22" conditionals="40" coveredconditionals="40" methods="8" coveredmethods="8"/>
+      <file name="app-layout.tsx" path="/workspace/Binocular/frontend/src/components/layout/app-layout.tsx">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="9" count="3" type="stmt"/>
+        <line num="11" count="3" type="stmt"/>
+      </file>
+      <file name="brand.tsx" path="/workspace/Binocular/frontend/src/components/layout/brand.tsx">
+        <metrics statements="1" coveredstatements="1" conditionals="5" coveredconditionals="5" methods="1" coveredmethods="1"/>
+        <line num="9" count="3" type="stmt"/>
+      </file>
+      <file name="header.tsx" path="/workspace/Binocular/frontend/src/components/layout/header.tsx">
+        <metrics statements="7" coveredstatements="7" conditionals="6" coveredconditionals="6" methods="2" coveredmethods="2"/>
+        <line num="12" count="6" type="stmt"/>
+        <line num="14" count="6" type="stmt"/>
+        <line num="15" count="3" type="stmt"/>
+        <line num="20" count="3" type="stmt"/>
+        <line num="21" count="3" type="stmt"/>
+        <line num="22" count="3" type="stmt"/>
+        <line num="25" count="6" type="stmt"/>
+      </file>
+      <file name="nav-item.tsx" path="/workspace/Binocular/frontend/src/components/layout/nav-item.tsx">
+        <metrics statements="6" coveredstatements="6" conditionals="13" coveredconditionals="13" methods="1" coveredmethods="1"/>
+        <line num="19" count="38" type="stmt"/>
+        <line num="20" count="38" type="cond" truecount="2" falsecount="0"/>
+        <line num="23" count="38" type="stmt"/>
+        <line num="41" count="38" type="cond" truecount="2" falsecount="0"/>
+        <line num="42" count="10" type="stmt"/>
+        <line num="52" count="28" type="stmt"/>
+      </file>
+      <file name="sidebar.tsx" path="/workspace/Binocular/frontend/src/components/layout/sidebar.tsx">
+        <metrics statements="3" coveredstatements="3" conditionals="12" coveredconditionals="12" methods="2" coveredmethods="2"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="29" count="3" type="stmt"/>
+        <line num="50" count="12" type="stmt"/>
+      </file>
+      <file name="version-display.tsx" path="/workspace/Binocular/frontend/src/components/layout/version-display.tsx">
+        <metrics statements="3" coveredstatements="3" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="2" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="3" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="5" count="6" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.components.modules">
+      <metrics statements="195" coveredstatements="164" conditionals="258" coveredconditionals="201" methods="52" coveredmethods="41"/>
+      <file name="FrequencyEditor.tsx" path="/workspace/Binocular/frontend/src/components/modules/FrequencyEditor.tsx">
+        <metrics statements="14" coveredstatements="11" conditionals="21" coveredconditionals="17" methods="4" coveredmethods="3"/>
+        <line num="10" count="3" type="stmt"/>
+        <line num="20" count="7" type="stmt"/>
+        <line num="21" count="7" type="stmt"/>
+        <line num="23" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="32" count="6" type="stmt"/>
+        <line num="33" count="7" type="cond" truecount="4" falsecount="0"/>
+        <line num="35" count="4" type="stmt"/>
+        <line num="36" count="0" type="stmt"/>
+        <line num="37" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="38" count="0" type="stmt"/>
+        <line num="42" count="4" type="stmt"/>
+        <line num="44" count="4" type="stmt"/>
+        <line num="62" count="24" type="stmt"/>
+      </file>
+      <file name="ModuleCard.tsx" path="/workspace/Binocular/frontend/src/components/modules/ModuleCard.tsx">
+        <metrics statements="24" coveredstatements="16" conditionals="88" coveredconditionals="77" methods="9" coveredmethods="5"/>
+        <line num="24" count="20" type="stmt"/>
+        <line num="25" count="20" type="stmt"/>
+        <line num="26" count="20" type="stmt"/>
+        <line num="27" count="20" type="stmt"/>
+        <line num="28" count="20" type="stmt"/>
+        <line num="29" count="20" type="cond" truecount="8" falsecount="0"/>
+        <line num="31" count="20" type="stmt"/>
+        <line num="32" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="33" count="3" type="stmt"/>
+        <line num="34" count="3" type="stmt"/>
+        <line num="35" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="39" count="20" type="stmt"/>
+        <line num="40" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="43" count="0" type="stmt"/>
+        <line num="45" count="0" type="stmt"/>
+        <line num="46" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="47" count="0" type="stmt"/>
+        <line num="48" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="51" count="0" type="stmt"/>
+        <line num="57" count="20" type="stmt"/>
+        <line num="59" count="20" type="stmt"/>
+        <line num="128" count="7" type="stmt"/>
+        <line num="132" count="4" type="cond" truecount="6" falsecount="0"/>
+        <line num="133" count="0" type="stmt"/>
+      </file>
+      <file name="ModuleGuidanceSection.tsx" path="/workspace/Binocular/frontend/src/components/modules/ModuleGuidanceSection.tsx">
+        <metrics statements="37" coveredstatements="37" conditionals="28" coveredconditionals="22" methods="18" coveredmethods="18"/>
+        <line num="33" count="28" type="stmt"/>
+        <line num="34" count="28" type="stmt"/>
+        <line num="35" count="28" type="stmt"/>
+        <line num="36" count="28" type="stmt"/>
+        <line num="37" count="28" type="stmt"/>
+        <line num="39" count="28" type="stmt"/>
+        <line num="40" count="13" type="stmt"/>
+        <line num="41" count="13" type="stmt"/>
+        <line num="42" count="10" type="cond" truecount="1" falsecount="1"/>
+        <line num="44" count="10" type="cond" truecount="2" falsecount="2"/>
+        <line num="47" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="49" count="13" type="cond" truecount="1" falsecount="1"/>
+        <line num="50" count="13" type="stmt"/>
+        <line num="53" count="28" type="stmt"/>
+        <line num="54" count="5" type="stmt"/>
+        <line num="55" count="5" type="stmt"/>
+        <line num="56" count="5" type="stmt"/>
+        <line num="57" count="5" type="stmt"/>
+        <line num="60" count="28" type="stmt"/>
+        <line num="63" count="1" type="stmt"/>
+        <line num="64" count="4" type="stmt"/>
+        <line num="66" count="4" type="stmt"/>
+        <line num="70" count="28" type="stmt"/>
+        <line num="71" count="12" type="cond" truecount="1" falsecount="1"/>
+        <line num="72" count="12" type="stmt"/>
+        <line num="75" count="28" type="stmt"/>
+        <line num="76" count="12" type="cond" truecount="2" falsecount="0"/>
+        <line num="77" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="78" count="3" type="stmt"/>
+        <line num="81" count="28" type="stmt"/>
+        <line num="89" count="7" type="stmt"/>
+        <line num="137" count="56" type="stmt"/>
+        <line num="202" count="1" type="cond" truecount="4" falsecount="0"/>
+        <line num="205" count="24" type="stmt"/>
+        <line num="214" count="12" type="stmt"/>
+        <line num="215" count="12" type="stmt"/>
+        <line num="219" count="1" type="stmt"/>
+      </file>
+      <file name="ModuleStatusBadge.tsx" path="/workspace/Binocular/frontend/src/components/modules/ModuleStatusBadge.tsx">
+        <metrics statements="5" coveredstatements="5" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="8" count="20" type="cond" truecount="4" falsecount="0"/>
+        <line num="10" count="6" type="stmt"/>
+        <line num="16" count="8" type="stmt"/>
+        <line num="22" count="3" type="stmt"/>
+        <line num="28" count="3" type="stmt"/>
+      </file>
+      <file name="ModuleUploadForm.tsx" path="/workspace/Binocular/frontend/src/components/modules/ModuleUploadForm.tsx">
+        <metrics statements="115" coveredstatements="95" conditionals="117" coveredconditionals="81" methods="20" coveredmethods="14"/>
+        <line num="29" count="28" type="stmt"/>
+        <line num="30" count="28" type="stmt"/>
+        <line num="31" count="28" type="stmt"/>
+        <line num="32" count="28" type="stmt"/>
+        <line num="33" count="28" type="stmt"/>
+        <line num="34" count="28" type="stmt"/>
+        <line num="35" count="28" type="stmt"/>
+        <line num="38" count="28" type="stmt"/>
+        <line num="39" count="28" type="stmt"/>
+        <line num="40" count="28" type="stmt"/>
+        <line num="41" count="28" type="stmt"/>
+        <line num="43" count="28" type="stmt"/>
+        <line num="44" count="0" type="stmt"/>
+        <line num="45" count="0" type="stmt"/>
+        <line num="48" count="28" type="stmt"/>
+        <line num="49" count="0" type="stmt"/>
+        <line num="52" count="28" type="stmt"/>
+        <line num="53" count="0" type="stmt"/>
+        <line num="54" count="0" type="stmt"/>
+        <line num="55" count="0" type="stmt"/>
+        <line num="56" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="57" count="0" type="stmt"/>
+        <line num="58" count="0" type="stmt"/>
+        <line num="59" count="0" type="stmt"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="62" count="0" type="stmt"/>
+        <line num="66" count="28" type="stmt"/>
+        <line num="67" count="6" type="stmt"/>
+        <line num="68" count="6" type="cond" truecount="1" falsecount="1"/>
+        <line num="69" count="6" type="cond" truecount="1" falsecount="1"/>
+        <line num="70" count="6" type="stmt"/>
+        <line num="71" count="6" type="stmt"/>
+        <line num="72" count="6" type="stmt"/>
+        <line num="73" count="6" type="stmt"/>
+        <line num="75" count="0" type="stmt"/>
+        <line num="80" count="28" type="stmt"/>
+        <line num="81" count="5" type="stmt"/>
+        <line num="82" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="84" count="5" type="stmt"/>
+        <line num="85" count="5" type="stmt"/>
+        <line num="87" count="5" type="stmt"/>
+        <line num="90" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="91" count="0" type="stmt"/>
+        <line num="97" count="5" type="stmt"/>
+        <line num="102" count="5" type="stmt"/>
+        <line num="103" count="5" type="stmt"/>
+        <line num="105" count="5" type="stmt"/>
+        <line num="106" count="5" type="stmt"/>
+        <line num="107" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="108" count="0" type="stmt"/>
+        <line num="111" count="3" type="stmt"/>
+        <line num="112" count="3" type="stmt"/>
+        <line num="113" count="3" type="stmt"/>
+        <line num="115" count="3" type="stmt"/>
+        <line num="116" count="6" type="stmt"/>
+        <line num="117" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="119" count="5" type="stmt"/>
+        <line num="120" count="5" type="stmt"/>
+        <line num="121" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="123" count="6" type="stmt"/>
+        <line num="124" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="126" count="5" type="stmt"/>
+        <line num="128" count="5" type="stmt"/>
+        <line num="129" count="5" type="stmt"/>
+        <line num="130" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="131" count="4" type="stmt"/>
+        <line num="141" count="6" type="cond" truecount="2" falsecount="2"/>
+        <line num="142" count="0" type="stmt"/>
+        <line num="144" count="6" type="cond" truecount="4" falsecount="1"/>
+        <line num="145" count="1" type="stmt"/>
+        <line num="147" count="5" type="stmt"/>
+        <line num="151" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="152" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="153" count="1" type="stmt"/>
+        <line num="154" count="1" type="stmt"/>
+        <line num="157" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="158" count="2" type="stmt"/>
+        <line num="159" count="1" type="stmt"/>
+        <line num="160" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="161" count="1" type="stmt"/>
+        <line num="163" count="1" type="stmt"/>
+        <line num="164" count="1" type="stmt"/>
+        <line num="165" count="1" type="stmt"/>
+        <line num="166" count="1" type="stmt"/>
+        <line num="171" count="1" type="stmt"/>
+        <line num="173" count="3" type="stmt"/>
+        <line num="174" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="180" count="0" type="stmt"/>
+        <line num="181" count="0" type="stmt"/>
+        <line num="183" count="3" type="stmt"/>
+        <line num="184" count="3" type="stmt"/>
+        <line num="191" count="28" type="stmt"/>
+        <line num="192" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="193" count="3" type="stmt"/>
+        <line num="197" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="198" count="3" type="stmt"/>
+        <line num="199" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="200" count="1" type="stmt"/>
+        <line num="202" count="2" type="stmt"/>
+        <line num="203" count="1" type="stmt"/>
+        <line num="204" count="1" type="stmt"/>
+        <line num="205" count="1" type="stmt"/>
+        <line num="207" count="2" type="stmt"/>
+        <line num="212" count="28" type="stmt"/>
+        <line num="233" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="237" count="0" type="cond" truecount="0" falsecount="5"/>
+        <line num="296" count="14" type="cond" truecount="3" falsecount="0"/>
+        <line num="301" count="14" type="stmt"/>
+        <line num="340" count="1" type="stmt"/>
+        <line num="341" count="1" type="stmt"/>
+        <line num="342" count="1" type="stmt"/>
+        <line num="400" count="1" type="stmt"/>
+        <line num="401" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="403" count="1" type="stmt"/>
+        <line num="410" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.components.ui">
+      <metrics statements="40" coveredstatements="33" conditionals="20" coveredconditionals="17" methods="34" coveredmethods="27"/>
+      <file name="badge.tsx" path="/workspace/Binocular/frontend/src/components/ui/badge.tsx">
+        <metrics statements="3" coveredstatements="3" conditionals="4" coveredconditionals="3" methods="1" coveredmethods="1"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="37" count="24" type="cond" truecount="1" falsecount="1"/>
+        <line num="39" count="24" type="stmt"/>
+      </file>
+      <file name="button.tsx" path="/workspace/Binocular/frontend/src/components/ui/button.tsx">
+        <metrics statements="3" coveredstatements="3" conditionals="5" coveredconditionals="5" methods="1" coveredmethods="1"/>
+        <line num="7" count="10" type="stmt"/>
+        <line num="54" count="559" type="cond" truecount="2" falsecount="0"/>
+        <line num="56" count="559" type="stmt"/>
+      </file>
+      <file name="card.tsx" path="/workspace/Binocular/frontend/src/components/ui/card.tsx">
+        <metrics statements="7" coveredstatements="5" conditionals="1" coveredconditionals="1" methods="7" coveredmethods="5"/>
+        <line num="10" count="172" type="stmt"/>
+        <line num="24" count="148" type="stmt"/>
+        <line num="37" count="148" type="stmt"/>
+        <line num="50" count="106" type="stmt"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="73" count="155" type="stmt"/>
+        <line num="83" count="0" type="stmt"/>
+      </file>
+      <file name="input.tsx" path="/workspace/Binocular/frontend/src/components/ui/input.tsx">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="6" count="502" type="stmt"/>
+      </file>
+      <file name="label.tsx" path="/workspace/Binocular/frontend/src/components/ui/label.tsx">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="10" count="776" type="stmt"/>
+      </file>
+      <file name="select.tsx" path="/workspace/Binocular/frontend/src/components/ui/select.tsx">
+        <metrics statements="11" coveredstatements="8" conditionals="7" coveredconditionals="5" methods="10" coveredmethods="7"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="12" count="79" type="stmt"/>
+        <line num="19" count="0" type="stmt"/>
+        <line num="31" count="79" type="stmt"/>
+        <line num="42" count="79" type="stmt"/>
+        <line num="67" count="79" type="stmt"/>
+        <line num="97" count="0" type="stmt"/>
+        <line num="111" count="182" type="stmt"/>
+        <line num="134" count="0" type="stmt"/>
+        <line num="147" count="79" type="stmt"/>
+        <line num="166" count="79" type="stmt"/>
+      </file>
+      <file name="switch.tsx" path="/workspace/Binocular/frontend/src/components/ui/switch.tsx">
+        <metrics statements="1" coveredstatements="1" conditionals="1" coveredconditionals="1" methods="1" coveredmethods="1"/>
+        <line num="13" count="162" type="stmt"/>
+      </file>
+      <file name="table.tsx" path="/workspace/Binocular/frontend/src/components/ui/table.tsx">
+        <metrics statements="9" coveredstatements="7" conditionals="0" coveredconditionals="0" methods="8" coveredmethods="6"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="8" count="3" type="stmt"/>
+        <line num="23" count="3" type="stmt"/>
+        <line num="33" count="3" type="stmt"/>
+        <line num="43" count="0" type="stmt"/>
+        <line num="56" count="11" type="stmt"/>
+        <line num="69" count="18" type="stmt"/>
+        <line num="82" count="18" type="stmt"/>
+        <line num="98" count="0" type="stmt"/>
+      </file>
+      <file name="tooltip.tsx" path="/workspace/Binocular/frontend/src/components/ui/tooltip.tsx">
+        <metrics statements="4" coveredstatements="4" conditionals="2" coveredconditionals="2" methods="4" coveredmethods="4"/>
+        <line num="10" count="27" type="stmt"/>
+        <line num="22" count="30" type="stmt"/>
+        <line num="28" count="30" type="stmt"/>
+        <line num="37" count="11" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.hooks">
+      <metrics statements="93" coveredstatements="90" conditionals="9" coveredconditionals="4" methods="47" coveredmethods="46"/>
+      <file name="use-activity.ts" path="/workspace/Binocular/frontend/src/hooks/use-activity.ts">
+        <metrics statements="3" coveredstatements="3" conditionals="1" coveredconditionals="1" methods="2" coveredmethods="2"/>
+        <line num="7" count="2" type="stmt"/>
+        <line num="10" count="4" type="stmt"/>
+        <line num="12" count="2" type="stmt"/>
+      </file>
+      <file name="use-devices.ts" path="/workspace/Binocular/frontend/src/hooks/use-devices.ts">
+        <metrics statements="34" coveredstatements="34" conditionals="0" coveredconditionals="0" methods="21" coveredmethods="21"/>
+        <line num="13" count="2" type="stmt"/>
+        <line num="16" count="8" type="stmt"/>
+        <line num="23" count="2" type="stmt"/>
+        <line num="25" count="1" type="stmt"/>
+        <line num="31" count="5" type="stmt"/>
+        <line num="32" count="5" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="35" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="43" count="5" type="stmt"/>
+        <line num="44" count="5" type="stmt"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="50" count="1" type="stmt"/>
+        <line num="56" count="5" type="stmt"/>
+        <line num="57" count="5" type="stmt"/>
+        <line num="58" count="1" type="stmt"/>
+        <line num="60" count="1" type="stmt"/>
+        <line num="61" count="1" type="stmt"/>
+        <line num="62" count="1" type="stmt"/>
+        <line num="68" count="5" type="stmt"/>
+        <line num="69" count="5" type="stmt"/>
+        <line num="71" count="1" type="stmt"/>
+        <line num="72" count="1" type="stmt"/>
+        <line num="77" count="1" type="stmt"/>
+        <line num="78" count="1" type="stmt"/>
+        <line num="79" count="1" type="stmt"/>
+        <line num="80" count="1" type="stmt"/>
+        <line num="85" count="5" type="stmt"/>
+        <line num="86" count="5" type="stmt"/>
+        <line num="87" count="1" type="stmt"/>
+        <line num="88" count="1" type="stmt"/>
+      </file>
+      <file name="use-modules.ts" path="/workspace/Binocular/frontend/src/hooks/use-modules.ts">
+        <metrics statements="27" coveredstatements="27" conditionals="0" coveredconditionals="0" methods="12" coveredmethods="12"/>
+        <line num="7" count="2" type="stmt"/>
+        <line num="8" count="2" type="stmt"/>
+        <line num="11" count="7" type="stmt"/>
+        <line num="19" count="2" type="stmt"/>
+        <line num="21" count="1" type="stmt"/>
+        <line num="29" count="4" type="stmt"/>
+        <line num="30" count="4" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="34" count="4" type="stmt"/>
+        <line num="35" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="38" count="1" type="stmt"/>
+        <line num="43" count="3" type="stmt"/>
+        <line num="44" count="3" type="stmt"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="50" count="1" type="stmt"/>
+        <line num="51" count="1" type="stmt"/>
+        <line num="57" count="3" type="stmt"/>
+        <line num="58" count="3" type="stmt"/>
+        <line num="59" count="1" type="stmt"/>
+        <line num="61" count="1" type="stmt"/>
+        <line num="62" count="1" type="stmt"/>
+        <line num="63" count="1" type="stmt"/>
+        <line num="64" count="1" type="stmt"/>
+      </file>
+      <file name="use-schedules.ts" path="/workspace/Binocular/frontend/src/hooks/use-schedules.ts">
+        <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="4"/>
+        <line num="7" count="2" type="stmt"/>
+        <line num="10" count="2" type="stmt"/>
+        <line num="17" count="3" type="stmt"/>
+        <line num="18" count="3" type="stmt"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+      </file>
+      <file name="use-sidebar.ts" path="/workspace/Binocular/frontend/src/hooks/use-sidebar.ts">
+        <metrics statements="19" coveredstatements="17" conditionals="6" coveredconditionals="2" methods="7" coveredmethods="6"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="4" count="1" type="stmt"/>
+        <line num="7" count="3" type="stmt"/>
+        <line num="8" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="10" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="14" count="3" type="stmt"/>
+        <line num="15" count="2" type="stmt"/>
+        <line num="16" count="2" type="stmt"/>
+        <line num="19" count="3" type="stmt"/>
+        <line num="20" count="2" type="stmt"/>
+        <line num="23" count="3" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="25" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="26" count="0" type="stmt"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="34" count="3" type="stmt"/>
+      </file>
+      <file name="use-theme.ts" path="/workspace/Binocular/frontend/src/hooks/use-theme.ts">
+        <metrics statements="4" coveredstatements="3" conditionals="2" coveredconditionals="1" methods="1" coveredmethods="1"/>
+        <line num="6" count="6" type="stmt"/>
+        <line num="7" count="6" type="cond" truecount="1" falsecount="1"/>
+        <line num="8" count="0" type="stmt"/>
+        <line num="10" count="6" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.lib">
+      <metrics statements="93" coveredstatements="92" conditionals="81" coveredconditionals="76" methods="32" coveredmethods="32"/>
+      <file name="api.ts" path="/workspace/Binocular/frontend/src/lib/api.ts">
+        <metrics statements="67" coveredstatements="66" conditionals="52" coveredconditionals="47" methods="25" coveredmethods="25"/>
+        <line num="5" count="9" type="stmt"/>
+        <line num="9" count="61" type="stmt"/>
+        <line num="10" count="61" type="cond" truecount="1" falsecount="1"/>
+        <line num="11" count="61" type="stmt"/>
+        <line num="13" count="61" type="cond" truecount="1" falsecount="1"/>
+        <line num="14" count="0" type="stmt"/>
+        <line num="17" count="61" type="stmt"/>
+        <line num="22" count="60" type="cond" truecount="2" falsecount="0"/>
+        <line num="23" count="8" type="stmt"/>
+        <line num="24" count="8" type="cond" truecount="3" falsecount="1"/>
+        <line num="25" count="8" type="stmt"/>
+        <line num="29" count="52" type="cond" truecount="2" falsecount="0"/>
+        <line num="31" count="51" type="stmt"/>
+        <line num="39" count="10" type="stmt"/>
+        <line num="40" count="10" type="stmt"/>
+        <line num="41" count="10" type="stmt"/>
+        <line num="42" count="10" type="stmt"/>
+        <line num="78" count="30" type="cond" truecount="4" falsecount="0"/>
+        <line num="79" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="82" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="85" count="6" type="stmt"/>
+        <line num="86" count="6" type="cond" truecount="4" falsecount="0"/>
+        <line num="87" count="2" type="stmt"/>
+        <line num="88" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="89" count="2" type="cond" truecount="4" falsecount="0"/>
+        <line num="90" count="1" type="stmt"/>
+        <line num="92" count="6" type="stmt"/>
+        <line num="142" count="9" type="stmt"/>
+        <line num="143" count="6" type="stmt"/>
+        <line num="144" count="3" type="stmt"/>
+        <line num="146" count="3" type="stmt"/>
+        <line num="151" count="4" type="stmt"/>
+        <line num="156" count="3" type="stmt"/>
+        <line num="158" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="163" count="9" type="stmt"/>
+        <line num="164" count="2" type="stmt"/>
+        <line num="165" count="4" type="stmt"/>
+        <line num="167" count="4" type="stmt"/>
+        <line num="168" count="4" type="stmt"/>
+        <line num="169" count="4" type="stmt"/>
+        <line num="173" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="174" count="2" type="stmt"/>
+        <line num="175" count="2" type="cond" truecount="2" falsecount="2"/>
+        <line num="176" count="2" type="stmt"/>
+        <line num="178" count="2" type="stmt"/>
+        <line num="181" count="2" type="stmt"/>
+        <line num="186" count="2" type="stmt"/>
+        <line num="202" count="9" type="stmt"/>
+        <line num="204" count="2" type="stmt"/>
+        <line num="206" count="2" type="stmt"/>
+        <line num="208" count="1" type="stmt"/>
+        <line num="226" count="9" type="stmt"/>
+        <line num="227" count="2" type="stmt"/>
+        <line num="229" count="2" type="stmt"/>
+        <line num="243" count="9" type="stmt"/>
+        <line num="244" count="5" type="stmt"/>
+        <line num="246" count="5" type="stmt"/>
+        <line num="251" count="5" type="stmt"/>
+        <line num="284" count="9" type="stmt"/>
+        <line num="286" count="4" type="stmt"/>
+        <line num="287" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="288" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="289" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="290" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="291" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="293" count="4" type="stmt"/>
+        <line num="294" count="4" type="cond" truecount="2" falsecount="0"/>
+      </file>
+      <file name="copy-errors-for-ai.ts" path="/workspace/Binocular/frontend/src/lib/copy-errors-for-ai.ts">
+        <metrics statements="18" coveredstatements="18" conditionals="15" coveredconditionals="15" methods="4" coveredmethods="4"/>
+        <line num="37" count="7" type="stmt"/>
+        <line num="38" count="7" type="stmt"/>
+        <line num="40" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="41" count="2" type="stmt"/>
+        <line num="42" count="4" type="stmt"/>
+        <line num="45" count="4" type="stmt"/>
+        <line num="46" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="47" count="4" type="stmt"/>
+        <line num="48" count="4" type="stmt"/>
+        <line num="49" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="50" count="2" type="stmt"/>
+        <line num="52" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="53" count="2" type="stmt"/>
+        <line num="57" count="4" type="stmt"/>
+        <line num="60" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="63" count="7" type="stmt"/>
+        <line num="77" count="1" type="stmt"/>
+        <line num="78" count="1" type="stmt"/>
+      </file>
+      <file name="source-guidance.ts" path="/workspace/Binocular/frontend/src/lib/source-guidance.ts">
+        <metrics statements="7" coveredstatements="7" conditionals="14" coveredconditionals="14" methods="2" coveredmethods="2"/>
+        <line num="3" count="1314" type="cond" truecount="7" falsecount="0"/>
+        <line num="4" count="57" type="cond" truecount="2" falsecount="0"/>
+        <line num="5" count="53" type="stmt"/>
+        <line num="6" count="53" type="stmt"/>
+        <line num="7" count="53" type="cond" truecount="5" falsecount="0"/>
+        <line num="8" count="51" type="stmt"/>
+        <line num="10" count="1" type="stmt"/>
+      </file>
+      <file name="utils.ts" path="/workspace/Binocular/frontend/src/lib/utils.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="5" count="3446" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.pages">
+      <metrics statements="187" coveredstatements="156" conditionals="194" coveredconditionals="161" methods="61" coveredmethods="41"/>
+      <file name="inventory.tsx" path="/workspace/Binocular/frontend/src/pages/inventory.tsx">
+        <metrics statements="32" coveredstatements="22" conditionals="52" coveredconditionals="41" methods="14" coveredmethods="8"/>
+        <line num="31" count="11" type="stmt"/>
+        <line num="32" count="11" type="stmt"/>
+        <line num="33" count="11" type="stmt"/>
+        <line num="34" count="11" type="stmt"/>
+        <line num="35" count="11" type="stmt"/>
+        <line num="36" count="11" type="stmt"/>
+        <line num="38" count="11" type="stmt"/>
+        <line num="40" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="42" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="44" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="46" count="11" type="stmt"/>
+        <line num="47" count="11" type="stmt"/>
+        <line num="48" count="11" type="stmt"/>
+        <line num="50" count="11" type="stmt"/>
+        <line num="51" count="0" type="stmt"/>
+        <line num="54" count="11" type="stmt"/>
+        <line num="55" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="56" count="0" type="stmt"/>
+        <line num="57" count="0" type="stmt"/>
+        <line num="59" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="62" count="0" type="stmt"/>
+        <line num="67" count="11" type="stmt"/>
+        <line num="68" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="69" count="0" type="stmt"/>
+        <line num="73" count="11" type="stmt"/>
+        <line num="74" count="1" type="stmt"/>
+        <line num="77" count="11" type="cond" truecount="1" falsecount="1"/>
+        <line num="78" count="0" type="stmt"/>
+        <line num="92" count="11" type="stmt"/>
+        <line num="153" count="6" type="stmt"/>
+        <line num="169" count="8" type="stmt"/>
+      </file>
+      <file name="logs.tsx" path="/workspace/Binocular/frontend/src/pages/logs.tsx">
+        <metrics statements="42" coveredstatements="23" conditionals="45" coveredconditionals="30" methods="18" coveredmethods="5"/>
+        <line num="25" count="2" type="stmt"/>
+        <line num="28" count="3" type="stmt"/>
+        <line num="29" count="3" type="stmt"/>
+        <line num="30" count="3" type="stmt"/>
+        <line num="31" count="3" type="stmt"/>
+        <line num="32" count="3" type="stmt"/>
+        <line num="35" count="3" type="stmt"/>
+        <line num="38" count="3" type="stmt"/>
+        <line num="46" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="47" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="48" count="3" type="stmt"/>
+        <line num="50" count="3" type="stmt"/>
+        <line num="51" count="0" type="stmt"/>
+        <line num="52" count="0" type="stmt"/>
+        <line num="55" count="3" type="stmt"/>
+        <line num="56" count="0" type="stmt"/>
+        <line num="57" count="0" type="stmt"/>
+        <line num="60" count="3" type="stmt"/>
+        <line num="61" count="0" type="stmt"/>
+        <line num="62" count="0" type="stmt"/>
+        <line num="65" count="3" type="stmt"/>
+        <line num="66" count="0" type="stmt"/>
+        <line num="67" count="0" type="stmt"/>
+        <line num="68" count="0" type="stmt"/>
+        <line num="69" count="0" type="stmt"/>
+        <line num="72" count="3" type="stmt"/>
+        <line num="73" count="2" type="stmt"/>
+        <line num="74" count="2" type="stmt"/>
+        <line num="75" count="2" type="stmt"/>
+        <line num="77" count="0" type="stmt"/>
+        <line num="81" count="3" type="stmt"/>
+        <line num="133" count="1" type="stmt"/>
+        <line num="168" count="5" type="stmt"/>
+        <line num="183" count="2" type="stmt"/>
+        <line num="185" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="232" count="0" type="stmt"/>
+        <line num="233" count="0" type="stmt"/>
+        <line num="265" count="0" type="stmt"/>
+        <line num="277" count="0" type="stmt"/>
+        <line num="292" count="0" type="stmt"/>
+        <line num="316" count="0" type="stmt"/>
+        <line num="359" count="0" type="stmt"/>
+      </file>
+      <file name="modules.tsx" path="/workspace/Binocular/frontend/src/pages/modules.tsx">
+        <metrics statements="17" coveredstatements="15" conditionals="27" coveredconditionals="26" methods="9" coveredmethods="8"/>
+        <line num="19" count="6" type="stmt"/>
+        <line num="20" count="6" type="stmt"/>
+        <line num="21" count="6" type="stmt"/>
+        <line num="22" count="6" type="stmt"/>
+        <line num="23" count="2" type="stmt"/>
+        <line num="24" count="2" type="stmt"/>
+        <line num="27" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="28" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="29" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="31" count="6" type="cond" truecount="1" falsecount="1"/>
+        <line num="32" count="0" type="stmt"/>
+        <line num="47" count="6" type="stmt"/>
+        <line num="55" count="1" type="stmt"/>
+        <line num="99" count="1" type="stmt"/>
+        <line num="113" count="3" type="stmt"/>
+        <line num="130" count="0" type="stmt"/>
+        <line num="142" count="2" type="stmt"/>
+      </file>
+      <file name="not-found.tsx" path="/workspace/Binocular/frontend/src/pages/not-found.tsx">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="6" count="1" type="stmt"/>
+      </file>
+      <file name="settings.tsx" path="/workspace/Binocular/frontend/src/pages/settings.tsx">
+        <metrics statements="95" coveredstatements="95" conditionals="70" coveredconditionals="64" methods="19" coveredmethods="19"/>
+        <line num="11" count="42" type="stmt"/>
+        <line num="12" count="42" type="stmt"/>
+        <line num="13" count="42" type="stmt"/>
+        <line num="14" count="42" type="stmt"/>
+        <line num="17" count="42" type="stmt"/>
+        <line num="18" count="42" type="stmt"/>
+        <line num="19" count="42" type="stmt"/>
+        <line num="20" count="42" type="stmt"/>
+        <line num="21" count="42" type="stmt"/>
+        <line num="22" count="42" type="stmt"/>
+        <line num="23" count="42" type="stmt"/>
+        <line num="24" count="42" type="stmt"/>
+        <line num="25" count="42" type="stmt"/>
+        <line num="28" count="42" type="stmt"/>
+        <line num="29" count="42" type="stmt"/>
+        <line num="30" count="42" type="stmt"/>
+        <line num="31" count="42" type="stmt"/>
+        <line num="33" count="42" type="stmt"/>
+        <line num="34" count="4" type="stmt"/>
+        <line num="35" count="4" type="stmt"/>
+        <line num="36" count="4" type="stmt"/>
+        <line num="37" count="4" type="stmt"/>
+        <line num="38" count="4" type="stmt"/>
+        <line num="40" count="3" type="stmt"/>
+        <line num="41" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="42" count="2" type="stmt"/>
+        <line num="43" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="44" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="45" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="46" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="47" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="48" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="49" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="52" count="4" type="stmt"/>
+        <line num="53" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="54" count="2" type="stmt"/>
+        <line num="55" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="56" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="59" count="1" type="stmt"/>
+        <line num="61" count="4" type="stmt"/>
+        <line num="65" count="42" type="stmt"/>
+        <line num="66" count="4" type="stmt"/>
+        <line num="67" count="4" type="stmt"/>
+        <line num="69" count="4" type="stmt"/>
+        <line num="72" count="42" type="stmt"/>
+        <line num="73" count="2" type="stmt"/>
+        <line num="74" count="2" type="stmt"/>
+        <line num="75" count="2" type="stmt"/>
+        <line num="76" count="2" type="stmt"/>
+        <line num="77" count="2" type="stmt"/>
+        <line num="90" count="2" type="stmt"/>
+        <line num="91" count="1" type="stmt"/>
+        <line num="93" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="94" count="1" type="stmt"/>
+        <line num="96" count="2" type="stmt"/>
+        <line num="100" count="42" type="stmt"/>
+        <line num="101" count="2" type="stmt"/>
+        <line num="102" count="2" type="stmt"/>
+        <line num="103" count="2" type="stmt"/>
+        <line num="104" count="2" type="stmt"/>
+        <line num="105" count="2" type="stmt"/>
+        <line num="113" count="2" type="stmt"/>
+        <line num="114" count="1" type="stmt"/>
+        <line num="116" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="117" count="1" type="stmt"/>
+        <line num="119" count="2" type="stmt"/>
+        <line num="123" count="42" type="stmt"/>
+        <line num="124" count="2" type="stmt"/>
+        <line num="125" count="2" type="stmt"/>
+        <line num="126" count="2" type="stmt"/>
+        <line num="127" count="2" type="stmt"/>
+        <line num="139" count="1" type="stmt"/>
+        <line num="141" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="142" count="1" type="stmt"/>
+        <line num="144" count="2" type="stmt"/>
+        <line num="148" count="42" type="stmt"/>
+        <line num="149" count="2" type="stmt"/>
+        <line num="150" count="2" type="stmt"/>
+        <line num="151" count="2" type="stmt"/>
+        <line num="152" count="2" type="stmt"/>
+        <line num="159" count="1" type="stmt"/>
+        <line num="161" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="162" count="1" type="stmt"/>
+        <line num="164" count="2" type="stmt"/>
+        <line num="168" count="42" type="cond" truecount="2" falsecount="0"/>
+        <line num="169" count="4" type="stmt"/>
+        <line num="177" count="38" type="stmt"/>
+        <line num="225" count="2" type="stmt"/>
+        <line num="236" count="2" type="stmt"/>
+        <line num="249" count="2" type="stmt"/>
+        <line num="259" count="2" type="stmt"/>
+        <line num="272" count="2" type="stmt"/>
+        <line num="283" count="2" type="stmt"/>
+        <line num="380" count="2" type="stmt"/>
+        <line num="392" count="2" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>

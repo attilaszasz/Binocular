@@ -27,7 +27,7 @@ class ModuleRepository(RepositoryBase):
         ", (SELECT COUNT(*) FROM devices WHERE devices.module_id = modules.id)"
         " AS linked_device_count, display_name, coverage_notes,"
         " model_examples, help_url,"
-        " registration_origin, official_content_hash"
+        " registration_origin, official_content_hash, config_generation"
     )
 
     async def list_all(self) -> list[aiosqlite.Row]:
@@ -102,8 +102,10 @@ class ModuleRepository(RepositoryBase):
     ) -> None:
         """Update selected module fields.
 
-        Only keys present in *fields* are written.
+        Only keys present in *fields* are written. ``force_config_change`` also
+        fences a replaced module file whose metadata did not change.
         """
+        force_config_change = bool(fields.pop("force_config_change", False))
         allowed = {
             "name",
             "device_type",
@@ -123,8 +125,10 @@ class ModuleRepository(RepositoryBase):
             "official_content_hash",
         }
 
-        updates = {k: v for k, v in fields.items() if k in allowed and v is not None}
-        if not updates:
+        if fields.keys() - allowed:
+            raise ValueError("Unsupported module update field")
+        updates = {k: v for k, v in fields.items() if v is not None}
+        if not updates and not force_config_change:
             return
 
         # Coerce is_official to int for SQLite storage.
@@ -133,6 +137,28 @@ class ModuleRepository(RepositoryBase):
 
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         params: list[Any] = list(updates.values())
+        configuration = {
+            "name",
+            "device_type",
+            "version",
+            "file_path",
+            "is_official",
+            "status",
+            "source_url",
+            "registration_origin",
+            "official_content_hash",
+        }
+        relevant = {k: v for k, v in updates.items() if k in configuration}
+        if relevant or force_config_change:
+            changed = (
+                "1"
+                if force_config_change
+                else " OR ".join(f"{k} IS NOT ?" for k in relevant)
+            )
+            prefix = ", " if set_clause else ""
+            set_clause += f"{prefix}config_generation = config_generation + ({changed})"
+            if not force_config_change:
+                params.extend(relevant.values())
         params.append(module_id)
         sql = f"UPDATE modules SET {set_clause} WHERE id = ?"  # noqa: S608
         await self.execute(sql, params)

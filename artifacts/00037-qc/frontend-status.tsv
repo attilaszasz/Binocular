@@ -1,0 +1,6 @@
+frontend-typecheck	0
+frontend-lint	0
+frontend-audit	0
+frontend-vitest	0
+frontend-build	0
+playwright	0

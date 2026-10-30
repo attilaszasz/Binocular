@@ -47,6 +47,10 @@ export class ApiError extends Error {
 
 /* ── Device types ─────────────────────────────────────────────── */
 
+export type ComparisonStatus =
+  | "unverified" | "unknown" | "comparison_unknown" | "current"
+  | "update_available" | "no_firmware" | "stale" | "failed";
+
 export interface Device {
   id: number;
   name: string;
@@ -58,9 +62,35 @@ export interface Device {
   has_update: boolean;
   latest_detected_version: string | null;
   last_checked: string | null;
+  last_check_attempt_at?: string | null;
   last_notified_version: string | null;
   created_at: string;
   updated_at: string;
+  /** Additive fields are optional for compatibility with pre-catalog responses. */
+  catalog_model_id?: string | null;
+  catalog_link_state?: "legacy" | "unresolved" | "linked";
+  installed_unknown?: boolean;
+  revision?: number;
+  comparison_status?: ComparisonStatus;
+}
+
+/** Absence of an update flag is not evidence of a successful comparison. */
+export function deviceComparisonStatus(device: Device): ComparisonStatus {
+  if (device.installed_unknown || !device.current_version.trim()) return "unknown";
+  if (device.comparison_status) return device.comparison_status;
+  // Older V1 responses do not carry comparison status. Only retain explicit
+  // update evidence or a checked exact match; never infer current from !has_update.
+  if (device.latest_detected_version?.trim()) {
+    // Be conservative without backend comparison metadata; opaque versions
+    // must not become current just because their display strings match.
+    const numericVersion = /^\d+(?:[._-]\d+)*$/;
+    if (!numericVersion.test(device.current_version) || !numericVersion.test(device.latest_detected_version))
+      return "comparison_unknown";
+    if (device.has_update) return "update_available";
+    if (device.last_checked && device.current_version === device.latest_detected_version)
+      return "current";
+  }
+  return "unverified";
 }
 
 export interface DeviceCreate {
@@ -68,6 +98,7 @@ export interface DeviceCreate {
   model?: string;
   module_id: number;
   current_version?: string;
+  installed_unknown?: boolean;
 }
 
 export interface DeviceUpdate {
@@ -75,6 +106,8 @@ export interface DeviceUpdate {
   model?: string;
   module_id?: number;
   current_version?: string;
+  installed_unknown?: boolean;
+  expected_revision?: number;
 }
 
 export interface Module {
@@ -122,8 +155,8 @@ export const devicesApi = {
     }),
   delete: (id: number) =>
     apiFetch<void>(`/devices/${id}`, { method: "DELETE" }),
-  confirm: (id: number) =>
-    apiFetch<Device>(`/devices/${id}/confirm`, { method: "PUT" }),
+  confirm: (id: number, expectedRevision?: number) =>
+    apiFetch<Device>(`/devices/${id}/confirm${expectedRevision === undefined ? "" : `?expected_revision=${expectedRevision}`}`, { method: "PUT" }),
 };
 
 /* ── Module API ───────────────────────────────────────────────── */
@@ -262,4 +295,3 @@ export const activityApi = {
     return apiFetch<ActivityLogListResponse>(`/activity${queryString ? `?${queryString}` : ""}`);
   },
 };
-

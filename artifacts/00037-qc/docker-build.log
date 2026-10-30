@@ -1,0 +1,117 @@
+cwd=/workspace/Binocular
+command=docker build --load -t binocular:qc-check -f Dockerfile . 
+started=2026-10-30T11:27:29+02:00
+#0 building with "default" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.21kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.13-slim
+#2 ...
+
+#3 [internal] load metadata for ghcr.io/astral-sh/uv:latest
+#3 DONE 0.6s
+
+#2 [internal] load metadata for docker.io/library/python:3.13-slim
+#2 DONE 0.7s
+
+#4 [internal] load metadata for docker.io/library/node:22-slim
+#4 DONE 0.7s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 274B done
+#5 DONE 0.0s
+
+#6 [frontend-builder 1/6] FROM docker.io/library/node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
+#6 resolve docker.io/library/node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da 0.0s done
+#6 DONE 0.0s
+
+#7 FROM ghcr.io/astral-sh/uv:latest@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0
+#7 resolve ghcr.io/astral-sh/uv:latest@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 0.0s done
+#7 DONE 0.0s
+
+#8 [builder 1/9] FROM docker.io/library/python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb
+#8 resolve docker.io/library/python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb 0.0s done
+#8 DONE 0.0s
+
+#9 [internal] load build context
+#9 transferring context: 11.54kB 0.1s done
+#9 DONE 0.1s
+
+#10 [stage-2 2/9] RUN apt-get update && apt-get upgrade -y     && apt-get install -y --no-install-recommends gosu passwd     && rm -rf /var/lib/apt/lists/*
+#10 CACHED
+
+#11 [builder 6/9] COPY backend/pyproject.toml backend/uv.lock* /app/
+#11 CACHED
+
+#12 [frontend-builder 6/6] RUN npm run build
+#12 CACHED
+
+#13 [builder 3/9] RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl     && rm -rf /var/lib/apt/lists/*
+#13 CACHED
+
+#14 [stage-2 3/9] RUN python -m pip uninstall --yes pip
+#14 CACHED
+
+#15 [builder 4/9] COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+#15 CACHED
+
+#16 [builder 5/9] WORKDIR /app
+#16 CACHED
+
+#17 [builder 9/9] RUN uv sync --frozen --no-dev
+#17 CACHED
+
+#18 [frontend-builder 4/6] RUN npm ci
+#18 CACHED
+
+#19 [frontend-builder 3/6] COPY frontend/package.json frontend/package-lock.json ./
+#19 CACHED
+
+#20 [stage-2 4/9] COPY --from=builder /app/.venv /app/.venv
+#20 CACHED
+
+#21 [stage-2 6/9] COPY --from=frontend-builder /build/frontend/dist /app/static_dist
+#21 CACHED
+
+#22 [builder 8/9] COPY backend/src /app/src
+#22 CACHED
+
+#23 [frontend-builder 2/6] WORKDIR /build/frontend
+#23 CACHED
+
+#24 [stage-2 7/9] COPY entrypoint.sh /entrypoint.sh
+#24 CACHED
+
+#25 [frontend-builder 5/6] COPY frontend/ ./
+#25 CACHED
+
+#26 [builder 7/9] RUN uv sync --frozen --no-dev --no-install-project
+#26 CACHED
+
+#27 [stage-2 8/9] RUN chmod +x /entrypoint.sh
+#27 CACHED
+
+#28 [builder 2/9] WORKDIR /build
+#28 CACHED
+
+#29 [stage-2 5/9] COPY backend/src /app/src
+#29 CACHED
+
+#30 [stage-2 9/9] RUN mkdir -p /app/data /app/modules
+#30 CACHED
+
+#31 exporting to oci image format
+#31 exporting layers done
+#31 exporting manifest sha256:54c83a271ce6f218cae54dc1c93445d686dc81ccb039c04012b8fa57576d70a4 done
+#31 exporting config sha256:2257a18fd5beeaae2d7b7f4a3497a919a281846256ec31847abae8818447cd24 done
+#31 sending tarball
+#31 sending tarball 1.6s done
+#31 DONE 1.6s
+
+#32 importing to docker
+#32 DONE 0.0s
+
+exit=0
+finished=2026-10-30T11:27:32+02:00

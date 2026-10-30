@@ -1,0 +1,52 @@
+Source gate configuration
+39:[tool.mypy]
+40-strict = true
+41-python_version = "3.13"
+42-mypy_path = "src"
+43-packages = ["binocular"]
+44-plugins = ["pydantic.mypy"]
+45-exclude = ["tests/extensions/fixtures"]
+46-
+47-[[tool.mypy.overrides]]
+48-module = "apscheduler.*"
+49-ignore_missing_imports = true
+50-
+51-[tool.ruff]
+52-src = ["src"]
+53-target-version = "py313"
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Strict mode */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path aliases */
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}
+
+Dependency integrity
+Resolved 81 packages in 2ms
+Checked 78 packages in 2ms
+All installed packages are compatible

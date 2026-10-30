@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { activityApi, ApiError, checksApi, devicesApi, modulesApi, notificationsApi, schedulesApi } from "./api";
+import { activityApi, ApiError, checksApi, deviceComparisonStatus, devicesApi, modulesApi, notificationsApi, schedulesApi, type Device } from "./api";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -31,4 +31,39 @@ it.each([true, false])("surfaces structured errors and invalid JSON (%s)", async
 it("handles bodyless delete responses", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
   expect(await devicesApi.delete(1)).toBeUndefined();
+});
+
+it("preserves additive status and ownership fields and sends explicit unknown/revision mutations", async () => {
+  const response = { catalog_model_id: null, catalog_link_state: "unresolved", installed_unknown: true, revision: 8, comparison_status: "unknown", current_version: "retained", latest_detected_version: "2.0" };
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json(response));
+  expect(await devicesApi.get(1)).toEqual(response);
+  await devicesApi.create({ name: "Camera", module_id: 1, current_version: "retained", installed_unknown: true });
+  expect(fetch).toHaveBeenLastCalledWith("/api/v1/devices", expect.objectContaining({ body: JSON.stringify({ name: "Camera", module_id: 1, current_version: "retained", installed_unknown: true }) }));
+  await devicesApi.update(1, { installed_unknown: true, expected_revision: 7 });
+  expect(fetch).toHaveBeenLastCalledWith("/api/v1/devices/1", expect.objectContaining({ body: '{"installed_unknown":true,"expected_revision":7}' }));
+  await devicesApi.confirm(1, 8);
+  expect(fetch).toHaveBeenLastCalledWith("/api/v1/devices/1/confirm?expected_revision=8", expect.objectContaining({ method: "PUT" }));
+});
+
+it("surfaces revision conflicts instead of silently retrying or confirming", async () => {
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json({ detail: "Device mutation conflict: stale_revision" }, { status: 409 }));
+  await expect(devicesApi.update(1, { expected_revision: 2, current_version: "2.0" })).rejects.toMatchObject({ status: 409, message: "Device mutation conflict: stale_revision" });
+  await expect(devicesApi.confirm(1, 2)).rejects.toMatchObject({ status: 409 });
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it.each<[Partial<Device>, string]>([
+  [{ current_version: "" }, "unknown"],
+  [{ installed_unknown: true, comparison_status: "current" }, "unknown"],
+  [{}, "unverified"],
+  [{ has_update: true }, "unverified"],
+  [{ latest_detected_version: "1.0", last_checked: null }, "unverified"],
+  [{ latest_detected_version: "1.0", last_checked: "2026-10-29" }, "current"],
+  [{ latest_detected_version: "2.0", has_update: true }, "update_available"],
+  [{ current_version: "opaque", latest_detected_version: "opaque", last_checked: "2026-10-29" }, "comparison_unknown"],
+  [{ latest_detected_version: "opaque", has_update: true }, "comparison_unknown"],
+  [{ comparison_status: "comparison_unknown", has_update: true, latest_detected_version: "2.0" }, "comparison_unknown"],
+])("adapts legacy and additive status honestly: %j", (overrides, expected) => {
+  const device: Device = { id: 1, name: "Camera", model: "Model", module_id: 1, module_name: "Source", device_type: "camera", current_version: "1.0", has_update: false, latest_detected_version: null, last_checked: null, last_notified_version: null, created_at: "", updated_at: "", ...overrides };
+  expect(deviceComparisonStatus(device)).toBe(expected);
 });

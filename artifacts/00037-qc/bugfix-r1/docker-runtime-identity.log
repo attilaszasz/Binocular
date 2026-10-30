@@ -1,0 +1,3 @@
+Setting up user binocular with PUID=1000 and PGID=1000
+uid=1000(binocular) gid=1000(binocular) groups=1000(binocular)
+EXIT=0

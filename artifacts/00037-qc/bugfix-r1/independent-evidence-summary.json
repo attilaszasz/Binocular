@@ -1,0 +1,98 @@
+{
+  "axe_audits": 40,
+  "axe_violations": 0,
+  "axe_incomplete": 0,
+  "persisted_failure_reload_audits": 4,
+  "ordinary_form_network": [
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/ordinary-form-network.json",
+      "before": 24,
+      "after": 24,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/ordinary-form-network.json",
+      "before": 17,
+      "after": 17,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/ordinary-form-network.json",
+      "before": 0,
+      "after": 0,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/ordinary-form-network.json",
+      "before": 8,
+      "after": 8,
+      "external": [],
+      "firmwareActions": []
+    }
+  ],
+  "cleanup_ports": {
+    "8001": "closed",
+    "5173": "closed"
+  },
+  "backend_coverage": {
+    "line-rate": "0.9041",
+    "lines-covered": "5938",
+    "lines-valid": "6568"
+  },
+  "backend_lowest_coverage": [
+    {
+      "file": "src/binocular/module_kit/EXAMPLE_MODULE.py",
+      "covered": 0,
+      "total": 72
+    },
+    {
+      "file": "src/binocular/module_kit/STARTER_TEMPLATE.py",
+      "covered": 0,
+      "total": 27
+    },
+    {
+      "file": "src/binocular/spa.py",
+      "covered": 9,
+      "total": 21
+    },
+    {
+      "file": "src/binocular/routes/notifications.py",
+      "covered": 64,
+      "total": 92
+    },
+    {
+      "file": "src/binocular/official_modules/canon_rf_cameras.py",
+      "covered": 144,
+      "total": 186
+    },
+    {
+      "file": "src/binocular/official_modules/canon_rf_lenses.py",
+      "covered": 154,
+      "total": 198
+    },
+    {
+      "file": "src/binocular/official_modules/viltrox_lenses.py",
+      "covered": 132,
+      "total": 154
+    },
+    {
+      "file": "src/binocular/db/delivery_repository.py",
+      "covered": 309,
+      "total": 355
+    },
+    {
+      "file": "src/binocular/extensions/validator.py",
+      "covered": 148,
+      "total": 168
+    },
+    {
+      "file": "src/binocular/extensions/guidance.py",
+      "covered": 45,
+      "total": 51
+    }
+  ],
+  "tasks_checked": 31
+}

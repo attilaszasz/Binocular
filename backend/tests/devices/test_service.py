@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
-
 import aiosqlite
 import pytest
 
 from binocular.devices.models import DeviceCreate, DeviceUpdate
 from binocular.devices.repository import DeviceRepository
 from binocular.devices.service import (
+    DeviceConflictError,
     DeviceNotFoundError,
     DeviceService,
     InvalidModuleError,
@@ -17,37 +16,13 @@ from binocular.devices.service import (
 
 
 @pytest.fixture
-async def conn() -> AsyncGenerator[aiosqlite.Connection]:
-    db = await aiosqlite.connect(":memory:")
-    db.row_factory = aiosqlite.Row
-    await db.execute("PRAGMA foreign_keys=ON")
-    await db.executescript(
-        """
-        CREATE TABLE modules (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            device_type TEXT NOT NULL DEFAULT '',
-            created_at TEXT NOT NULL DEFAULT (datetime('now'))
-        );
-        CREATE TABLE devices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            model TEXT NOT NULL DEFAULT '',
-            module_id INTEGER NOT NULL REFERENCES modules(id) ON DELETE RESTRICT,
-            current_version TEXT NOT NULL DEFAULT '',
-            has_update INTEGER NOT NULL DEFAULT 0 CHECK(has_update IN (0,1)),
-            latest_detected_version TEXT,
-            last_checked TEXT,
-            last_notified_version TEXT,
-            created_at TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-        );
-        INSERT INTO modules (name, device_type) VALUES ('Sony Camera', 'Camera');
-        """
+async def conn(migrated_db: aiosqlite.Connection) -> aiosqlite.Connection:
+    await migrated_db.execute(
+        "INSERT INTO modules (name, device_type) VALUES (?, ?)",
+        ("Sony Camera", "Camera"),
     )
-    await db.commit()
-    yield db
-    await db.close()
+    await migrated_db.commit()
+    return migrated_db
 
 
 @pytest.fixture
@@ -107,3 +82,41 @@ async def test_confirm_update(
     confirmed = await service.confirm_update(device.id)
     assert confirmed.current_version == "2.0"
     assert confirmed.has_update is False
+
+
+@pytest.mark.asyncio
+async def test_response_uses_persisted_unknown_and_revision(
+    service: DeviceService,
+) -> None:
+    device = await service.create(
+        DeviceCreate(
+            name="Manual",
+            module_id=1,
+            current_version="1",
+            installed_unknown=True,
+        )
+    )
+    assert device.current_version == "1"
+    assert device.installed_unknown is True
+    assert device.comparison_status == "unknown"
+    assert device.catalog_model_id is None
+    assert device.catalog_link_state == "legacy"
+    updated = await service.update(
+        device.id,
+        DeviceUpdate(
+            current_version="1",
+            expected_revision=1,
+        ),
+    )
+    assert updated.installed_unknown is False
+    assert updated.revision == 2
+    assert updated.comparison_status == "unverified"
+    assert (await service.get(device.id)) == updated
+    assert (await service.list_all()) == [updated]
+    with pytest.raises(DeviceConflictError):
+        await service.update(
+            device.id, DeviceUpdate(current_version="stale", expected_revision=1)
+        )
+    with pytest.raises(DeviceConflictError):
+        await service.confirm_update(device.id, expected_revision=1)
+    assert (await service.get(device.id)) == updated

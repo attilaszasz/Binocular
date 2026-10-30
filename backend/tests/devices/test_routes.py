@@ -11,6 +11,7 @@ from httpx import ASGITransport, AsyncClient
 
 from binocular.app import create_app
 from binocular.config import Settings
+from binocular.extensions.repository import ModuleRepository
 
 
 @pytest.fixture
@@ -29,12 +30,9 @@ async def client() -> AsyncIterator[AsyncClient]:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 # Seed a module after migrations have run
-                db = app.state.db
-                await db.execute(
-                    "INSERT INTO modules (name, device_type) VALUES (?, ?)",
-                    ("Sony Camera", "Camera"),
+                await ModuleRepository(app.state.db).create(
+                    name="Sony Camera", device_type="Camera"
                 )
-                await db.commit()
                 yield ac
 
 
@@ -135,3 +133,42 @@ async def test_list_modules(client: AsyncClient) -> None:
     modules = resp.json()
     assert len(modules) >= 1
     assert modules[0]["name"] == "Sony Camera"
+
+
+@pytest.mark.asyncio
+async def test_explicit_unknown_and_revision_conflicts(client: AsyncClient) -> None:
+    created = await client.post(
+        "/api/v1/devices",
+        json={
+            "name": "Manual",
+            "model": "literal';--",
+            "module_id": 1,
+            "current_version": "1",
+            "installed_unknown": True,
+        },
+    )
+    assert created.status_code == 201
+    data = created.json()
+    assert data["installed_unknown"] is True
+    assert data["current_version"] == "1"
+    assert data["catalog_model_id"] is None
+    assert data["catalog_link_state"] == "legacy"
+    assert data["comparison_status"] == "unknown"
+    assert data["revision"] == 1
+    url = f"/api/v1/devices/{data['id']}"
+    updated = await client.put(
+        url, json={"current_version": "1", "expected_revision": 1}
+    )
+    assert updated.status_code == 200
+    assert updated.json()["installed_unknown"] is False
+    assert updated.json()["revision"] == 2
+    stale = await client.put(
+        url, json={"current_version": "stale", "expected_revision": 1}
+    )
+    assert stale.status_code == 409
+    stale_confirm = await client.put(f"{url}/confirm?expected_revision=1")
+    assert stale_confirm.status_code == 409
+    assert (await client.get(url)).json() == updated.json()
+    assert (await client.get("/api/v1/devices")).json() == [updated.json()]
+    invalid = await client.put(url, json={"expected_revision": 0})
+    assert invalid.status_code == 422

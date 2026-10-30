@@ -29,7 +29,6 @@ class OfficialModuleSeeder:
         self._settings = settings
         self._repository = ModuleRepository(connection)
         self._modules_dir = settings.modules_dir
-        self._connection = connection
 
     async def discover_and_seed(self) -> None:
         """Scan binocular/official_modules and seed/update records.
@@ -92,73 +91,96 @@ class OfficialModuleSeeder:
         bundled_hash = self._hash_file(bundled_path)
         author = "Binocular"
 
-        # Check existing record
-        existing = await self._repository.get_by_name(name)
         active_path = self._modules_dir / bundled_path.name
-        active_hash = self._hash_file(active_path) if active_path.is_file() else ""
-        if existing is not None:
-            info = dict(existing)
-            historical = HISTORICAL_SHIPPED.get(name)
-            known = (
-                bool(active_hash)
-                and Path(info["file_path"]) == active_path
-                and info["registration_origin"] != "custom"
-                and (
-                    (active_hash == bundled_hash and info["version"] == bundled_version)
-                    or (historical == (info["version"], active_hash))
-                    or (
-                        info["registration_origin"] == "bundled"
-                        and active_hash == info["official_content_hash"]
+        prior_bytes = active_path.read_bytes() if active_path.is_file() else None
+        active_hash = hashlib.sha256(prior_bytes).hexdigest() if prior_bytes else ""
+
+        # Validation, loading and hashing above execute no write transaction.
+        # Re-read provenance under the owner lock; update the existing identity
+        # rather than replacing its controls, schedule or device/history links.
+        unit = self._repository.write_unit()
+        copied = False
+        try:
+            async with unit:
+                repository = ModuleRepository(unit)
+                existing = await repository.get_by_name(name)
+                if existing is not None:
+                    info = dict(existing)
+                    historical = HISTORICAL_SHIPPED.get(name)
+                    known = (
+                        bool(active_hash)
+                        and Path(info["file_path"]) == active_path
+                        and info["registration_origin"] != "custom"
+                        and (
+                            (
+                                active_hash == bundled_hash
+                                and info["version"] == bundled_version
+                            )
+                            or (historical == (info["version"], active_hash))
+                            or (
+                                info["registration_origin"] == "bundled"
+                                and active_hash == info["official_content_hash"]
+                            )
+                        )
                     )
-                )
-            )
-            if not known:
-                logger.warning("official_provenance_unverifiable_protected", name=name)
-                await self._repository.update(info["id"], is_official=False)
-                return
-            if info["version"] != bundled_version and not VersionCompare.is_newer(
-                info["version"], bundled_version
-            ):
-                return
-        elif active_path.exists() and active_hash != bundled_hash:
-            logger.warning("unregistered_custom_file_protected", name=name)
-            return
+                    if not known:
+                        logger.warning(
+                            "official_provenance_unverifiable_protected", name=name
+                        )
+                        await repository.update(info["id"], is_official=False)
+                        return
+                    if info[
+                        "version"
+                    ] != bundled_version and not VersionCompare.is_newer(
+                        info["version"], bundled_version
+                    ):
+                        return
+                elif active_path.exists() and active_hash != bundled_hash:
+                    logger.warning("unregistered_custom_file_protected", name=name)
+                    return
 
-        # 3. Copy file to active directory
-        self._modules_dir.mkdir(parents=True, exist_ok=True)
-        if active_hash != bundled_hash:
-            shutil.copyfile(bundled_path, active_path)
+                self._modules_dir.mkdir(parents=True, exist_ok=True)
+                if active_hash != bundled_hash:
+                    copied = True
+                    shutil.copyfile(bundled_path, active_path)
 
-        # 4. Upsert module record in database
-        if existing is None:
-            await self._repository.create(
-                name=name,
-                device_type=device_type,
-                version=bundled_version,
-                author=author,
-                file_path=str(active_path),
-                is_official=True,
-                status="active",
-                source_url=source_url,
-                registration_origin="bundled",
-                official_content_hash=bundled_hash,
-                **load_result.guidance.persistence(),
-            )
-        else:
-            await self._repository.update(
-                existing["id"],
-                device_type=device_type,
-                version=bundled_version,
-                author=author,
-                file_path=str(active_path),
-                is_official=True,
-                source_url=source_url,
-                registration_origin="bundled",
-                official_content_hash=bundled_hash,
-                **load_result.guidance.persistence(),
-            )
+                if existing is None:
+                    await repository.create(
+                        name=name,
+                        device_type=device_type,
+                        version=bundled_version,
+                        author=author,
+                        file_path=str(active_path),
+                        is_official=True,
+                        status="active",
+                        source_url=source_url,
+                        registration_origin="bundled",
+                        official_content_hash=bundled_hash,
+                        **load_result.guidance.persistence(),
+                    )
+                else:
+                    await repository.update(
+                        existing["id"],
+                        device_type=device_type,
+                        version=bundled_version,
+                        author=author,
+                        file_path=str(active_path),
+                        is_official=True,
+                        source_url=source_url,
+                        registration_origin="bundled",
+                        official_content_hash=bundled_hash,
+                        **load_result.guidance.persistence(),
+                    )
+        except BaseException:
+            # A drained cancellation can mean COMMIT succeeded. Restore bytes
+            # only for an actual rollback, never undo the committed module file.
+            if copied and not unit.committed:
+                if prior_bytes is None:
+                    active_path.unlink(missing_ok=True)
+                else:
+                    active_path.write_bytes(prior_bytes)
+            raise
 
-        await self._connection.commit()
         logger.info("official_module_seeded", name=name, version=bundled_version)
 
     @staticmethod

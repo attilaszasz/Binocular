@@ -1,0 +1,26 @@
+cwd=/workspace/Binocular/frontend
+command=npm audit --json 
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {},
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "dependencies": {
+      "prod": 123,
+      "dev": 224,
+      "optional": 55,
+      "peer": 8,
+      "peerOptional": 0,
+      "total": 401
+    }
+  }
+}
+
+EXIT=0

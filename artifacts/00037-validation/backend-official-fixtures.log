@@ -1,0 +1,45 @@
+........................................................................ [ 44%]
+........................................................................ [ 88%]
+.F.................                                                      [100%]
+=================================== FAILURES ===================================
+_____________________ test_integration_with_runner_failure _____________________
+
+    @pytest.mark.asyncio
+    async def test_integration_with_runner_failure() -> None:
+        module_path = Path(sony_alpha.__file__ or "")
+        load_result = ModuleLoader(module_path.parent).load(module_path)
+        assert load_result.success
+        assert load_result.module is not None
+    
+        fetched_urls: list[str] = []
+        client = FakeScrapeClient(
+            read_fixture("alpha_universe_firmware.html"), fetched_urls
+        )
+    
+        runner = ModuleRunner()
+        run_result = await runner.run(
+            load_result.module,
+            url="https://alphauniverse.com/firmware/",
+            model="ILCE-1",  # Not found
+            http_client=client,  # type: ignore[arg-type]
+        )
+    
+        assert run_result.success is False
+        assert run_result.result is None
+        # Provider exception text is deliberately excluded at the runner boundary.
+        assert run_result.error == "Module raised an exception"
+>       assert run_result.error_type == "exception"
+E       AssertionError: assert 'product_not_found' == 'exception'
+E         
+E         - exception
+E         + product_not_found
+
+tests/test_official_sony_alpha_module.py:197: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-30 11:21:44 [debug    ] loading_module                 name=sony_alpha path=/workspace/Binocular/backend/src/binocular/official_modules/sony_alpha.py
+2026-10-30 11:21:44 [info     ] module_loaded
+2026-10-30 11:21:44 [debug    ] runner_executing               timeout=30.0
+2026-10-30 11:21:44 [warning  ] runner_exception               error_code=parse
+=========================== short test summary info ============================
+FAILED tests/test_official_sony_alpha_module.py::test_integration_with_runner_failure
+1 failed, 162 passed in 4.88s

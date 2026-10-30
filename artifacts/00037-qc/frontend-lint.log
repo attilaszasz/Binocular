@@ -1,0 +1,10 @@
+cwd=/workspace/Binocular/frontend
+command=npm run lint 
+started=2026-10-30T11:27:35+02:00
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+exit=0
+finished=2026-10-30T11:27:39+02:00

@@ -1,0 +1,12 @@
+E501 Line too long (90 > 88)
+   --> src/binocular/db/work_repository.py:774:89
+    |
+772 |             or context is None
+773 |             or not (
+774 |                 0 <= now - observation.verified_at < context["interval_hours"] * 3_600_000
+    |                                                                                         ^^
+775 |             )
+776 |         ):
+    |
+
+Found 1 error.

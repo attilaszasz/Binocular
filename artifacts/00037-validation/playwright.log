@@ -1,0 +1,264 @@
+[WebServer] (node:50816) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:50816) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+
+Running 10 tests using 1 worker
+
+(node:50912) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light (14.6s)
+(node:51625) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 [desktop] › e2e/source-accessibility.spec.ts:165:3 › FR-018 rendered WCAG regression: light navigation and source states (8.6s)
+  ✘   3 [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark (12.6s)
+(node:52792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   4 [desktop] › e2e/source-accessibility.spec.ts:165:3 › FR-018 rendered WCAG regression: dark navigation and source states (6.3s)
+  ✘   5 [desktop] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring (8.3s)
+(node:53209) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   6 [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light (8.0s)
+(node:53802) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 [mobile] › e2e/source-accessibility.spec.ts:165:3 › FR-018 rendered WCAG regression: light navigation and source states (4.8s)
+  ✘   8 [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark (8.0s)
+(node:54895) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   9 [mobile] › e2e/source-accessibility.spec.ts:165:3 › FR-018 rendered WCAG regression: dark navigation and source states (4.4s)
+  ✘  10 [mobile] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring (8.6s)
+
+
+  1) [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "product_not_found"
+    Received string:    "Module runner failed"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 5000ms
+      - waiting for getByRole('alert')
+        12 × locator resolved to <p role="alert" class="text-sm text-destructive">Module runner failed</p>
+           - unexpected value "Module runner failed"
+
+
+      119 |       await model.fill("near-match unknown");
+      120 |       await page.getByRole("button", { name: "Search Version" }).press("Enter");
+    > 121 |       await expect(page.getByRole("alert")).toContainText("product_not_found");
+          |                                             ^
+      122 |       await expect(page.getByRole("status", { name: "Version search reference" })).toHaveCount(0);
+      123 |       await expect(installed).toHaveValue("1.00");
+      124 |       await expect(unknown).toBeChecked();
+        at /workspace/Binocular/frontend/e2e/source-accessibility.spec.ts:121:45
+
+    attachment #1: keyboard-form-error-axe (application/json) ──────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/keyboard-form-error-axe-6ac85552d32f803d81dfa66d725c6daa8d7af5a7.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: keyboard-unknown-form-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/keyboard-unknown-form-axe-55a481d85da71d16c54c2c0f3f6b3b75826db76c.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: ordinary-form-network (application/json) ────────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/ordinary-form-network-5c6075bd788d921f104322366d474fc54684113a.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: explicit-search-reference-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/explicit-search-reference-axe-e38fa0ae68ec11aacb0f489f532b844482455a4e.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/error-context.md
+
+  2) [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "product_not_found"
+    Received string:    "Module runner failed"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 5000ms
+      - waiting for getByRole('alert')
+        13 × locator resolved to <p role="alert" class="text-sm text-destructive">Module runner failed</p>
+           - unexpected value "Module runner failed"
+
+
+      119 |       await model.fill("near-match unknown");
+      120 |       await page.getByRole("button", { name: "Search Version" }).press("Enter");
+    > 121 |       await expect(page.getByRole("alert")).toContainText("product_not_found");
+          |                                             ^
+      122 |       await expect(page.getByRole("status", { name: "Version search reference" })).toHaveCount(0);
+      123 |       await expect(installed).toHaveValue("1.00");
+      124 |       await expect(unknown).toBeChecked();
+        at /workspace/Binocular/frontend/e2e/source-accessibility.spec.ts:121:45
+
+    attachment #1: keyboard-form-error-axe (application/json) ──────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/keyboard-form-error-axe-1c08af35b12ec7c8d68965a7d4eb5270064dd64d.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: keyboard-unknown-form-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/keyboard-unknown-form-axe-6fc52870eb5a1f2d38af15e867cac05608f519a1.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: ordinary-form-network (application/json) ────────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/ordinary-form-network-6c1bccdefa2a819f50c2c43d9440c0bfd5c1066a.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: explicit-search-reference-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/explicit-search-reference-axe-16ae316170cd478889910ef3625d4913769bc828.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/error-context.md
+
+  3) [desktop] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "product_not_found"
+    Received string:    "Module runner failed"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 5000ms
+      - waiting for getByRole('alert')
+        9 × locator resolved to <p role="alert" class="text-sm text-destructive">Module runner failed</p>
+          - unexpected value "Module runner failed"
+
+
+      50 |   await page.getByLabel("Model", { exact: true }).fill("near-match unknown");
+      51 |   await page.getByRole("button", { name: "Search Version" }).click();
+    > 52 |   await expect(page.getByRole("alert")).toContainText("product_not_found");
+         |                                         ^
+      53 |   await page.getByLabel("Source", { exact: true }).click();
+      54 |   await page.getByRole("option", { name: "Nikon Z-series cameras" }).click();
+      55 |   await expect(page.getByRole("alert")).toHaveCount(0);
+        at /workspace/Binocular/frontend/e2e/source-guidance.spec.ts:52:41
+
+    Error Context: test-results/source-guidance-SC-001–SC--ce48e-forms-scope-pause-authoring-desktop/error-context.md
+
+  4) [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "product_not_found"
+    Received string:    "Module runner failed"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 5000ms
+      - waiting for getByRole('alert')
+        9 × locator resolved to <p role="alert" class="text-sm text-destructive">Module runner failed</p>
+          - unexpected value "Module runner failed"
+
+
+      119 |       await model.fill("near-match unknown");
+      120 |       await page.getByRole("button", { name: "Search Version" }).press("Enter");
+    > 121 |       await expect(page.getByRole("alert")).toContainText("product_not_found");
+          |                                             ^
+      122 |       await expect(page.getByRole("status", { name: "Version search reference" })).toHaveCount(0);
+      123 |       await expect(installed).toHaveValue("1.00");
+      124 |       await expect(unknown).toBeChecked();
+        at /workspace/Binocular/frontend/e2e/source-accessibility.spec.ts:121:45
+
+    attachment #1: keyboard-form-error-axe (application/json) ──────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/keyboard-form-error-axe-e23c409221bd41e479c045d6f1b40869f2abb173.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: keyboard-unknown-form-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/keyboard-unknown-form-axe-b86f27373f317b7d5c9eb146908571d76011118d.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: ordinary-form-network (application/json) ────────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/ordinary-form-network-4fb4d7d600cf6536b86f942b4c09811919789a8c.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: explicit-search-reference-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/explicit-search-reference-axe-2d02a4468d8df4ea38b761546eae0e601e349ff0.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/error-context.md
+
+  5) [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "product_not_found"
+    Received string:    "Module runner failed"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 5000ms
+      - waiting for getByRole('alert')
+        9 × locator resolved to <p role="alert" class="text-sm text-destructive">Module runner failed</p>
+          - unexpected value "Module runner failed"
+
+
+      119 |       await model.fill("near-match unknown");
+      120 |       await page.getByRole("button", { name: "Search Version" }).press("Enter");
+    > 121 |       await expect(page.getByRole("alert")).toContainText("product_not_found");
+          |                                             ^
+      122 |       await expect(page.getByRole("status", { name: "Version search reference" })).toHaveCount(0);
+      123 |       await expect(installed).toHaveValue("1.00");
+      124 |       await expect(unknown).toBeChecked();
+        at /workspace/Binocular/frontend/e2e/source-accessibility.spec.ts:121:45
+
+    attachment #1: keyboard-form-error-axe (application/json) ──────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/keyboard-form-error-axe-6b8471856fcbd89964dcd564ed2d0917b159d4b2.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: keyboard-unknown-form-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/keyboard-unknown-form-axe-c97237f3bc36d981aa30b7577709d19ee09b3a61.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: ordinary-form-network (application/json) ────────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/ordinary-form-network-e7c66f1b44c921c22bee73f7ea2a08d069d740d8.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: explicit-search-reference-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/explicit-search-reference-axe-534f680babb46b8174f866bde34d0f0f5a7b35d8.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/error-context.md
+
+  6) [mobile] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "product_not_found"
+    Received string:    "Module runner failed"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 5000ms
+      - waiting for getByRole('alert')
+        9 × locator resolved to <p role="alert" class="text-sm text-destructive">Module runner failed</p>
+          - unexpected value "Module runner failed"
+
+
+      50 |   await page.getByLabel("Model", { exact: true }).fill("near-match unknown");
+      51 |   await page.getByRole("button", { name: "Search Version" }).click();
+    > 52 |   await expect(page.getByRole("alert")).toContainText("product_not_found");
+         |                                         ^
+      53 |   await page.getByLabel("Source", { exact: true }).click();
+      54 |   await page.getByRole("option", { name: "Nikon Z-series cameras" }).click();
+      55 |   await expect(page.getByRole("alert")).toHaveCount(0);
+        at /workspace/Binocular/frontend/e2e/source-guidance.spec.ts:52:41
+
+    Error Context: test-results/source-guidance-SC-001–SC--ce48e-forms-scope-pause-authoring-mobile/error-context.md
+
+  6 failed
+    [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light 
+    [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark 
+    [desktop] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring 
+    [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light 
+    [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark 
+    [mobile] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring 
+  4 passed (1.6m)

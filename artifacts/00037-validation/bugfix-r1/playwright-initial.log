@@ -1,0 +1,207 @@
+[WebServer] (node:93952) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - `__dirname` (vite.config.ts:11:25). Use `import.meta.dirname` instead
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:93952) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+
+Running 10 tests using 1 worker
+
+(node:94038) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light (10.5s)
+(node:94880) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 [desktop] › e2e/source-accessibility.spec.ts:191:3 › FR-018 rendered WCAG regression: light navigation and source states (5.1s)
+  ✘   3 [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark (11.8s)
+(node:96153) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   4 [desktop] › e2e/source-accessibility.spec.ts:191:3 › FR-018 rendered WCAG regression: dark navigation and source states (4.7s)
+  ✓   5 [desktop] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring (7.8s)
+(node:97059) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   6 [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light (9.2s)
+(node:97672) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 [mobile] › e2e/source-accessibility.spec.ts:191:3 › FR-018 rendered WCAG regression: light navigation and source states (4.6s)
+  ✘   8 [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark (9.0s)
+(node:98533) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   9 [mobile] › e2e/source-accessibility.spec.ts:191:3 › FR-018 rendered WCAG regression: dark navigation and source states (5.0s)
+  ✓  10 [mobile] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring (7.2s)
+
+
+  1) [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      158 |       const beforeFailure = (await (await request.get("/api/v1/devices")).json())
+      159 |         .find((device: { name: string }) => device.name === `${prefix} Current`);
+    > 160 |       expect((await request.put("/e2e/vendor-failure/true")).ok()).toBe(true);
+          |                                                                    ^
+      161 |       try {
+      162 |         const failure = await (await request.post(`/api/v1/checks/device/${beforeFailure.id}`)).json();
+      163 |         expect(failure.success).toBe(false);
+        at /workspace/Binocular/frontend/e2e/source-accessibility.spec.ts:160:68
+
+    attachment #1: keyboard-form-error-axe (application/json) ──────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/keyboard-form-error-axe-6ac85552d32f803d81dfa66d725c6daa8d7af5a7.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: keyboard-unknown-form-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/keyboard-unknown-form-axe-55a481d85da71d16c54c2c0f3f6b3b75826db76c.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: ordinary-form-network (application/json) ────────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/ordinary-form-network-5c6075bd788d921f104322366d474fc54684113a.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: explicit-search-reference-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/explicit-search-reference-axe-e38fa0ae68ec11aacb0f489f532b844482455a4e.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: explicit-search-error-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/explicit-search-error-axe-901df176a373ddce2c85ecd20f0cdfb1c7397730.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #6: honest-inventory-statuses-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/attachments/honest-inventory-statuses-axe-e44a5d7e3d0d43623c3118cc78a712ad6eb8e097.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/error-context.md
+
+  2) [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      158 |       const beforeFailure = (await (await request.get("/api/v1/devices")).json())
+      159 |         .find((device: { name: string }) => device.name === `${prefix} Current`);
+    > 160 |       expect((await request.put("/e2e/vendor-failure/true")).ok()).toBe(true);
+          |                                                                    ^
+      161 |       try {
+      162 |         const failure = await (await request.post(`/api/v1/checks/device/${beforeFailure.id}`)).json();
+      163 |         expect(failure.success).toBe(false);
+        at /workspace/Binocular/frontend/e2e/source-accessibility.spec.ts:160:68
+
+    attachment #1: keyboard-form-error-axe (application/json) ──────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/keyboard-form-error-axe-1c08af35b12ec7c8d68965a7d4eb5270064dd64d.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: keyboard-unknown-form-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/keyboard-unknown-form-axe-6fc52870eb5a1f2d38af15e867cac05608f519a1.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: ordinary-form-network (application/json) ────────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/ordinary-form-network-6c1bccdefa2a819f50c2c43d9440c0bfd5c1066a.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: explicit-search-reference-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/explicit-search-reference-axe-16ae316170cd478889910ef3625d4913769bc828.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: explicit-search-error-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/explicit-search-error-axe-f9014cbf57b2d34cf744cfe1f388516d4a54ff96.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #6: honest-inventory-statuses-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/attachments/honest-inventory-statuses-axe-40aaf4b563a9e8dafe5014586e61159f55e0d5d9.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/error-context.md
+
+  3) [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      158 |       const beforeFailure = (await (await request.get("/api/v1/devices")).json())
+      159 |         .find((device: { name: string }) => device.name === `${prefix} Current`);
+    > 160 |       expect((await request.put("/e2e/vendor-failure/true")).ok()).toBe(true);
+          |                                                                    ^
+      161 |       try {
+      162 |         const failure = await (await request.post(`/api/v1/checks/device/${beforeFailure.id}`)).json();
+      163 |         expect(failure.success).toBe(false);
+        at /workspace/Binocular/frontend/e2e/source-accessibility.spec.ts:160:68
+
+    attachment #1: keyboard-form-error-axe (application/json) ──────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/keyboard-form-error-axe-e23c409221bd41e479c045d6f1b40869f2abb173.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: keyboard-unknown-form-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/keyboard-unknown-form-axe-b86f27373f317b7d5c9eb146908571d76011118d.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: ordinary-form-network (application/json) ────────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/ordinary-form-network-4fb4d7d600cf6536b86f942b4c09811919789a8c.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: explicit-search-reference-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/explicit-search-reference-axe-2d02a4468d8df4ea38b761546eae0e601e349ff0.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: explicit-search-error-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/explicit-search-error-axe-f79aff749cc24d8db131e059a4dc17bb71abfb2c.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #6: honest-inventory-statuses-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/attachments/honest-inventory-statuses-axe-16f01b9fd3ec15909af801cdefae2b12f7fa1ce5.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/error-context.md
+
+  4) [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      158 |       const beforeFailure = (await (await request.get("/api/v1/devices")).json())
+      159 |         .find((device: { name: string }) => device.name === `${prefix} Current`);
+    > 160 |       expect((await request.put("/e2e/vendor-failure/true")).ok()).toBe(true);
+          |                                                                    ^
+      161 |       try {
+      162 |         const failure = await (await request.post(`/api/v1/checks/device/${beforeFailure.id}`)).json();
+      163 |         expect(failure.success).toBe(false);
+        at /workspace/Binocular/frontend/e2e/source-accessibility.spec.ts:160:68
+
+    attachment #1: keyboard-form-error-axe (application/json) ──────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/keyboard-form-error-axe-6b8471856fcbd89964dcd564ed2d0917b159d4b2.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: keyboard-unknown-form-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/keyboard-unknown-form-axe-c97237f3bc36d981aa30b7577709d19ee09b3a61.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: ordinary-form-network (application/json) ────────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/ordinary-form-network-e7c66f1b44c921c22bee73f7ea2a08d069d740d8.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: explicit-search-reference-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/explicit-search-reference-axe-534f680babb46b8174f866bde34d0f0f5a7b35d8.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: explicit-search-error-axe (application/json) ────────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/explicit-search-error-axe-23362601871be434a0add3b2e30664d54803b8ed.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #6: honest-inventory-statuses-axe (application/json) ────────────────────────────────
+    test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/attachments/honest-inventory-statuses-axe-81c43812405a87eb0d52f67d7fd335c48662b3da.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/error-context.md
+
+  4 failed
+    [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light 
+    [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark 
+    [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light 
+    [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark 
+  6 passed (1.4m)

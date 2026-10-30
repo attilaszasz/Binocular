@@ -98,6 +98,7 @@ async def test_provenance_backfill_protects_state_and_bytes(
         (mid,),
     )
     await conn.commit()
+    await conn.execute("PRAGMA query_only=ON")
     try:
         await OfficialModuleSeeder(settings, conn)._seed_module(bundled)
         stored = await repo.get_by_id(mid)
