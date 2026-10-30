@@ -10,7 +10,10 @@ from fastapi import Depends, Request
 
 
 async def get_db(request: Request) -> aiosqlite.Connection:
-    """FastAPI dependency returning the lifespan-managed DB connection.
+    """Return the read-only lifespan connection, never a request transaction.
+
+    Writers must open a dedicated WriteUnit or use a repository's standalone
+    write adapter. Do not BEGIN/commit on this shared runtime input.
 
     Args:
         request: The incoming HTTP request.

@@ -1,0 +1,148 @@
+#0 building with "default" instance using docker-container driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.21kB 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.13-slim
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/node:22-slim
+#3 DONE 0.8s
+
+#2 [internal] load metadata for docker.io/library/python:3.13-slim
+#2 DONE 0.8s
+
+#4 [internal] load metadata for ghcr.io/astral-sh/uv:latest
+#4 DONE 0.8s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 274B 0.0s done
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 DONE 0.0s
+
+#7 FROM ghcr.io/astral-sh/uv:latest@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0
+#7 resolve ghcr.io/astral-sh/uv:latest@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 0.0s done
+#7 DONE 0.0s
+
+#8 [builder 1/9] FROM docker.io/library/python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb
+#8 resolve docker.io/library/python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb 0.0s done
+#8 DONE 0.0s
+
+#9 [frontend-builder 1/6] FROM docker.io/library/node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
+#9 resolve docker.io/library/node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da 0.0s done
+#9 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 166.34kB 0.1s done
+#6 DONE 0.1s
+
+#10 [frontend-builder 3/6] COPY frontend/package.json frontend/package-lock.json ./
+#10 CACHED
+
+#11 [frontend-builder 2/6] WORKDIR /build/frontend
+#11 CACHED
+
+#12 [frontend-builder 4/6] RUN npm ci
+#12 CACHED
+
+#13 [builder 6/9] COPY backend/pyproject.toml backend/uv.lock* /app/
+#13 CACHED
+
+#14 [builder 2/9] WORKDIR /build
+#14 CACHED
+
+#15 [builder 3/9] RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl     && rm -rf /var/lib/apt/lists/*
+#15 CACHED
+
+#16 [builder 4/9] COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+#16 CACHED
+
+#17 [builder 5/9] WORKDIR /app
+#17 CACHED
+
+#18 [builder 7/9] RUN uv sync --frozen --no-dev --no-install-project
+#18 CACHED
+
+#19 [builder 8/9] COPY backend/src /app/src
+#19 DONE 0.1s
+
+#20 [frontend-builder 5/6] COPY frontend/ ./
+#20 DONE 0.1s
+
+#21 [frontend-builder 6/6] RUN npm run build
+#21 0.313 
+#21 0.313 > frontend@0.0.0 build
+#21 0.313 > tsc -b && vite build
+#21 0.313 
+#21 ...
+
+#22 [builder 9/9] RUN uv sync --frozen --no-dev
+#22 0.443    Building binocular @ file:///app
+#22 1.903       Built binocular @ file:///app
+#22 1.913 Prepared 1 package in 1.47s
+#22 1.915 Installed 1 package in 2ms
+#22 1.916  + binocular==0.1.0 (from file:///app)
+#22 DONE 1.9s
+
+#23 [stage-2 2/9] RUN apt-get update && apt-get upgrade -y     && apt-get install -y --no-install-recommends gosu passwd     && rm -rf /var/lib/apt/lists/*
+#23 CACHED
+
+#24 [stage-2 3/9] RUN python -m pip uninstall --yes pip
+#24 CACHED
+
+#25 [stage-2 4/9] COPY --from=builder /app/.venv /app/.venv
+#25 DONE 0.2s
+
+#21 [frontend-builder 6/6] RUN npm run build
+#21 ...
+
+#26 [stage-2 5/9] COPY backend/src /app/src
+#26 DONE 0.0s
+
+#21 [frontend-builder 6/6] RUN npm run build
+#21 6.613 (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+#21 6.613   - `__dirname` (vite.config.ts:11:25). Use `import.meta.dirname` instead
+#21 6.613 Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+#21 6.652 vite v8.3.5 building client environment for production...
+#21 6.670 transforming...
+#21 7.189 ✓ 1940 modules transformed.
+#21 7.319 rendering chunks...
+#21 7.422 computing gzip size...
+#21 7.439 dist/index.html                                              0.67 kB │ gzip:   0.39 kB
+#21 7.439 dist/assets/geist-cyrillic-ext-wght-normal-DjL33-gN.woff2    7.42 kB
+#21 7.439 dist/assets/geist-vietnamese-wght-normal-6IgcOCM7.woff2      8.00 kB
+#21 7.439 dist/assets/geist-cyrillic-wght-normal-BEAKL7Jp.woff2       15.08 kB
+#21 7.439 dist/assets/geist-latin-ext-wght-normal-DC-KSUi6.woff2      16.51 kB
+#21 7.439 dist/assets/geist-latin-wght-normal-BgDaEnEv.woff2          29.40 kB
+#21 7.439 dist/assets/index-BiT5o3Ur.css                              69.32 kB │ gzip:  12.23 kB
+#21 7.439 dist/assets/index-rtfpWSKl.js                              471.74 kB │ gzip: 143.75 kB
+#21 7.439 
+#21 7.452 ✓ built in 794ms
+#21 DONE 7.5s
+
+#27 [stage-2 6/9] COPY --from=frontend-builder /build/frontend/dist /app/static_dist
+#27 DONE 0.0s
+
+#28 [stage-2 7/9] COPY entrypoint.sh /entrypoint.sh
+#28 DONE 0.0s
+
+#29 [stage-2 8/9] RUN chmod +x /entrypoint.sh
+#29 DONE 0.1s
+
+#30 [stage-2 9/9] RUN mkdir -p /app/data /app/modules
+#30 DONE 0.1s
+
+#31 exporting to oci image format
+#31 exporting layers
+#31 exporting layers 2.2s done
+#31 exporting manifest sha256:297f9d3f10d4ca6cbac74403e18dc7b1b0f5c769b5d6859e05a16ba07120bb0c done
+#31 exporting config sha256:4759ed9b111245c02ed978cccca91c8fc9795c46dbd67dbdf1efcad985175f41 done
+#31 sending tarball
+#31 sending tarball 2.5s done
+#31 DONE 4.8s
+
+#32 importing to docker
+#32 DONE 0.0s

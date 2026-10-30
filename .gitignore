@@ -1,4 +1,7 @@
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
 .coverage
 .mypy_cache/
 .pytest_cache/

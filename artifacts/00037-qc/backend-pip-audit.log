@@ -1,0 +1,10 @@
+cwd=/workspace/Binocular/backend
+command=uv run pip-audit 
+started=2026-10-30T11:27:30+02:00
+No known vulnerabilities found
+Name      Skip Reason
+--------- ------------------------------------------------------------------------
+binocular Dependency not found on PyPI and could not be audited: binocular (0.1.0)
+
+exit=0
+finished=2026-10-30T11:27:32+02:00

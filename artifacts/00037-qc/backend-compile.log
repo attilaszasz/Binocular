@@ -1,0 +1,12 @@
+cwd=/workspace/Binocular/backend
+command=uv run python -m compileall -q src tests 
+started=2026-10-30T11:27:29+02:00
+*** Error compiling 'tests/extensions/fixtures/syntax_error.py'...
+  File "tests/extensions/fixtures/syntax_error.py", line 6
+    def check_firmware(url: str, model: str, http_client: object)
+                                                                 ^
+SyntaxError: expected ':'
+
+
+exit=1
+finished=2026-10-30T11:27:29+02:00

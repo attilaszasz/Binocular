@@ -1,7 +1,7 @@
 """FastAPI application factory."""
 
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 
 import structlog
 import uvicorn
@@ -24,39 +24,46 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     settings: Settings = app.state.settings
     conn = await open_connection(settings)
-    app.state.db = conn
+    try:
+        await run_migrations(conn, settings)
+    finally:
+        await close_connection(conn)
 
-    await run_migrations(conn, settings)
+    async with AsyncExitStack() as resources:
+        # Bootstrap writes have finished. All runtime consumers receive only a
+        # read/path-resolution input, including the startup seeders.
+        conn = await open_connection(settings, read_only=True)
+        resources.push_async_callback(close_connection, conn)
+        app.state.db = conn
 
-    from binocular.services.settings_seeder import NotificationSettingsSeeder
+        from binocular.services.settings_seeder import NotificationSettingsSeeder
 
-    settings_seeder = NotificationSettingsSeeder(settings, conn)
-    await settings_seeder.seed()
+        settings_seeder = NotificationSettingsSeeder(settings, conn)
+        await settings_seeder.seed()
 
-    if settings.seed_modules:
-        from binocular.services.seeder import OfficialModuleSeeder
+        if settings.seed_modules:
+            from binocular.services.seeder import OfficialModuleSeeder
 
-        seeder = OfficialModuleSeeder(settings, conn)
-        await seeder.discover_and_seed()
+            seeder = OfficialModuleSeeder(settings, conn)
+            await seeder.discover_and_seed()
 
-    scrape_client = ScrapeClient()
-    app.state.scrape_client = scrape_client
+        scrape_client = ScrapeClient()
+        resources.push_async_callback(scrape_client.close)
+        app.state.scrape_client = scrape_client
 
-    from binocular.services.scheduler import SchedulerService
+        from binocular.services.scheduler import SchedulerService
 
-    scheduler = SchedulerService(
-        db=conn,
-        scrape_client=scrape_client,
-        settings=settings,
-    )
-    await scheduler.start()
-    app.state.scheduler = scheduler
+        scheduler = SchedulerService(
+            db=conn,
+            scrape_client=scrape_client,
+            settings=settings,
+        )
+        resources.push_async_callback(scheduler.stop)
+        await scheduler.start()
+        app.state.scheduler = scheduler
 
-    yield
+        yield
 
-    await scheduler.stop()
-    await scrape_client.close()
-    await close_connection(conn)
     logger.info("shutting_down")
 
 

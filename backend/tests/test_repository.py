@@ -2,33 +2,20 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
-from pathlib import Path
-
+import aiosqlite
 import pytest
 
-from binocular.config import Settings
-from binocular.db.connection import close_connection, open_connection
 from binocular.db.repository import RepositoryBase
 
 
 @pytest.fixture
-def settings(tmp_path: Path) -> Settings:
-    """Create settings pointing to a temporary data directory."""
-    return Settings(data_dir=tmp_path)
-
-
-@pytest.fixture
-async def repo(settings: Settings) -> AsyncGenerator[RepositoryBase]:
+async def repo(migrated_db: aiosqlite.Connection) -> RepositoryBase:
     """Create a RepositoryBase with a test connection and sample table."""
-    conn = await open_connection(settings)
-    await conn.execute(
+    await migrated_db.execute(
         "CREATE TABLE test_items (id INTEGER PRIMARY KEY, name TEXT NOT NULL)"
     )
-    await conn.commit()
-    repo = RepositoryBase(conn)
-    yield repo
-    await close_connection(conn)
+    await migrated_db.commit()
+    return RepositoryBase(migrated_db)
 
 
 @pytest.mark.asyncio

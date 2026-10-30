@@ -8,6 +8,7 @@ from typing import Any
 import aiosqlite
 
 from binocular.db.repository import RepositoryBase
+from binocular.db.unit_of_work import WriteConnection
 
 
 class NotificationsRepository(RepositoryBase):
@@ -16,7 +17,7 @@ class NotificationsRepository(RepositoryBase):
     async def get_by_type(self, channel_type: str) -> aiosqlite.Row | None:
         """Return a single notification channel by type, or ``None``."""
         sql = """
-            SELECT id, type, enabled, config, created_at, updated_at
+            SELECT id, type, enabled, config, config_revision, created_at, updated_at
             FROM notification_channels
             WHERE type = ?
         """
@@ -25,7 +26,7 @@ class NotificationsRepository(RepositoryBase):
     async def list_all(self) -> list[aiosqlite.Row]:
         """Return all notification channels."""
         sql = """
-            SELECT id, type, enabled, config, created_at, updated_at
+            SELECT id, type, enabled, config, config_revision, created_at, updated_at
             FROM notification_channels
         """
         return await self.fetch_all(sql)
@@ -33,13 +34,26 @@ class NotificationsRepository(RepositoryBase):
     async def save(
         self, channel_type: str, enabled: bool, config: dict[str, Any]
     ) -> None:
-        """Upsert a notification channel configuration."""
-        config_json = json.dumps(config)
+        """Save atomically, retaining channel identity and fencing effective changes."""
+        if not isinstance(self._conn, WriteConnection):
+            async with self.write_unit() as unit:
+                await NotificationsRepository(unit).save(channel_type, enabled, config)
+            return
+
+        config_json = json.dumps(config, sort_keys=True)
         row = await self.get_by_type(channel_type)
         if row:
+            # Legacy JSON may differ in key order or whitespace only. Keep its exact
+            # representation on no-op saves; the SQL guard compares stored text.
+            if (
+                bool(row["enabled"]) == enabled
+                and json.dumps(json.loads(row["config"]), sort_keys=True) == config_json
+            ):
+                return
             sql = """
                 UPDATE notification_channels
-                SET enabled = ?, config = ?, updated_at = datetime('now')
+                SET enabled = ?, config = ?, config_revision = config_revision + 1,
+                    updated_at = datetime('now')
                 WHERE type = ?
             """
             await self.execute(sql, (1 if enabled else 0, config_json, channel_type))

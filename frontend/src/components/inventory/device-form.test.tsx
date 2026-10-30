@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import userEvent from "@testing-library/user-event";
 import { DeviceForm } from "./device-form";
 
 // Mock useModules hook
@@ -62,13 +63,15 @@ describe("DeviceForm", () => {
     expect(screen.queryByText("stale error")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Search Version" })).toBeEnabled();
   });
-  it("invalidates requests on unmount and clears only search-derived values", async () => {
+  it("invalidates requests on unmount and clears only search references", async () => {
     mockSearchVersion.mockResolvedValueOnce({ version: "derived" });
     const view = render(<DeviceForm device={device} onSubmit={vi.fn()} onCancel={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Search Version" }));
-    await waitFor(() => expect(screen.getByLabelText("Current Version")).toHaveValue("derived"));
+    await waitFor(() => expect(screen.getByRole("status", { name: "Version search reference" })).toHaveTextContent("Latest found version (reference only): derived"));
+    expect(screen.getByLabelText("Current Version")).toHaveValue("typed");
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "new" } });
-    expect(screen.getByLabelText("Current Version")).toHaveValue("");
+    expect(screen.getByLabelText("Current Version")).toHaveValue("typed");
+    expect(screen.queryByRole("status", { name: "Version search reference" })).not.toBeInTheDocument();
     let resolve!: (value: { version: string }) => void;
     mockSearchVersion.mockImplementationOnce(() => new Promise(yes => { resolve = yes; }));
     fireEvent.click(screen.getByRole("button", { name: "Search Version" }));
@@ -199,7 +202,7 @@ describe("DeviceForm", () => {
     expect(searchBtn).not.toBeDisabled();
   });
 
-  it("calls checksApi.searchVersion when Search Version is clicked and updates current version", async () => {
+  it("calls checksApi.searchVersion and displays a reference without changing installed version", async () => {
     mockSearchVersion.mockResolvedValue({ version: "2.0.1" });
 
     const mockDevice = {
@@ -238,7 +241,8 @@ describe("DeviceForm", () => {
 
     await waitFor(() => {
       const versionInput = screen.getByLabelText("Current Version") as HTMLInputElement;
-      expect(versionInput.value).toBe("2.0.1");
+      expect(screen.getByRole("status", { name: "Version search reference" })).toHaveTextContent("Latest found version (reference only): 2.0.1");
+      expect(versionInput.value).toBe("1.0.0");
     });
   });
 
@@ -291,5 +295,74 @@ describe("DeviceForm", () => {
 
     expect(screen.getByText("Device name is required.")).toBeInTheDocument();
     expect(mockSubmit).not.toHaveBeenCalled();
+  });
+
+  it("supports labeled unknown control via keyboard, preserves text and submits edit revision", async () => {
+    const submit = vi.fn();
+    const user = userEvent.setup();
+    render(<DeviceForm device={{ ...device, installed_unknown: false, revision: 7 }} onSubmit={submit} onCancel={vi.fn()} />);
+    const unknown = screen.getByRole("checkbox", { name: "Installed version unknown" });
+    screen.getByLabelText("Current Version").focus();
+    await user.tab();
+    expect(unknown).toHaveFocus();
+    await user.keyboard(" ");
+    expect(unknown).toBeChecked();
+    expect(screen.getByLabelText("Current Version")).toHaveValue("typed");
+    expect(unknown).toHaveAccessibleDescription(/Unknown preserves any entered version/);
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Save Changes" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(submit).toHaveBeenCalledWith({ installed_unknown: true, expected_revision: 7 });
+  });
+
+  it("nonblank installed edits clear unknown and blank edits restore it", () => {
+    const submit = vi.fn();
+    const view = render(<DeviceForm device={{ ...device, installed_unknown: true, revision: 3 }} onSubmit={submit} onCancel={vi.fn()} />);
+    const unknown = screen.getByRole("checkbox", { name: "Installed version unknown" });
+    expect(unknown).toBeChecked();
+    fireEvent.change(screen.getByLabelText("Current Version"), { target: { value: "2.0" } });
+    expect(unknown).not.toBeChecked();
+    fireEvent.submit(view.container.querySelector("form")!);
+    expect(submit).toHaveBeenLastCalledWith({ current_version: "2.0", installed_unknown: false, expected_revision: 3 });
+    fireEvent.change(screen.getByLabelText("Current Version"), { target: { value: "  " } });
+    expect(unknown).toBeChecked();
+    fireEvent.click(unknown);
+    expect(unknown).toBeChecked();
+    fireEvent.submit(view.container.querySelector("form")!);
+    expect(submit).toHaveBeenLastCalledWith({ current_version: "  ", expected_revision: 3 });
+  });
+
+  it("creates an explicitly unknown device without discarding the entered reference", async () => {
+    const submit = vi.fn();
+    const user = userEvent.setup();
+    const view = render(<DeviceForm onSubmit={submit} onCancel={vi.fn()} />);
+    await user.type(screen.getByLabelText("Name"), "Camera");
+    fireEvent.change(view.container.querySelector("select")!, { target: { value: "1" } });
+    await user.type(screen.getByLabelText("Current Version"), "last known");
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    await user.click(screen.getByRole("checkbox", { name: "Installed version unknown" }));
+    await user.click(screen.getByRole("button", { name: "Add Device" }));
+    expect(submit).toHaveBeenCalledWith({ name: "Camera", model: "", module_id: 1, current_version: "last known", installed_unknown: true });
+    expect(mockSearchVersion).not.toHaveBeenCalled();
+  });
+
+  it.each(["", "   "])("rejects empty search result %j without changing installed state", async version => {
+    mockSearchVersion.mockResolvedValueOnce({ version });
+    render(<DeviceForm device={{ ...device, installed_unknown: true }} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Search Version" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("No version returned by module");
+    expect(screen.getByLabelText("Current Version")).toHaveValue("typed");
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    expect(screen.queryByRole("status", { name: "Version search reference" })).not.toBeInTheDocument();
+  });
+
+  it("keeps unknown installed state after a successful reference search", async () => {
+    mockSearchVersion.mockResolvedValueOnce({ version: "9.0" });
+    render(<DeviceForm device={{ ...device, current_version: "", installed_unknown: true, latest_detected_version: "8.0" }} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByLabelText("Current Version")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "Search Version" }));
+    expect(await screen.findByRole("status", { name: "Version search reference" })).toHaveTextContent("9.0");
+    expect(screen.getByLabelText("Current Version")).toHaveValue("");
+    expect(screen.getByRole("checkbox")).toBeChecked();
   });
 });

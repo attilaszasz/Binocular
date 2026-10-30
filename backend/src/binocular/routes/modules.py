@@ -11,6 +11,7 @@ import structlog
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
+from binocular.db.unit_of_work import WriteUnit
 from binocular.deps import DBDep
 from binocular.devices.models import (
     ModuleResponse,
@@ -283,40 +284,44 @@ async def upload_module(
                 )
 
                 repo = _repository(db)
-                existing = await repo.get_by_name(name)
                 # Retain prior bytes if persistence fails; never claim a failed save.
                 final_path = modules_dir / filename
                 prior_bytes = final_path.read_bytes() if final_path.exists() else None
                 final_path.write_bytes(contents)
 
                 try:
-                    if existing:
-                        await repo.update(
-                            existing["id"],
-                            device_type=device_type,
-                            version=version,
-                            author=author,
-                            file_path=str(final_path),
-                            source_url=source_url,
-                            is_official=False,
-                            registration_origin="custom",
-                            official_content_hash="",
-                            **load_result.guidance.persistence(),
-                        )
-                        module_id = existing["id"]
-                    else:
-                        module_id = await repo.create(
-                            name=name,
-                            device_type=device_type,
-                            version=version,
-                            author=author,
-                            file_path=str(final_path),
-                            is_official=False,
-                            status="active",
-                            source_url=source_url,
-                            registration_origin="custom",
-                            **load_result.guidance.persistence(),
-                        )
+                    # File/module validation is complete before writer admission.
+                    async with repo.write_scope() as conn:
+                        writer = ModuleRepository(conn)
+                        existing = await writer.get_by_name(name)
+                        if existing:
+                            await writer.update(
+                                existing["id"],
+                                force_config_change=prior_bytes != contents,
+                                device_type=device_type,
+                                version=version,
+                                author=author,
+                                file_path=str(final_path),
+                                source_url=source_url,
+                                is_official=False,
+                                registration_origin="custom",
+                                official_content_hash="",
+                                **load_result.guidance.persistence(),
+                            )
+                            module_id = existing["id"]
+                        else:
+                            module_id = await writer.create(
+                                name=name,
+                                device_type=device_type,
+                                version=version,
+                                author=author,
+                                file_path=str(final_path),
+                                is_official=False,
+                                status="active",
+                                source_url=source_url,
+                                registration_origin="custom",
+                                **load_result.guidance.persistence(),
+                            )
                 except Exception:
                     if prior_bytes is None:
                         final_path.unlink(missing_ok=True)
@@ -387,11 +392,13 @@ async def update_module(
 ) -> ModuleResponse:
     """Update a module's status."""
     repo = _repository(db)
-    existing = await repo.get_by_id(module_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Module not found")
-
-    await repo.update(module_id, status=body.status)
+    async with repo.write_scope() as conn:
+        writer = ModuleRepository(conn)
+        existing = await writer.get_by_id(module_id)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Module not found")
+        await writer.update(module_id, status=body.status)
+        updated = await writer.get_by_id(module_id)
 
     # Enable or disable background job
     scheduler = request.app.state.scheduler
@@ -400,7 +407,6 @@ async def update_module(
     else:
         scheduler.remove_job(module_id)
 
-    updated = await repo.get_by_id(module_id)
     if not updated:
         raise HTTPException(
             status_code=500, detail="Failed to retrieve updated module."
@@ -417,32 +423,31 @@ async def delete_module(
     request: Request,
 ) -> None:
     """Delete a module."""
-    repo = _repository(db)
-    existing = await repo.get_by_id(module_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Module not found")
-
-    # Check if module is currently linked to devices
-    cursor = await db.execute(
-        "SELECT COUNT(*) FROM devices WHERE module_id = ?", (module_id,)
-    )
-    row = await cursor.fetchone()
-    count = row[0] if row else 0
-    if count > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Cannot delete module: it is currently referenced"
-                f" by {count} active devices."
-            ),
+    async with WriteUnit(db) as unit:
+        repo = ModuleRepository(unit)
+        existing = await repo.get_by_id(module_id)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Module not found")
+        # Keep validation and deletion in one unit; filesystem/job effects follow.
+        row = await repo.fetch_one(
+            "SELECT COUNT(*) FROM devices WHERE module_id = ?", (module_id,)
         )
+        count = row[0] if row else 0
+        if count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Cannot delete module: it is currently referenced"
+                    f" by {count} active devices."
+                ),
+            )
+        deleted = await repo.delete(module_id)
 
     # Remove background job
     scheduler = request.app.state.scheduler
     scheduler.remove_job(module_id)
 
     file_path_str = dict(existing).get("file_path")
-    deleted = await repo.delete(module_id)
     if deleted and file_path_str:
         path = Path(file_path_str)
         path.unlink(missing_ok=True)

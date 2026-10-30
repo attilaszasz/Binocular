@@ -36,7 +36,12 @@ test("SC-001–SC-006: sources, both forms, scope, pause, authoring", async ({ p
   expect(order).toEqual(["device-module", "device-model"]);
   await page.getByLabel("Model", { exact: true }).fill("ILCE-7CM2");
   await page.getByRole("button", { name: "Search Version" }).click();
-  await expect(page.getByLabel("Current Version")).toHaveValue("2.01");
+  await expect(page.getByRole("status", { name: "Version search reference" })).toContainText("reference only): 2.01");
+  await expect(page.getByLabel("Current Version", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("checkbox", { name: "Installed version unknown" })).toBeChecked();
+  // Manufacturer detection is a reference, never proof of the installed version.
+  await page.getByLabel("Current Version", { exact: true }).fill("1.00");
+  await expect(page.getByRole("checkbox", { name: "Installed version unknown" })).not.toBeChecked();
   await page.getByRole("button", { name: "Add Device", exact: true }).click();
   await page.getByTitle("Edit device").click();
   await expect(page.getByLabel("Source", { exact: true })).toBeVisible();

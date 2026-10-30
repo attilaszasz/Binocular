@@ -7,6 +7,7 @@ from typing import Any
 import aiosqlite
 
 from binocular.db.repository import RepositoryBase
+from binocular.db.unit_of_work import WriteConnection
 
 
 class ActivityRepository(RepositoryBase):
@@ -22,6 +23,13 @@ class ActivityRepository(RepositoryBase):
         traceback: str | None = None,
     ) -> None:
         """Insert a new activity log entry and prune oldest logs above 1000 limit."""
+        if not isinstance(self._conn, WriteConnection):
+            async with self.write_unit() as unit:
+                await ActivityRepository(unit).log(
+                    level, category, message, device_id, module_name, traceback
+                )
+            return
+
         insert_sql = """
             INSERT INTO activity_log (
                 level, category, message, device_id, module_name, traceback
@@ -35,18 +43,13 @@ class ActivityRepository(RepositoryBase):
                 LIMIT 1000
             )
         """
-        # Execute insert and pruning within a transaction block
-        async with self._conn.execute("BEGIN"):
-            try:
-                await self._conn.execute(
-                    insert_sql,
-                    (level, category, message, device_id, module_name, traceback),
-                )
-                await self._conn.execute(prune_sql)
-                await self._conn.commit()
-            except Exception:
-                await self._conn.rollback()
-                raise
+        # Both effects belong to the same caller-owned unit, including standalone use.
+        async with self._conn.execute(
+            insert_sql, (level, category, message, device_id, module_name, traceback)
+        ):
+            pass
+        async with self._conn.execute(prune_sql):
+            pass
 
     async def list_all(
         self,

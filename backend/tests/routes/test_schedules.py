@@ -11,6 +11,7 @@ from httpx import ASGITransport, AsyncClient
 
 from binocular.app import create_app
 from binocular.config import Settings
+from binocular.extensions.repository import ModuleRepository
 
 
 @pytest.fixture
@@ -30,13 +31,13 @@ async def client() -> AsyncIterator[AsyncClient]:
                 # DB migrations already seed default schedule since we have
                 # modules trigger, but let's seed an initial module and
                 # verify its trigger schedule is created.
-                db = app.state.db
-                await db.execute(
-                    "INSERT INTO modules (name, device_type, version, author, status) "
-                    "VALUES (?, ?, ?, ?, ?)",
-                    ("sony_camera", "camera", "1.0.0", "Official", "active"),
+                await ModuleRepository(app.state.db).create(
+                    name="sony_camera",
+                    device_type="camera",
+                    version="1.0.0",
+                    author="Official",
+                    status="active",
                 )
-                await db.commit()
                 yield ac
 
 

@@ -1,0 +1,35 @@
+{
+  "axe_audits": 40,
+  "violations": 0,
+  "incomplete": 0,
+  "network": [
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/ordinary-form-network.json",
+      "before": 24,
+      "after": 24,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/ordinary-form-network.json",
+      "before": 17,
+      "after": 17,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/ordinary-form-network.json",
+      "before": 0,
+      "after": 0,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/ordinary-form-network.json",
+      "before": 8,
+      "after": 8,
+      "external": [],
+      "firmwareActions": []
+    }
+  ]
+}

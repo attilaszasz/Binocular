@@ -1,0 +1,29 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0 -- /workspace/Binocular/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/Binocular/backend
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, cov-7.1.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+tests/db/test_catalog_performance.py::test_local_pages_search_and_full_cursor_walk_are_bounded PASSED [ 14%]
+tests/db/test_catalog_performance.py::test_large_fanout_atomic_chunks_wal_snapshot_and_exhausted_restart[50] PASSED [ 28%]
+tests/db/test_catalog_performance.py::test_large_fanout_atomic_chunks_wal_snapshot_and_exhausted_restart[100] PASSED [ 42%]
+tests/db/test_catalog_performance.py::test_large_fanout_deadline_survives_restart_without_local_effects PASSED [ 57%]
+tests/db/test_catalog_performance.py::test_large_catalog_refresh_bounds_survive_restart[requests] PASSED [ 71%]
+tests/db/test_catalog_performance.py::test_large_catalog_refresh_bounds_survive_restart[models] PASSED [ 85%]
+tests/db/test_catalog_performance.py::test_large_catalog_refresh_bounds_survive_restart[deadline] PASSED [100%]
+
+============================= slowest 10 durations =============================
+0.70s setup    tests/db/test_catalog_performance.py::test_large_fanout_deadline_survives_restart_without_local_effects
+0.61s setup    tests/db/test_catalog_performance.py::test_large_fanout_atomic_chunks_wal_snapshot_and_exhausted_restart[100]
+0.61s setup    tests/db/test_catalog_performance.py::test_local_pages_search_and_full_cursor_walk_are_bounded
+0.61s setup    tests/db/test_catalog_performance.py::test_large_fanout_atomic_chunks_wal_snapshot_and_exhausted_restart[50]
+0.59s setup    tests/db/test_catalog_performance.py::test_large_catalog_refresh_bounds_survive_restart[deadline]
+0.59s setup    tests/db/test_catalog_performance.py::test_large_catalog_refresh_bounds_survive_restart[requests]
+0.59s setup    tests/db/test_catalog_performance.py::test_large_catalog_refresh_bounds_survive_restart[models]
+0.58s call     tests/db/test_catalog_performance.py::test_local_pages_search_and_full_cursor_walk_are_bounded
+0.28s call     tests/db/test_catalog_performance.py::test_large_fanout_atomic_chunks_wal_snapshot_and_exhausted_restart[100]
+0.21s call     tests/db/test_catalog_performance.py::test_large_fanout_atomic_chunks_wal_snapshot_and_exhausted_restart[50]
+============================== 7 passed in 5.68s ===============================

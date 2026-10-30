@@ -1,0 +1,83 @@
+cwd=/workspace/Binocular
+command=docker image inspect binocular:qc-check 
+started=2026-10-30T11:27:32+02:00
+[
+    {
+        "Id": "sha256:54c83a271ce6f218cae54dc1c93445d686dc81ccb039c04012b8fa57576d70a4",
+        "RepoTags": [
+            "binocular:qc-check"
+        ],
+        "RepoDigests": [
+            "binocular@sha256:54c83a271ce6f218cae54dc1c93445d686dc81ccb039c04012b8fa57576d70a4"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-10-30T09:22:30.395240206Z",
+        "Config": {
+            "ExposedPorts": {
+                "8000/tcp": {}
+            },
+            "Env": [
+                "PATH=/app/.venv/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+                "PYTHON_VERSION=3.13.18",
+                "PYTHON_SHA256=abb0102e6d4ae027509bcb82327d9dd85515b44a3ba8ad538cfc5e9847029f68",
+                "PYTHONPATH=/app/src",
+                "PYTHONUNBUFFERED=1"
+            ],
+            "Entrypoint": [
+                "/entrypoint.sh"
+            ],
+            "Cmd": [
+                "uvicorn",
+                "binocular.app:create_app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--factory"
+            ],
+            "Labels": {
+                "description": "Self-hosted firmware-update watcher",
+                "maintainer": "Binocular"
+            },
+            "ArgsEscaped": true
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 248147608,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:a5d6d345f6afa08d7c31272055746d60a838b290bfcc82c0a23e8e984d61a933",
+                "sha256:b9baa14e993c683240d519adebb39657df4d2b973dc2f3fee23cd51367806e2b",
+                "sha256:1217eb836a36d0c4be6a310113a777ecb9d7e9c24197a407665c8884cc5369a4",
+                "sha256:3929d22d8aa43d69f436bbc47ef472db875440b850dbc4e80dd272a3adf673d2",
+                "sha256:758e694fe9b5574e22d078e39877f577074f86c6b2f8e8c08bca07829dd881d4",
+                "sha256:ff62c643482d225ab435c6550bb5669b3c57acc6773fa00bf87215376c4491f3",
+                "sha256:2a16df01c8308fcba4085051e53f07e0ddf34e6036359d1f880dae53d880e1d8",
+                "sha256:c68ce959709fb4a5dbf80c83fb21267b9e8b634e192d65e97f5f61ea3196d91c",
+                "sha256:8f6ccd435499c488f6d45987014532cf4a94f1bd61a77dc1dc119835e61fcfef",
+                "sha256:c569f7a3852428917be6d9e3d40f98b7e29b425a0e071ce0f3c9c68c3ab01511",
+                "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+                "sha256:1ce6f89f34efb59628aa41974b22dedaacc6d0a673b4af1962653fd25d413486"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-30T09:27:32.010538658Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:54c83a271ce6f218cae54dc1c93445d686dc81ccb039c04012b8fa57576d70a4",
+            "size": 2577,
+            "annotations": {
+                "io.containerd.image.name": "docker.io/library/binocular:qc-check",
+                "org.opencontainers.image.created": "2026-10-30T09:27:30Z",
+                "org.opencontainers.image.ref.name": "qc-check"
+            }
+        }
+    }
+]
+
+exit=0
+finished=2026-10-30T11:27:32+02:00

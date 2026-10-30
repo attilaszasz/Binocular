@@ -1,0 +1,386 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@vitest/coverage-v8": {
+      "name": "@vitest/coverage-v8",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "vitest"
+      ],
+      "effects": [
+        "vitest"
+      ],
+      "range": "2.1.0-beta.1 - 4.1.11",
+      "nodes": [
+        "node_modules/@vitest/coverage-v8"
+      ],
+      "fixAvailable": {
+        "name": "@vitest/coverage-v8",
+        "version": "4.1.12",
+        "isSemVerMajor": false
+      }
+    },
+    "@vitest/mocker": {
+      "name": "@vitest/mocker",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1242767,
+          "name": "@vitest/mocker",
+          "dependency": "@vitest/mocker",
+          "title": "Vitest: Code injection via unauthenticated manual mock registration",
+          "url": "https://github.com/advisories/GHSA-qxg6-89mg-rqv8",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-94",
+            "CWE-116",
+            "CWE-306"
+          ],
+          "cvss": {
+            "score": 4.7,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:L/A:N"
+          },
+          "range": ">=2.1.0-beta.7 <4.1.12"
+        },
+        {
+          "source": 1242769,
+          "name": "@vitest/mocker",
+          "dependency": "@vitest/mocker",
+          "title": "Vitest: Windows backslash traversal bypasses the @vitest/mocker redirect allowlist fix",
+          "url": "https://github.com/advisories/GHSA-xp26-3454-mjgp",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N"
+          },
+          "range": ">=4.1.11 <4.1.12"
+        }
+      ],
+      "effects": [
+        "vitest"
+      ],
+      "range": "<=4.1.11",
+      "nodes": [
+        "node_modules/@vitest/mocker"
+      ],
+      "fixAvailable": {
+        "name": "@vitest/coverage-v8",
+        "version": "4.1.12",
+        "isSemVerMajor": false
+      }
+    },
+    "undici": {
+      "name": "undici",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1243078,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Denial of Service via unbounded memory in the EventSource parser",
+          "url": "https://github.com/advisories/GHSA-4qv8-2p9j-2685",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243081,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Subresource Integrity bypass via non-lowercase algorithm tokens",
+          "url": "https://github.com/advisories/GHSA-f72v-6w45-q472",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-178"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": ">=7.15.0 <7.30.1"
+        },
+        {
+          "source": 1243113,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Denial of Service via unhandled error on excessive content-encodings",
+          "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+          "severity": "high",
+          "cwe": [
+            "CWE-248",
+            "CWE-459"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.18.0 <7.30.1"
+        },
+        {
+          "source": 1243473,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to cache poisoning and cross-user disclosure via cross-origin redirects",
+          "url": "https://github.com/advisories/GHSA-4w7w-5xrc-9h26",
+          "severity": "high",
+          "cwe": [
+            "CWE-346",
+            "CWE-524"
+          ],
+          "cvss": {
+            "score": 7.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243475,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to TLS certificate validation bypass via dropped tls options in Agent",
+          "url": "https://github.com/advisories/GHSA-2m5v-pch6-74hx",
+          "severity": "high",
+          "cwe": [
+            "CWE-295"
+          ],
+          "cvss": {
+            "score": 7.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243478,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Denial of Service via TLS 1.2 certificate-changing renegotiation",
+          "url": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm",
+          "severity": "high",
+          "cwe": [
+            "CWE-248",
+            "CWE-617"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243481,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici WebSocket client vulnerable to Denial of Service via unbounded automatic PONG buffering",
+          "url": "https://github.com/advisories/GHSA-9fm3-97px-rjf6",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-400",
+            "CWE-405",
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243484,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Denial of Service via unhandled exception in the decompress interceptor",
+          "url": "https://github.com/advisories/GHSA-55wc-3pg8-jfw6",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-248"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.15.0 <7.30.1"
+        }
+      ],
+      "effects": [],
+      "range": "7.0.0 - 7.30.0",
+      "nodes": [
+        "node_modules/undici"
+      ],
+      "fixAvailable": true
+    },
+    "vite": {
+      "name": "vite",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1242624,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+          "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-78"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=8.0.0 <=8.1.5"
+        },
+        {
+          "source": 1242653,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+          "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-88"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=8.0.0 <=8.1.5"
+        },
+        {
+          "source": 1242660,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+          "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm",
+          "severity": "high",
+          "cwe": [
+            "CWE-77"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=8.0.0 <=8.1.5"
+        },
+        {
+          "source": 1242726,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite: Cross origin script execution through Vite custom middleware",
+          "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw",
+          "severity": "low",
+          "cwe": [
+            "CWE-80"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=8.0.0 <=8.1.5"
+        },
+        {
+          "source": 1242732,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+          "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22",
+            "CWE-284"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=8.0.0 <=8.1.5"
+        }
+      ],
+      "effects": [],
+      "range": "8.0.0 - 8.1.5",
+      "nodes": [
+        "node_modules/vite"
+      ],
+      "fixAvailable": true
+    },
+    "vitest": {
+      "name": "vitest",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@vitest/coverage-v8",
+        "@vitest/mocker"
+      ],
+      "effects": [
+        "@vitest/coverage-v8"
+      ],
+      "range": "2.1.0-beta.1 - 4.1.11",
+      "nodes": [
+        "node_modules/vitest"
+      ],
+      "fixAvailable": {
+        "name": "@vitest/coverage-v8",
+        "version": "4.1.12",
+        "isSemVerMajor": false
+      }
+    },
+    "zod": {
+      "name": "zod",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1243066,
+          "name": "zod",
+          "dependency": "zod",
+          "title": "Zod can exhaust memory while validating oversized constrained collections",
+          "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
+          "severity": "high",
+          "cwe": [
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<4.6.6"
+        }
+      ],
+      "effects": [],
+      "range": "<4.6.6",
+      "nodes": [
+        "node_modules/zod"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 3,
+      "high": 3,
+      "critical": 0,
+      "total": 6
+    },
+    "dependencies": {
+      "prod": 122,
+      "dev": 224,
+      "optional": 44,
+      "peer": 8,
+      "peerOptional": 0,
+      "total": 389
+    }
+  }
+}

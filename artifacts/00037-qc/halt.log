@@ -1,0 +1,4 @@
+HALT requested: story-verifier F1/F2 CRITICAL, F3 HIGH; no fix loop.
+Stopping only QC backend runner 76215 and its uv/pytest children 76447/76450.
+kill_exit=0
+2026-10-30T11:30:04+02:00

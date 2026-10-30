@@ -1,0 +1,3 @@
+Capture warning resolved: default Vitest XML reporter is clover.xml, not cobertura-coverage.xml. Actual output copied without test rerun or altered results.
+-rw-r--r-- 1 openchamber openchamber 259757 Oct 30 11:29 artifacts/00037-qc/frontend-coverage-final.json
+-rw-r--r-- 1 openchamber openchamber  52213 Oct 30 11:29 artifacts/00037-qc/frontend-coverage.xml

@@ -7,6 +7,7 @@ import asyncio
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from binocular.db.catalog_types import ComparisonStatus
 from binocular.deps import DBDep
 from binocular.devices.repository import DeviceRepository
 from binocular.services.checks import CheckService
@@ -25,6 +26,8 @@ class DeviceCheckResultResponse(BaseModel):
     checked_at: str
     success: bool
     error_message: str | None = None
+    skipped: bool = False
+    comparison_status: ComparisonStatus = "unverified"
 
 
 class SearchVersionRequest(BaseModel):
@@ -94,6 +97,8 @@ async def check_single_device(
         checked_at=result.checked_at,
         success=result.success,
         error_message=result.error_message,
+        skipped=result.skipped,
+        comparison_status=result.comparison_status,
     )
 
 
@@ -141,6 +146,8 @@ async def check_bulk_devices(
                     checked_at=res.checked_at,
                     success=res.success,
                     error_message=res.error_message,
+                    skipped=res.skipped,
+                    comparison_status=res.comparison_status,
                 )
             )
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -10,6 +11,12 @@ import aiosqlite
 import structlog
 
 from binocular.config import Settings
+from binocular.db.connection import (
+    close_connection,
+    drain_task,
+    open_file_connection,
+    resolve_database_path,
+)
 
 logger = structlog.get_logger("binocular.services.backup")
 
@@ -40,7 +47,7 @@ class BackupService:
         backup_dir = self.get_backup_dir()
         backup_dir.mkdir(parents=True, exist_ok=True)
 
-        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S_%f")
         filename = f"binocular_backup_{timestamp}.db"
         target_path = backup_dir / filename
         temp_path = backup_dir / f"{filename}.tmp"
@@ -52,9 +59,13 @@ class BackupService:
         )
 
         try:
-            # Escape single quotes in the temp path for sqlite literal string
-            safe_temp_path = str(temp_path).replace("'", "''")
-            await self._db.execute(f"VACUUM INTO '{safe_temp_path}'")
+            # Drain VACUUM and close before cleanup: cancelling an aiosqlite
+            # await does not stop its worker from creating the output file.
+            _, cancellation = await drain_task(
+                asyncio.create_task(self._write_snapshot(temp_path))
+            )
+            if cancellation is not None:
+                raise cancellation
 
             # Atomic rename on the same filesystem
             temp_path.rename(target_path)
@@ -67,7 +78,7 @@ class BackupService:
                 duration_seconds=round(duration, 3),
             )
             return target_path
-        except Exception as e:
+        except BaseException as e:
             duration = time.monotonic() - start_time
             logger.error(
                 "backup_failed",
@@ -81,3 +92,13 @@ class BackupService:
                 except OSError:
                     pass
             raise
+
+    async def _write_snapshot(self, target: Path) -> None:
+        # VACUUM cannot run in a WriteUnit. This transaction-free connection
+        # never mutates/commits the shared runtime read input or another owner.
+        maintenance = await open_file_connection(await resolve_database_path(self._db))
+        try:
+            async with maintenance.execute("VACUUM INTO ?", (str(target),)):
+                pass
+        finally:
+            await close_connection(maintenance)

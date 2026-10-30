@@ -1,0 +1,31 @@
+cwd=/workspace/Binocular/frontend
+command=npx playwright test 
+started=2026-10-30T11:28:11+02:00
+[WebServer] (node:78939) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - `__dirname` (vite.config.ts:11:25). Use `import.meta.dirname` instead
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:78939) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+
+Running 10 tests using 1 worker
+
+(node:79024) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light (10.2s)
+  ✓   2 [desktop] › e2e/source-accessibility.spec.ts:165:3 › FR-018 rendered WCAG regression: light navigation and source states (4.4s)
+  ✓   3 [desktop] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark (8.6s)
+  ✓   4 [desktop] › e2e/source-accessibility.spec.ts:165:3 › FR-018 rendered WCAG regression: dark navigation and source states (4.3s)
+  ✓   5 [desktop] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring (7.8s)
+(node:80623) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   6 [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: light (9.0s)
+  ✓   7 [mobile] › e2e/source-accessibility.spec.ts:165:3 › FR-018 rendered WCAG regression: light navigation and source states (4.4s)
+  ✓   8 [mobile] › e2e/source-accessibility.spec.ts:26:3 › TR-007 keyboard, honest firmware states and local-only forms: dark (8.6s)
+  ✓   9 [mobile] › e2e/source-accessibility.spec.ts:165:3 › FR-018 rendered WCAG regression: dark navigation and source states (4.4s)
+  ✓  10 [mobile] › e2e/source-guidance.spec.ts:3:1 › SC-001–SC-006: sources, both forms, scope, pause, authoring (7.8s)
+
+  10 passed (1.2m)
+
+exit=0
+finished=2026-10-30T11:29:27+02:00

@@ -12,6 +12,8 @@ from httpx import ASGITransport, AsyncClient
 
 from binocular.app import create_app
 from binocular.config import Settings
+from binocular.db.repository import RepositoryBase
+from binocular.db.unit_of_work import WriteUnit
 from binocular.services.checks import DeviceCheckResult
 
 
@@ -30,18 +32,17 @@ async def client() -> AsyncIterator[AsyncClient]:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 # Seed a module and device
-                db = app.state.db
-                await db.execute(
-                    "INSERT INTO modules (name, device_type, file_path) "
-                    "VALUES (?, ?, ?)",
-                    ("Sony Camera", "Camera", "sony.py"),
-                )
-                await db.execute(
-                    "INSERT INTO devices (name, model, module_id, current_version)"
-                    " VALUES (?, ?, ?, ?)",
-                    ("My Camera", "ILCE-7M4", 1, "1.0.0"),
-                )
-                await db.commit()
+                async with WriteUnit(app.state.db) as unit:
+                    await unit.connection.execute(
+                        "INSERT INTO modules (name, device_type, file_path) "
+                        "VALUES (?, ?, ?)",
+                        ("Sony Camera", "Camera", "sony.py"),
+                    )
+                    await unit.connection.execute(
+                        "INSERT INTO devices (name, model, module_id, current_version)"
+                        " VALUES (?, ?, ?, ?)",
+                        ("My Camera", "ILCE-7M4", 1, "1.0.0"),
+                    )
                 yield ac
 
 
@@ -116,8 +117,7 @@ async def test_check_bulk_empty(client: AsyncClient) -> None:
     app = transport.app
     assert isinstance(app, FastAPI)
     db = app.state.db
-    await db.execute("DELETE FROM devices")
-    await db.commit()
+    await RepositoryBase(db).execute("DELETE FROM devices")
 
     resp = await client.post("/api/v1/checks/bulk")
     assert resp.status_code == 200

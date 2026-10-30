@@ -1,0 +1,173 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
+rootdir: /workspace/Binocular/backend
+configfile: pyproject.toml
+testpaths: tests
+plugins: asyncio-1.4.0, cov-7.1.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1345 items
+
+tests/db/test_auxiliary_write_ownership.py ..........                    [  0%]
+tests/db/test_catalog_atomic_work.py ................................... [  3%]
+............                                                             [  4%]
+tests/db/test_catalog_delivery.py ...................................... [  7%]
+.................                                                        [  8%]
+tests/db/test_catalog_delivery_transitions.py .......................... [ 10%]
+.................                                                        [ 11%]
+tests/db/test_catalog_device_links.py ........................           [ 13%]
+tests/db/test_catalog_identity.py .................                      [ 14%]
+tests/db/test_catalog_intents.py ....................................... [ 17%]
+.....                                                                    [ 17%]
+tests/db/test_catalog_migration.py ...................                   [ 19%]
+tests/db/test_catalog_observations.py ...........................        [ 21%]
+tests/db/test_catalog_performance.py .......                             [ 21%]
+tests/db/test_catalog_reevaluation.py ...............................    [ 24%]
+tests/db/test_catalog_refresh_work.py ...........................        [ 26%]
+tests/db/test_catalog_repository.py ........................             [ 27%]
+tests/db/test_catalog_security.py ...................................... [ 30%]
+........................................................................ [ 36%]
+........................................................................ [ 41%]
+.....................................................                    [ 45%]
+tests/db/test_catalog_types.py ......................................... [ 48%]
+.............                                                            [ 49%]
+tests/db/test_catalog_work.py ...............                            [ 50%]
+tests/db/test_legacy_repository_units.py .............                   [ 51%]
+tests/db/test_runtime_write_ownership.py .............                   [ 52%]
+tests/db/test_write_ownership.py ....................................... [ 55%]
+........................                                                 [ 57%]
+tests/db/test_write_unit.py ........................                     [ 58%]
+tests/devices/test_repository.py ........                                [ 59%]
+tests/devices/test_routes.py ..........                                  [ 60%]
+tests/devices/test_service.py .......                                    [ 60%]
+tests/extensions/test_contract.py .......                                [ 61%]
+tests/extensions/test_loader.py .........                                [ 61%]
+tests/extensions/test_repository.py ...........                          [ 62%]
+tests/extensions/test_runner.py ........                                 [ 63%]
+tests/extensions/test_validator.py ...............                       [ 64%]
+tests/routes/test_backups.py ..                                          [ 64%]
+tests/routes/test_checks_routes.py .......                               [ 65%]
+tests/routes/test_modules.py ........                                    [ 65%]
+tests/routes/test_modules_streaming.py ....                              [ 66%]
+tests/routes/test_schedules.py ....                                      [ 66%]
+tests/scraping/test_client.py ...............                            [ 67%]
+tests/scraping/test_conftest.py ..                                       [ 67%]
+tests/scraping/test_rate_limit.py ...............                        [ 68%]
+tests/scraping/test_robots.py .................                          [ 69%]
+tests/scraping/test_scope.py ...........                                 [ 70%]
+tests/scraping/test_trace.py .                                           [ 70%]
+tests/services/test_backup.py ...                                        [ 71%]
+tests/services/test_checks.py .......................................... [ 74%]
+.......................                                                  [ 75%]
+tests/services/test_scheduler.py .........                               [ 76%]
+tests/services/test_settings_seeder.py ..                                [ 76%]
+tests/services/test_version_compare.py .................                 [ 77%]
+tests/test_activity_logging_integration.py ..                            [ 78%]
+tests/test_activity_repository.py ..                                     [ 78%]
+tests/test_activity_routes.py ....                                       [ 78%]
+tests/test_auth.py ......                                                [ 79%]
+tests/test_canon_endpoint_cache.py .....                                 [ 79%]
+tests/test_config.py .............                                       [ 80%]
+tests/test_connection.py .......                                         [ 80%]
+tests/test_database_fixture.py ..                                        [ 81%]
+tests/test_entrypoint.py ............                                    [ 81%]
+tests/test_health.py ...                                                 [ 82%]
+tests/test_logging.py .....                                              [ 82%]
+tests/test_masking.py ....                                               [ 82%]
+tests/test_migrations.py ......................                          [ 84%]
+tests/test_module_kit.py .......                                         [ 84%]
+tests/test_module_scope.py ..                                            [ 85%]
+tests/test_notifications.py ........                                     [ 85%]
+tests/test_official_canon_rf_cameras_module.py ................          [ 86%]
+tests/test_official_canon_rf_lenses_module.py ......................     [ 88%]
+tests/test_official_godox_flashes_module.py ..........                   [ 89%]
+tests/test_official_nikon_z_series_module.py ........................... [ 91%]
+.........................................                                [ 94%]
+tests/test_official_panasonic_lumix_lenses_module.py ..........          [ 95%]
+tests/test_official_panasonic_lumix_module.py .........                  [ 95%]
+tests/test_official_sony_alpha_module.py ...........                     [ 96%]
+tests/test_official_viltrox_lenses_module.py .................           [ 97%]
+tests/test_repository.py .....                                           [ 98%]
+tests/test_scraping_security.py .                                        [ 98%]
+tests/test_seeder.py ..........                                          [ 99%]
+tests/test_source_guidance.py .............                              [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.18-final-0 _______________
+
+Name                                                       Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------------------------
+src/binocular/__init__.py                                      0      0   100%
+src/binocular/app.py                                          57      6    89%   45-48, 82, 110-111
+src/binocular/auth.py                                         32      2    94%   40-41
+src/binocular/config.py                                       70      3    96%   133, 162-163
+src/binocular/db/__init__.py                                   2      0   100%
+src/binocular/db/activity_repository.py                       40      0   100%
+src/binocular/db/catalog_repository.py                       222     18    92%   61, 87, 190, 219, 227, 232, 239, 244, 258, 313, 328, 348, 355, 377, 379, 383, 385, 399
+src/binocular/db/catalog_types.py                            492     10    98%   70, 217, 299, 315, 392, 480, 496, 524, 534, 546
+src/binocular/db/connection.py                                68      3    96%   34, 64, 132
+src/binocular/db/delivery_repository.py                      355     46    87%   46, 63, 97, 179, 282, 294, 364, 369, 389, 405, 410, 421, 461, 498, 506, 522, 575, 645, 653, 660, 688, 690, 702, 717, 754, 762, 791, 803, 866, 878, 906, 923, 928, 938, 940, 949, 979, 996, 1001, 1021, 1030-1031, 1039, 1060, 1090, 1155
+src/binocular/db/migrations.py                                82      1    99%   78
+src/binocular/db/notifications_repository.py                  27      0   100%
+src/binocular/db/observation_repository.py                   193     19    90%   46, 69, 78, 81, 105, 162, 165, 213, 217, 229, 232, 279, 302, 312, 330, 343, 358, 361, 364
+src/binocular/db/repository.py                                32      0   100%
+src/binocular/db/unit_of_work.py                             104      0   100%
+src/binocular/db/work_repository.py                          693     50    93%   67, 73, 94, 97, 119, 132, 179, 241, 254, 323, 328, 353, 364, 372, 381, 393, 415, 421, 444, 457, 546, 565, 580, 598, 613, 632, 635, 658, 674, 679, 735, 803, 811, 825, 847, 917, 933, 941, 1091, 1108, 1133, 1148, 1254, 1256, 1258, 1277, 1279, 1288, 1305, 1317
+src/binocular/deps.py                                          7      0   100%
+src/binocular/devices/__init__.py                              0      0   100%
+src/binocular/devices/models.py                               75      0   100%
+src/binocular/devices/repository.py                          154     11    93%   146, 152, 183, 229, 234, 259, 288, 295, 346, 387, 391
+src/binocular/devices/service.py                              66      1    98%   81
+src/binocular/extensions/__init__.py                           6      0   100%
+src/binocular/extensions/contract.py                          29      0   100%
+src/binocular/extensions/guidance.py                          51      6    88%   21, 27, 29-30, 88-89
+src/binocular/extensions/loader.py                            78      3    96%   105, 124, 175
+src/binocular/extensions/repository.py                        48      0   100%
+src/binocular/extensions/runner.py                            67      4    94%   173-174, 181-185
+src/binocular/extensions/validator.py                        168     20    88%   113-115, 319-321, 324-329, 336, 361-362, 376-383, 417-425, 536
+src/binocular/logging.py                                      26      0   100%
+src/binocular/module_kit/EXAMPLE_MODULE.py                    72     72     0%   11-165
+src/binocular/module_kit/STARTER_TEMPLATE.py                  27     27     0%   19-136
+src/binocular/module_kit/__init__.py                           0      0   100%
+src/binocular/official_modules/__init__.py                     0      0   100%
+src/binocular/official_modules/canon_endpoint_cache.py       120      4    97%   256, 271-272, 275
+src/binocular/official_modules/canon_rf_cameras.py           186     42    77%   64, 69, 71, 89, 100, 107, 129, 144, 153, 241-294, 304-310
+src/binocular/official_modules/canon_rf_lenses.py            198     44    78%   79, 86, 105, 116, 123, 145, 161, 170, 261-317, 327-333
+src/binocular/official_modules/godox_flashes.py              123      9    93%   56, 73-74, 135, 145, 156, 160, 163, 215
+src/binocular/official_modules/nikon_z_series.py             185     13    93%   98, 115, 121, 165, 178, 181, 197, 203, 297-298, 319-320, 334
+src/binocular/official_modules/panasonic_lumix.py             97      5    95%   78-79, 129, 171, 184
+src/binocular/official_modules/panasonic_lumix_lenses.py      97      5    95%   75-76, 96, 154, 203
+src/binocular/official_modules/sony_alpha.py                 124     11    91%   70-71, 128, 132, 135-136, 139, 150, 152, 164, 169
+src/binocular/official_modules/viltrox_lenses.py             154     22    86%   88-89, 110, 116, 139, 147, 149, 166, 187, 193, 195, 202, 204, 209, 223-225, 230, 259, 264, 266, 269
+src/binocular/routes/__init__.py                              18      0   100%
+src/binocular/routes/activity.py                              28      0   100%
+src/binocular/routes/backups.py                               18      2    89%   32-33
+src/binocular/routes/checks.py                                65      3    95%   72-73, 126
+src/binocular/routes/devices.py                               49      3    94%   64, 66, 96
+src/binocular/routes/health.py                                 8      0   100%
+src/binocular/routes/module_kit.py                            30      2    93%   38, 72
+src/binocular/routes/modules.py                              178     17    90%   103-113, 117-127, 200-212, 264-274, 327, 334-344, 399, 406, 411, 430, 452-453
+src/binocular/routes/notifications.py                         92     28    70%   22, 57-61, 74-78, 100, 111-112, 115, 137, 143-150, 152-159
+src/binocular/scraping/__init__.py                             2      0   100%
+src/binocular/scraping/client.py                             220     15    93%   72, 135, 143, 149, 177, 179, 199, 213, 226, 244, 249, 325, 337, 381, 383
+src/binocular/scraping/rate_limit.py                         187     13    93%   42, 58, 99, 128, 213, 251-253, 297-301
+src/binocular/scraping/robots.py                             181     17    91%   47, 53-55, 60, 130, 143-145, 233, 241-242, 251, 263-266
+src/binocular/scraping/scope.py                               99      2    98%   106, 142
+src/binocular/services/__init__.py                             5      0   100%
+src/binocular/services/automatic_admission.py                 28      1    96%   25
+src/binocular/services/backup.py                              50      2    96%   92-93
+src/binocular/services/checks.py                             150     25    83%   71, 74, 77, 92, 120, 124, 127-128, 138, 142-144, 161, 170-171, 193, 199, 232-233, 240-244, 288, 294-297
+src/binocular/services/email_renderer.py                      11      0   100%
+src/binocular/services/notifier.py                           122      9    93%   97, 191-203, 216-217
+src/binocular/services/official_provenance.py                 23      2    91%   49-50
+src/binocular/services/scheduler.py                          138     16    88%   40, 51, 61, 69-75, 100-103, 174-177, 288
+src/binocular/services/seeder.py                              92      9    90%   44-45, 57-58, 81-85, 139-140, 179
+src/binocular/services/settings_seeder.py                     25      0   100%
+src/binocular/services/version_compare.py                     61      3    95%   49-51
+src/binocular/spa.py                                          21     12    43%   30-51
+src/binocular/utils/__init__.py                                0      0   100%
+src/binocular/utils/masking.py                                22      0   100%
+----------------------------------------------------------------------------------------
+TOTAL                                                       6550    638    90%
+Coverage XML written to file ../artifacts/00037-validation/backend-coverage.xml
+Required test coverage of 80% reached. Total coverage: 90.26%
+======================= 1345 passed in 225.89s (0:03:45) =======================

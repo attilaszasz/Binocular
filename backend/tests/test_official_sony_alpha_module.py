@@ -192,4 +192,7 @@ async def test_integration_with_runner_failure() -> None:
 
     assert run_result.success is False
     assert run_result.result is None
-    assert "product_not_found" in (run_result.error or "")
+    # Provider exception text is deliberately excluded at the runner boundary.
+    assert run_result.error == "Module raised an exception"
+    # Preserve the safe source outcome without restoring provider/model text.
+    assert run_result.error_type == "product_not_found"

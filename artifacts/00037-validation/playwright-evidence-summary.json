@@ -1,0 +1,253 @@
+{
+  "auditCount": 36,
+  "violations": 0,
+  "incomplete": 0,
+  "audits": [
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-0e03f-avigation-and-source-states-desktop/add-source-help-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-0e03f-avigation-and-source-states-desktop/scope-details-authoring-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 24
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-0e03f-avigation-and-source-states-desktop/sources-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 23
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-0e03f-avigation-and-source-states-desktop/upload-warning-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-0e03f-avigation-and-source-states-mobile/add-source-help-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-0e03f-avigation-and-source-states-mobile/scope-details-authoring-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-0e03f-avigation-and-source-states-mobile/sources-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 22
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-0e03f-avigation-and-source-states-mobile/upload-warning-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-e4d36-avigation-and-source-states-desktop/add-source-help-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-e4d36-avigation-and-source-states-desktop/scope-details-authoring-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 24
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-e4d36-avigation-and-source-states-desktop/sources-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 23
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-e4d36-avigation-and-source-states-desktop/upload-warning-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-e4d36-avigation-and-source-states-mobile/add-source-help-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-e4d36-avigation-and-source-states-mobile/scope-details-authoring-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-e4d36-avigation-and-source-states-mobile/sources-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 22
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-FR-01-e4d36-avigation-and-source-states-mobile/upload-warning-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/explicit-search-error-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/explicit-search-reference-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/honest-inventory-statuses-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 21
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/keyboard-form-error-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/keyboard-unknown-form-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/explicit-search-error-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/explicit-search-reference-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/honest-inventory-statuses-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 21
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/keyboard-form-error-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/keyboard-unknown-form-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/explicit-search-error-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/explicit-search-reference-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/honest-inventory-statuses-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 21
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/keyboard-form-error-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/keyboard-unknown-form-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 26
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/explicit-search-error-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/explicit-search-reference-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/honest-inventory-statuses-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 21
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/keyboard-form-error-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/keyboard-unknown-form-axe.json",
+      "violations": 0,
+      "incomplete": 0,
+      "passes": 25
+    }
+  ],
+  "network": [
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-desktop/ordinary-form-network.json",
+      "before": 0,
+      "after": 0,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-00160--and-local-only-forms-light-mobile/ordinary-form-network.json",
+      "before": 15,
+      "after": 15,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-desktop/ordinary-form-network.json",
+      "before": 7,
+      "after": 7,
+      "external": [],
+      "firmwareActions": []
+    },
+    {
+      "path": "frontend/test-results/source-accessibility-TR-00-8427b-s-and-local-only-forms-dark-mobile/ordinary-form-network.json",
+      "before": 21,
+      "after": 21,
+      "external": [],
+      "firmwareActions": []
+    }
+  ]
+}

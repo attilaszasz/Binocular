@@ -200,14 +200,9 @@ class ModuleLoader:
         device_type = str(getattr(module, SUPPORTED_DEVICE_TYPE_ATTR, ""))
         source_url = str(getattr(module, SOURCE_URL_ATTR, "") or "")
 
-        logger.info(
-            "module_loaded",
-            name=mod_name,
-            device_type=device_type,
-            version=version,
-            source_url=source_url,
-            guidance=guidance,
-        )
+        # Module metadata may accidentally contain signed links/configuration.
+        # Loading success needs no raw metadata in diagnostics.
+        logger.info("module_loaded")
 
         return LoadResult(
             success=True,

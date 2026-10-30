@@ -1,0 +1,30 @@
+cwd=/workspace/Binocular/frontend
+command=npm run build 
+started=2026-10-30T11:28:06+02:00
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vite.config.ts:11:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.3.5 building client environment for production...
+(node:78486) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+transforming...
+✓ 1940 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                              0.67 kB │ gzip:   0.40 kB
+dist/assets/geist-cyrillic-ext-wght-normal-DjL33-gN.woff2    7.42 kB
+dist/assets/geist-vietnamese-wght-normal-6IgcOCM7.woff2      8.00 kB
+dist/assets/geist-cyrillic-wght-normal-BEAKL7Jp.woff2       15.08 kB
+dist/assets/geist-latin-ext-wght-normal-DC-KSUi6.woff2      16.51 kB
+dist/assets/geist-latin-wght-normal-BgDaEnEv.woff2          29.40 kB
+dist/assets/index-BiT5o3Ur.css                              69.32 kB │ gzip:  12.23 kB
+dist/assets/index-CkXPSGQD.js                              471.33 kB │ gzip: 143.64 kB
+
+✓ built in 813ms
+
+exit=0
+finished=2026-10-30T11:28:11+02:00

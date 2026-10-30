@@ -67,7 +67,8 @@ export function useDeleteDevice() {
 export function useConfirmUpdate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => devicesApi.confirm(id),
+    mutationFn: ({ id, expectedRevision }: { id: number; expectedRevision?: number }) =>
+      devicesApi.confirm(id, expectedRevision),
     onSuccess: () => qc.invalidateQueries({ queryKey: DEVICES_KEY }),
   });
 }

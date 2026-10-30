@@ -1,0 +1,6 @@
+backend/src/binocular/db/migrations/0012_v1_check_attempt.sql: OK
+backend/src/binocular/db/catalog_types.py: OK
+backend/src/binocular/db/work_repository.py: OK
+backend/src/binocular/devices/repository.py: OK
+frontend/src/components/inventory/device-card.tsx: OK
+EXIT=0

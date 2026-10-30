@@ -102,19 +102,21 @@ async def save_notification_channel(
     repo = NotificationsRepository(db)
 
     # Password merging logic for masked passwords/tokens
-    existing = await repo.get_by_type(channel_type)
-    if existing:
-        try:
-            existing_config = json.loads(existing["config"])
-        except Exception:
-            existing_config = {}
+    async with repo.write_scope() as conn:
+        writer = NotificationsRepository(conn)
+        existing = await writer.get_by_type(channel_type)
+        if existing:
+            try:
+                existing_config = json.loads(existing["config"])
+            except Exception:
+                existing_config = {}
 
-        if channel_type == "email" and config.get("smtp_pass") == "********":
-            config["smtp_pass"] = existing_config.get("smtp_pass", "")
-        elif channel_type == "gotify" and config.get("app_token") == "********":
-            config["app_token"] = existing_config.get("app_token", "")
+            if channel_type == "email" and config.get("smtp_pass") == "********":
+                config["smtp_pass"] = existing_config.get("smtp_pass", "")
+            elif channel_type == "gotify" and config.get("app_token") == "********":
+                config["app_token"] = existing_config.get("app_token", "")
 
-    await repo.save(channel_type, enabled, config)
+        await writer.save(channel_type, enabled, config)
 
     return {
         "type": channel_type,

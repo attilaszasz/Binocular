@@ -3,38 +3,32 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncGenerator
-from pathlib import Path
 
+import aiosqlite
 import pytest
 
-from binocular.config import Settings
-from binocular.db.connection import close_connection, open_connection
-from binocular.db.migrations import run_migrations
 from binocular.official_modules.canon_endpoint_cache import CanonEndpointCache
 
+ENDPOINT = (
+    "https://asia.canon/asia/en/support/EOS%20R5/"
+    "get-search-result-content?fileType=FA"
+)
 
 @pytest.fixture
-async def cache(tmp_path: Path) -> AsyncGenerator[CanonEndpointCache]:
-    settings = Settings(data_dir=tmp_path, db_path=tmp_path / "binocular.db")
-    conn = await open_connection(settings)
-    await run_migrations(conn, settings)
-    instance = CanonEndpointCache(conn, now_ms=lambda: 1_000_000)
-    try:
-        yield instance
-    finally:
-        await close_connection(conn)
+async def cache(migrated_db: aiosqlite.Connection) -> CanonEndpointCache:
+    await migrated_db.execute("PRAGMA query_only=ON")
+    return CanonEndpointCache(migrated_db, now_ms=lambda: 1_000_000)
 
 
 @pytest.mark.asyncio
 async def test_mapping_persists_and_has_a_strict_24_hour_boundary(
     cache: CanonEndpointCache,
 ) -> None:
-    await cache.upsert_discovery("camera", " EOS R5 ", "https://asia.canon/firmware", 0)
+    await cache.upsert_discovery("camera", " EOS R5 ", ENDPOINT, 0)
     mapping = await cache.get_mapping("camera", "eos r5")
 
     assert mapping is not None
-    assert mapping.endpoint_url == "https://asia.canon/firmware"
+    assert mapping.endpoint_url == ENDPOINT
     assert mapping.is_fresh(0) is True
     assert mapping.is_fresh(86_400_000 - 1) is True
     assert mapping.is_fresh(86_400_000) is False
@@ -43,7 +37,7 @@ async def test_mapping_persists_and_has_a_strict_24_hour_boundary(
 
 @pytest.mark.asyncio
 async def test_invalidated_mapping_is_never_reused(cache: CanonEndpointCache) -> None:
-    await cache.upsert_discovery("camera", "EOS R5", "https://asia.canon/firmware")
+    await cache.upsert_discovery("camera", "EOS R5", ENDPOINT)
     await cache.invalidate_mapping("camera", "EOS R5", "transport")
     mapping = await cache.get_mapping("camera", "EOS R5")
 
@@ -91,3 +85,41 @@ async def test_cancelled_waiter_does_not_cancel_shared_operation(
         await waiter
     release.set()
     assert await owner == "live"
+
+
+async def test_normalized_same_variant_callers_share_actual_live_work(
+    cache: CanonEndpointCache,
+) -> None:
+    entered = asyncio.Event()
+    joined = asyncio.Event()
+    release = asyncio.Event()
+    calls = 0
+
+    async def operation() -> str:
+        nonlocal calls
+        calls += 1
+        # Independent writer admission proves no lease transaction spans I/O.
+        async with cache.write_unit():
+            pass
+        entered.set()
+        await release.wait()
+        return "shared live result"
+
+    async def join() -> str:
+        joined.set()
+        # The uncontended cache lock does not yield before shield(existing).
+        return await cache.coordinate_live_check("camera", " eos   r5 ", operation)
+
+    owner = asyncio.create_task(
+        cache.coordinate_live_check("camera", "EOS R5", operation)
+    )
+    await asyncio.wait_for(entered.wait(), 5)
+    waiter = asyncio.create_task(join())
+    try:
+        await asyncio.wait_for(joined.wait(), 5)
+        assert calls == 1
+        assert not waiter.done()
+    finally:
+        release.set()
+    assert await owner == await waiter == "shared live result"
+    assert calls == 1

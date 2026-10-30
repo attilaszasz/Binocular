@@ -1,0 +1,57 @@
+
+> frontend@0.0.0 test
+> NODE_OPTIONS=--disable-warning=DEP0205 vitest --run --coverage
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vite.config.ts:11:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.12 /workspace/Binocular/frontend
+      Coverage enabled with v8
+
+
+ Test Files  17 passed (17)
+      Tests  120 passed (120)
+   Start at  11:53:42
+   Duration  22.79s (transform 1.23s, setup 0ms, import 12.04s, tests 19.89s, environment 24.77s)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   88.46 |    84.47 |   84.96 |   89.77 |                   
+ src               |   66.66 |      100 |     100 |   66.66 |                   
+  main.tsx         |       0 |      100 |     100 |       0 | 6                 
+ src/components    |   88.88 |    72.72 |   88.88 |   95.83 |                   
+  ...-provider.tsx |   88.46 |    72.72 |   88.88 |   95.65 | 47                
+ ...ents/inventory |   97.95 |    92.53 |     100 |   98.83 |                   
+  device-card.tsx  |     100 |       90 |     100 |     100 | 50-55,83          
+  device-form.tsx  |   97.43 |     92.5 |     100 |   98.48 | 100               
+ ...onents/modules |   81.53 |     77.9 |   78.84 |    84.1 |                   
+  ...ncyEditor.tsx |   81.25 |    80.95 |      75 |   78.57 | 36-38             
+  ModuleCard.tsx   |      64 |     87.5 |   55.55 |   66.66 | 40-51,133         
+  ...ceSection.tsx |      96 |    78.57 |     100 |     100 | 42-71             
+  ...ploadForm.tsx |   78.57 |    69.23 |      70 |    82.6 | ...80-181,233-237 
+ src/components/ui |    82.5 |       85 |   79.41 |    82.5 |                   
+  badge.tsx        |     100 |       75 |     100 |     100 | 37                
+  card.tsx         |   71.42 |      100 |   71.42 |   71.42 | 60,83             
+  select.tsx       |   72.72 |    71.42 |      70 |   72.72 | 19,97,134         
+  table.tsx        |   77.77 |      100 |      75 |   77.77 | 43,98             
+ src/hooks         |   94.79 |    44.44 |   97.87 |   96.77 |                   
+  use-sidebar.ts   |   81.81 |    33.33 |   85.71 |   89.47 | 25-26             
+  use-theme.ts     |      75 |       50 |     100 |      75 | 8                 
+ src/lib           |   99.07 |    93.82 |     100 |   98.92 |                   
+  api.ts           |   98.71 |    90.38 |     100 |    98.5 | 14                
+ src/pages         |   82.91 |    82.98 |   67.21 |   83.42 |                   
+  inventory.tsx    |   70.27 |    78.84 |   57.14 |   68.75 | 51,55-62,68-69,78 
+  logs.tsx         |   52.27 |    66.66 |   27.77 |   54.76 | ...-69,77,185-359 
+  modules.tsx      |   89.47 |    96.29 |   88.88 |   88.23 | 32,130            
+  settings.tsx     |     100 |    91.42 |     100 |     100 | 93-161,213,369    
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 88.46% ( 721/815 )
+Branches     : 84.47% ( 631/747 )
+Functions    : 84.96% ( 226/266 )
+Lines        : 89.77% ( 667/743 )
+================================================================================

@@ -79,7 +79,7 @@ class TestModuleRunnerErrorBoundary:
         )
         assert run_result.success is False
         assert run_result.error_type == "exception"
-        assert "RuntimeError" in (run_result.error or "")
+        assert "exception" in (run_result.error or "")
 
     async def test_catches_systemexit(
         self,
@@ -196,6 +196,32 @@ class TestModuleRunnerTimeout:
 
 class TestModuleRunnerContractErrors:
     """Contract violation tests."""
+
+    @pytest.mark.parametrize(
+        ("message", "expected"),
+        [
+            ("product_not_found: password=seed-secret", "product_not_found"),
+            ("firmware_not_available: token=seed-secret", "firmware_not_available"),
+            ("firmware_index_not_found: seed-secret", "firmware_index_not_found"),
+            ("product_not_found_seed-secret: private", "exception"),
+            ("password=seed-secret", "exception"),
+        ],
+    )
+    async def test_source_failure_retains_only_allowlisted_code(
+        self, message: str, expected: str, runner: ModuleRunner,
+        mock_client: MagicMock,
+    ) -> None:
+        module = ModuleType("source_failure")
+
+        def check_firmware(url: str, model: str, client: object) -> object:
+            raise ValueError(message)
+
+        module.check_firmware = check_firmware  # type: ignore[attr-defined]
+        result = await runner.run(module, "", "", mock_client)
+        assert not result.success
+        assert result.error_type == expected
+        assert result.error == "Module raised an exception"
+        assert "seed-secret" not in repr(result)
 
     async def test_missing_function_returns_error(
         self,

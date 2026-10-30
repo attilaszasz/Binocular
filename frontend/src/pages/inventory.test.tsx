@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InventoryPage } from "./inventory";
 import { vi, describe, it, expect, beforeEach } from "vitest";
@@ -25,7 +25,7 @@ import type { Device } from "@/lib/api";
 
 // Mock child components that are not critical for layout testing
 vi.mock("@/components/inventory/device-card", () => ({
-  DeviceCard: ({ device }: { device: Device }) => <div data-testid="device-card">{device.name}</div>,
+  DeviceCard: ({ device, onConfirm }: { device: Device; onConfirm: (device: Device) => void }) => <div data-testid="device-card">{device.name}<button onClick={() => onConfirm(device)}>Confirm device update</button></div>,
 }));
 vi.mock("@/components/inventory/device-form", () => ({
   DeviceForm: () => <div>Device Form</div>,
@@ -121,5 +121,22 @@ describe("InventoryPage - Compact Stats Subtitle", () => {
 
     renderWithProvider();
     expect(screen.getByText("2 devices • 1 update available • 2 of 2 checked")).toBeInTheDocument();
+  });
+
+  it("confirms using the rendered revision and exposes conflicts without claiming success", () => {
+    const mutate = vi.fn();
+    mockUseDevices.mockReturnValue({ data: [{ id: 1, name: "Camera", revision: 5, has_update: true, last_checked: null }], isLoading: false });
+    mockUseConfirmUpdate.mockReturnValue({ mutate, error: new Error("Device mutation conflict: stale_revision") });
+    renderWithProvider();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm device update" }));
+    expect(mutate).toHaveBeenCalledWith({ id: 1, expectedRevision: 5 });
+    expect(screen.getByRole("alert")).toHaveTextContent("Update was not confirmed. Device mutation conflict: stale_revision");
+  });
+
+  it("keeps edit conflicts visible as failed saves", () => {
+    mockUseDevices.mockReturnValue({ data: [], isLoading: false });
+    mockUseUpdateDevice.mockReturnValue({ mutate: vi.fn(), error: new Error("Device mutation conflict: stale_revision") });
+    renderWithProvider();
+    expect(screen.getByRole("alert")).toHaveTextContent("Device was not saved. Device mutation conflict: stale_revision");
   });
 });

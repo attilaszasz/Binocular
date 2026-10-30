@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query
 
 from binocular.deps import DBDep
 from binocular.devices.models import (
@@ -12,6 +14,7 @@ from binocular.devices.models import (
 )
 from binocular.devices.repository import DeviceRepository
 from binocular.devices.service import (
+    DeviceConflictError,
     DeviceNotFoundError,
     DeviceService,
     InvalidModuleError,
@@ -61,6 +64,8 @@ async def update_device(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidModuleError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except DeviceConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.delete("/devices/{device_id}", status_code=204)
@@ -76,9 +81,18 @@ async def delete_device(device_id: int, db: DBDep) -> None:
     "/devices/{device_id}/confirm",
     response_model=DeviceResponse,
 )
-async def confirm_device_update(device_id: int, db: DBDep) -> DeviceResponse:
+async def confirm_device_update(
+    device_id: int,
+    db: DBDep,
+    expected_revision: Annotated[int | None, Query(ge=1)] = None,
+) -> DeviceResponse:
     """Confirm a firmware update has been applied."""
     try:
-        return await _service(db).confirm_update(device_id)
+        return await _service(db).confirm_update(
+            device_id,
+            expected_revision=expected_revision,
+        )
     except DeviceNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except DeviceConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc

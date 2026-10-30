@@ -1,0 +1,62 @@
+[
+  {
+    "file": "frontend/src/main.tsx",
+    "covered": 0,
+    "total": 1,
+    "percent": 0
+  },
+  {
+    "file": "frontend/src/pages/logs.tsx",
+    "covered": 23,
+    "total": 42,
+    "percent": 54.76190476190476
+  },
+  {
+    "file": "frontend/src/components/modules/ModuleCard.tsx",
+    "covered": 16,
+    "total": 24,
+    "percent": 66.66666666666667
+  },
+  {
+    "file": "frontend/src/pages/inventory.tsx",
+    "covered": 22,
+    "total": 32,
+    "percent": 68.75
+  },
+  {
+    "file": "frontend/src/components/ui/card.tsx",
+    "covered": 5,
+    "total": 7,
+    "percent": 71.42857142857143
+  },
+  {
+    "file": "frontend/src/components/ui/select.tsx",
+    "covered": 8,
+    "total": 11,
+    "percent": 72.72727272727273
+  },
+  {
+    "file": "frontend/src/hooks/use-theme.ts",
+    "covered": 3,
+    "total": 4,
+    "percent": 75
+  },
+  {
+    "file": "frontend/src/components/ui/table.tsx",
+    "covered": 7,
+    "total": 9,
+    "percent": 77.77777777777777
+  },
+  {
+    "file": "frontend/src/components/modules/FrequencyEditor.tsx",
+    "covered": 11,
+    "total": 14,
+    "percent": 78.57142857142857
+  },
+  {
+    "file": "frontend/src/components/modules/ModuleUploadForm.tsx",
+    "covered": 95,
+    "total": 115,
+    "percent": 82.6086956521739
+  }
+]

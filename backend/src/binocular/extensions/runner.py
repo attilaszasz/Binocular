@@ -13,6 +13,7 @@ from types import ModuleType
 
 import structlog
 
+from binocular.db.catalog_types import validate_version_display
 from binocular.extensions.contract import (
     CHECK_FIRMWARE_FUNC,
     CheckResult,
@@ -52,20 +53,16 @@ class ModuleRunner:
         Returns:
             A :class:`RunResult` with success/failure details.
         """
-        mod_name = getattr(module, "__name__", "<unknown>")
         func = getattr(module, CHECK_FIRMWARE_FUNC, None)
         if func is None or not callable(func):
             return RunResult(
                 success=False,
-                error=f"Module '{mod_name}' has no callable '{CHECK_FIRMWARE_FUNC}'",
+                error=f"Module has no callable '{CHECK_FIRMWARE_FUNC}'",
                 error_type="contract",
             )
 
         logger.debug(
             "runner_executing",
-            module=mod_name,
-            url=url,
-            model=model,
             timeout=self._timeout,
         )
 
@@ -114,25 +111,35 @@ class ModuleRunner:
         except AutomaticSkipped:
             return RunResult(success=False, error_type="skipped")
         except TimeoutError:
-            logger.warning("runner_timeout", module=mod_name, timeout=self._timeout)
+            logger.warning("runner_timeout", timeout=self._timeout)
             return RunResult(
                 success=False,
-                error=f"Module '{mod_name}' timed out after {self._timeout}s",
+                error=f"Module timed out after {self._timeout}s",
                 error_type="timeout",
             )
-        except SystemExit as exc:
-            logger.warning("runner_systemexit", module=mod_name, code=exc.code)
+        except SystemExit:
+            logger.warning("runner_systemexit", error_code="parse")
             return RunResult(
                 success=False,
-                error=f"Module '{mod_name}' called sys.exit({exc.code})",
+                error="Module called sys.exit",
                 error_type="system_exit",
             )
         except Exception as exc:
-            logger.warning("runner_exception", module=mod_name, error=str(exc))
+            # Retain only a code-owned failure label, never provider text/model
+            # input or exception str/repr (which may contain credentials).
+            label = None
+            if type(exc) is ValueError and exc.args and type(exc.args[0]) is str:
+                candidate = exc.args[0].partition(":")[0]
+                if candidate in {
+                    "product_not_found", "firmware_not_available",
+                    "firmware_index_not_found",
+                }:
+                    label = candidate
+            logger.warning("runner_exception", error_code="parse")
             return RunResult(
                 success=False,
-                error=f"Module '{mod_name}' raised {type(exc).__name__}: {exc}",
-                error_type="exception",
+                error="Module raised an exception",
+                error_type=label or "exception",
             )
 
         # Convert raw result to CheckResult.
@@ -160,23 +167,19 @@ class ModuleRunner:
             else:
                 return RunResult(
                     success=False,
-                    error=(
-                        f"Module '{mod_name}' returned"
-                        f" unsupported type: {type(raw).__name__}"
-                    ),
+                    error="Module returned an unsupported result type",
                     error_type="contract",
                 )
-        except Exception as exc:
+            validate_version_display(check_result.latest_version)
+        except Exception:
             return RunResult(
                 success=False,
-                error=f"Failed to parse result from '{mod_name}': {exc}",
+                error="Failed to parse module result",
                 error_type="parse",
             )
 
         logger.info(
             "runner_success",
-            module=mod_name,
-            latest_version=check_result.latest_version,
         )
 
         return RunResult(success=True, result=check_result)
